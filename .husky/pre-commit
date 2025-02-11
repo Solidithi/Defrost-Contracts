@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🕺 Performing linting checks..."
+npm run lint
+echo "Your code is beautiful, nice job 👍"
+
+echo "🧪 Testing your code..."
+forge test
+echo "All tests passed 🚀"
