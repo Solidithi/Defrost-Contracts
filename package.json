@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@nomiclabs/hardhat-solhint": "^4.0.1"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
+    "husky": "^8.0.0"
+  },
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'"
+  }
+}
