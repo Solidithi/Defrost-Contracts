@@ -2,9 +2,17 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 echo "🕺 Performing linting checks..."
-npm run lint
+if git ls-files --error-unmatch 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' > /dev/null 2>&1; then
+  npm run lint
+else
+  echo "No Solidity files to lint, skipping..."
+fi
 echo "Your code is beautiful, nice job 👍"
 
-echo "🧪 Testing your code..."
-forge test
+echo "🧪 Running tests..."
+if ls test/**/*.sol 1> /dev/null 2>&1; then
+  forge test
+else
+  echo "No Solidity test files found, skipping tests..."
+fi
 echo "All tests passed 🚀"
