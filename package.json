@@ -21,6 +21,6 @@
 		"prepare": "husky install",
 		"lint": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
 		"lint:fix": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' --fix --noPrompt",
-		"format:sol": "prettier --write --plugin=prettier-plugin-solidity"
+		"format:sol": "prettier --write * --plugin=prettier-plugin-solidity"
 	}
 }
