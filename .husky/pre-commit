@@ -2,11 +2,7 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 echo "🕺 Performing linting checks..."
-if git ls-files --error-unmatch 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' > /dev/null 2>&1; then
-  npx lint-staged
-else
-  echo "No Solidity files to lint, skipping..."
-fi
+npx lint-staged
 echo "Your code is beautiful, nice job 👍"
 
 echo "🧪 Running tests..."
@@ -21,5 +17,5 @@ if git diff --cached --name-only | grep -q "\.sol$"; then
     echo "No Solidity test files found, skipping tests..."
   fi
 else
-  echo "No Solidity files in staged changes, skipping tests..."
+  echo "No Solidity files in staged changes, skipping..."
 fi
