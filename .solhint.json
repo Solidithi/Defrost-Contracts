@@ -22,7 +22,7 @@
 		"visibility-modifier-order": "error",
 		"state-visibility": "error",
 		"gas-custom-errors": "error",
-		"gas-length-in-loops": "error",
+		"gas-length-in-loops": "warn",
 		"gas-indexed-events": "warn",
 		"gas-small-strings": "warn"
 	}
