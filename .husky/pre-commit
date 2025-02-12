@@ -10,9 +10,16 @@ fi
 echo "Your code is beautiful, nice job 👍"
 
 echo "🧪 Running tests..."
-if ls test/**/*.sol 1> /dev/null 2>&1; then
-  forge test
+if git diff --cached --name-only | grep -q "\.sol$"; then
+  if ls test/**/*.sol 1> /dev/null 2>&1; then
+    if ! forge test; then
+      echo "❌ Tests failed! Please fix before committing."
+      exit 1
+    fi
+    echo "All tests passed 🚀"
+  else
+    echo "No Solidity test files found, skipping tests..."
+  fi
 else
-  echo "No Solidity test files found, skipping tests..."
+  echo "No Solidity files in staged changes, skipping tests..."
 fi
-echo "All tests passed 🚀"
