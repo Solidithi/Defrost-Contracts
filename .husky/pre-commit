@@ -3,7 +3,7 @@
 
 echo "🕺 Performing linting checks..."
 if git ls-files --error-unmatch 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' > /dev/null 2>&1; then
-  npm run lint
+  npx lint-staged
 else
   echo "No Solidity files to lint, skipping..."
 fi

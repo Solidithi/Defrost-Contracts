@@ -1,14 +1,26 @@
 {
-  "dependencies": {
-    "@nomiclabs/hardhat-solhint": "^4.0.1"
-  },
-  "devDependencies": {
-    "@commitlint/cli": "^19.7.1",
-    "@commitlint/config-conventional": "^19.7.1",
-    "husky": "^8.0.0"
-  },
-  "scripts": {
-    "prepare": "husky install",
-    "lint": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'"
-  }
+	"dependencies": {
+		"@nomiclabs/hardhat-solhint": "^4.0.1"
+	},
+	"devDependencies": {
+		"@commitlint/cli": "^19.7.1",
+		"@commitlint/config-conventional": "^19.7.1",
+		"husky": "^8.0.0",
+		"lint-staged": "^15.4.3",
+		"prettier": "^3.5.0",
+		"prettier-plugin-solidity": "^1.4.2",
+		"solhint-plugin-prettier": "^0.1.0"
+	},
+	"lint-staged": {
+		"*.sol": [
+			"prettier --write",
+			"solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' --fix"
+		]
+	},
+	"scripts": {
+		"prepare": "husky install",
+		"lint": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+		"lint:fix": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' --fix",
+		"format:sol": "prettier --write"
+	}
 }

@@ -1,0 +1,7 @@
+node_modules
+build
+artifacts
+package-lock.json
+package.json
+.github
+.husky
