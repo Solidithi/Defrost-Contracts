@@ -1,7 +1,12 @@
 node_modules
 build
+cache
+lib
+out
 artifacts
+foundry.toml
 package-lock.json
 package.json
 .github
 .husky
+.vscode
