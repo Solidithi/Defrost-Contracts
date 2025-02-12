@@ -218,7 +218,10 @@ contract ExpensiveContract {
 	string private _errorMessage = "Not authorized for ";
 
 	function authenticate(address user) public view {
-		require(msg.sender == owner, string(abi.encodePacked(_errorMessage, user)));
+		require(
+			msg.sender == owner,
+			string(abi.encodePacked(_errorMessage, user))
+		);
 	}
 }
 ```
