@@ -13,14 +13,14 @@
 	},
 	"lint-staged": {
 		"*.sol": [
-			"prettier --write",
-			"solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' --fix"
+			"prettier --write --plugin=prettier-plugin-solidity",
+			"solhint"
 		]
 	},
 	"scripts": {
 		"prepare": "husky install",
 		"lint": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
-		"lint:fix": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' --fix",
-		"format:sol": "prettier --write"
+		"lint:fix": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' --fix --noPrompt",
+		"format:sol": "prettier --write --plugin=prettier-plugin-solidity"
 	}
 }
