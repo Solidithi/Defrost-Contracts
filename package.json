@@ -1,11 +1,11 @@
 {
 	"dependencies": {
-		"@nomiclabs/hardhat-solhint": "^4.0.1"
 	},
 	"devDependencies": {
+		"@nomiclabs/hardhat-solhint": "^4.0.1",
 		"@commitlint/cli": "^19.7.1",
 		"@commitlint/config-conventional": "^19.7.1",
-		"husky": "^8.0.0",
+		"husky": "^9.0.0",
 		"lint-staged": "^15.4.3",
 		"prettier": "^3.5.0",
 		"prettier-plugin-solidity": "^1.4.2",
