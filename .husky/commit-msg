@@ -1,4 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
+echo "🐙 Performing commit message checks..."
 npx --no -- commitlint --edit ${1}
+echo "Your commit message is a work of art. Chef kiss 🧑‍🍳😙🤌. Nice job 👍"

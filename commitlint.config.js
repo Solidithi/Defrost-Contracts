@@ -24,7 +24,6 @@ module.exports = {
 		],
 		"type-case": [0, "always", "lower-case"], // Type must be in lower case
 		"type-empty": [2, "never"], // Ensure type is not empty
-		"subject-case": [2, "always", "lower-case"], // Subject must be in lower case
 		"subject-empty": [2, "never"], // Subject cannot be empty
 		"subject-full-stop": [2, "never", "."], // Subject cannot ends with '.'
 	},

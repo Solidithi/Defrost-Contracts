@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 echo "🕺 Performing linting checks..."
 npx lint-staged
 echo "Your code is beautiful, nice job 👍"
