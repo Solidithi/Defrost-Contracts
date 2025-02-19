@@ -10,6 +10,15 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////
 	//////////////////////// CONTRACT STATES ///////////////////////
 	///////////////////////////////////////////////////////////////
+	uint256 public cumulativeExchangeRate;
+	uint128 public startBlock;
+	uint128 public endBlock;
+
+	mapping(uint128 => uint256) public emissionRateChanges;
+	uint128[] public changeBlocks;
+
+	IERC20 public projectToken;
+	IERC20 public acceptedVAsset;
 
 	/////////////////////////////////////////////////////////////////
 	//////////////////////// CONTRACT EVENTS ///////////////////////
@@ -63,7 +72,9 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		uint128 _startBlock,
 		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker
+		uint256 _minVTokensPerStaker,
+		uint128[] memory _changeBlocks,
+		uint256[] memory _emissionRateChanges
 	) Ownable(_projectOwner) {
 		_initValidation(
 			_projectToken,
@@ -73,6 +84,22 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			_maxVTokensPerStaker,
 			_minVTokensPerStaker
 		);
+
+		projectToken = IERC20(_projectToken);
+		acceptedVAsset = IERC20(_acceptedVAsset);
+		startBlock = _startBlock;
+		endBlock = _endBlock;
+
+		uint256 len = _changeBlocks.length;
+		require(len > 0, "No emission rate changes provided");
+		require(_emissionRateChanges.length == len, "Arrays length mismatch");
+
+		unchecked {
+			for (uint256 i = 0; i < len; ++i) {
+				emissionRateChanges[_changeBlocks[i]] = _emissionRateChanges[i];
+			}
+		}
+		changeBlocks = _changeBlocks;
 	}
 
 	function _initValidation(

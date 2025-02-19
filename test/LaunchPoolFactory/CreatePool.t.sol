@@ -24,7 +24,9 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000
+			1000,
+			new uint128[](2),
+			new uint256[](2)
 		);
 
 		// Assert: Check if the pool count increased
@@ -49,7 +51,9 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000
+			1000,
+			new uint128[](2),
+			new uint256[](2)
 		);
 
 		// Assert: Check if the current pool count is 0
@@ -71,7 +75,9 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000
+			1000,
+			new uint128[](2),
+			new uint256[](2)
 		);
 		uint256 poolId2 = poolFactory.createPool(
 			address(this),
@@ -79,7 +85,9 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000
+			1000,
+			new uint128[](2),
+			new uint256[](2)
 		);
 		uint256 poolId3 = poolFactory.createPool(
 			address(this),
@@ -87,7 +95,9 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000
+			1000,
+			new uint128[](2),
+			new uint256[](2)
 		);
 		uint256 poolId4 = poolFactory.createPool(
 			address(this),
@@ -95,7 +105,9 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000
+			1000,
+			new uint128[](2),
+			new uint256[](2)
 		);
 
 		// Assert: Check if the current pool count is 4

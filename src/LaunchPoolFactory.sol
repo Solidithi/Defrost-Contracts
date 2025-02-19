@@ -87,7 +87,9 @@ contract LaunchPoolFactory is Ownable {
 		uint128 _startBlock,
 		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker
+		uint256 _minVTokensPerStaker,
+		uint128[] memory _changeBlocks,
+		uint256[] memory _emissionRateChanges
 	) public returns (uint256 poolId) {
 		_initValidation(
 			_projectToken,
@@ -108,7 +110,9 @@ contract LaunchPoolFactory is Ownable {
 				_startBlock,
 				_endBlock,
 				_maxVTokensPerStaker,
-				_minVTokensPerStaker
+				_minVTokensPerStaker,
+				_changeBlocks,
+				_emissionRateChanges
 			)
 		);
 
