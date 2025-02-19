@@ -194,7 +194,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		return address(acceptedVAsset);
 	}
 
-	function getTotalStake() public view returns (uint256) {
+	function getTotalStaked() public view returns (uint256) {
 		return acceptedVAsset.balanceOf(address(this));
 	}
 
@@ -217,6 +217,19 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			emissionRate = emissionRateChanges[changeBlocks[i]];
 		}
 		return emissionRate;
+	}
+
+	function getPoolInfo()
+		public
+		view
+		returns (uint128, uint128, uint256, uint256)
+	{
+		return (
+			startBlock,
+			endBlock,
+			getTotalProjectToken(),
+			getEmissionRate()
+		);
 	}
 
 	function claimableProjectToken(
