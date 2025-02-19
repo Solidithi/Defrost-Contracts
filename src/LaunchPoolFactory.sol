@@ -56,10 +56,8 @@ contract LaunchPoolFactory is Ownable {
 		_;
 	}
 
-	modifier validTokenAddresses(
-		address _projectToken,
-		address _acceptedVAsset
-	) {
+	modifier validTokenAddresses(address _projectToken, address _acceptedVAsset)
+	{
 		if (_projectToken == address(0)) revert InvalidProjectTokenAddress();
 		if (_acceptedVAsset == address(0))
 			revert InvalidAcceptedVAssetAddress();

@@ -18,7 +18,10 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint256 public lastRewardBlock;
 	uint256 public maxVTokensPerStaker;
 	uint256 public maxStakers;
-	address public Defrost; // @todo: change to our withdraw address, this currently implement as the factory which is not ideal
+	/**
+	 * TODO: change to our withdraw address, this currently implement as the factory which is not ideal
+	 */
+	address public platformAdminAddress;
 	uint256 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
 	// @todo: decide how much decimal should we take, this will affect some value
 
@@ -44,6 +47,15 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	error TotalProjectTokensMustBeGreaterThanZero();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 	error MaxTokensPerStakerMustBeGreaterThanMin();
+	error ArraysLengthMismatch();
+	error NoEmissionRateChangesProvided();
+
+	/////////////////////////////////////////////////////////////////////////////
+	//////////////////////// OTHER ERRORS //////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////
+	error ProjectTokenNotRecoverable();
+	error MustBeAfterPoolEnd();
+	error NotPlatformAdmin();
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
@@ -54,10 +66,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		_;
 	}
 
-	modifier validTokenAddresses(
-		address _projectToken,
-		address _acceptedVAsset
-	) {
+	modifier validTokenAddresses(address _projectToken, address _acceptedVAsset)
+	{
 		if (_projectToken == address(0)) revert InvalidProjectTokenAddress();
 		if (_acceptedVAsset == address(0))
 			revert InvalidAcceptedVAssetAddress();
@@ -76,20 +86,23 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	}
 
 	modifier notProjectToken(address _tokenAddress) {
-		require(
-			_tokenAddress != address(projectToken),
-			"Project token cannot be recovered"
-		);
+		if (_tokenAddress == address(acceptedVAsset)) {
+			revert ProjectTokenNotRecoverable();
+		}
 		_;
 	}
 
 	modifier afterPoolEnd() {
-		require(block.number >= endBlock, "Pool is still active");
+		if (block.number < endBlock) {
+			revert MustBeAfterPoolEnd();
+		}
 		_;
 	}
 
-	modifier onlyPlatform() {
-		require(msg.sender == Defrost, "Caller is not the platform");
+	modifier onlyPlatformAdmin() {
+		if (msg.sender != platformAdminAddress) {
+			revert NotPlatformAdmin();
+		}
 		_;
 	}
 
@@ -106,25 +119,37 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		uint256 _minVTokensPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
-	) Ownable(_projectOwner) {
-		_initValidation(
-			_projectToken,
-			_acceptedVAsset,
-			_startBlock,
-			_endBlock,
-			_maxVTokensPerStaker,
-			_minVTokensPerStaker
-		);
+	)
+		Ownable(_projectOwner)
+		validTimeFrame(_startBlock, _endBlock)
+		validTokenAddresses(_projectToken, _acceptedVAsset)
+		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
+	{
+		// _initValidation(
+		// 	_projectToken,
+		// 	_acceptedVAsset,
+		// 	_startBlock,
+		// 	_endBlock,
+		// 	_maxVTokensPerStaker,
+		// 	_minVTokensPerStaker
+		// );
 
-		Defrost = msg.sender;
+		platformAdminAddress = msg.sender;
 		projectToken = IERC20(_projectToken);
 		acceptedVAsset = IERC20(_acceptedVAsset);
 		startBlock = _startBlock;
 		endBlock = _endBlock;
 
 		uint256 len = _changeBlocks.length;
-		require(len > 0, "No emission rate changes provided");
-		require(_emissionRateChanges.length == len, "Arrays length mismatch");
+		// require(len > 0, "No emission rate changes provided");
+		// require(_emissionRateChanges.length == len, "Arrays length mismatch");
+		if (len <= 0) {
+			revert NoEmissionRateChangesProvided();
+		}
+
+		if (_emissionRateChanges.length != len) {
+			revert ArraysLengthMismatch();
+		}
 
 		unchecked {
 			for (uint256 i = 0; i < len; ++i) {
@@ -138,7 +163,9 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
 	function stake() public {}
+
 	function unstake() public nonReentrant {}
+
 	function recoverWrongToken(
 		address _tokenAddress
 	) public onlyOwner notProjectToken(_tokenAddress) {
@@ -149,43 +176,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 	function unstakeWithoutProjectToken() public nonReentrant {}
 
-	function _tick() internal {
-		if (block.number <= endBlock) {
-			return;
-		}
-
-		uint256 stakedVAssetSupply = getTotalStaked();
-
-		if (stakedVAssetSupply == 0) {
-			lastRewardBlock = block.number;
-			return;
-		}
-
-		uint256 currentBlock = block.number;
-		uint256 tickBlockDelta = _getTickBlockDelta(
-			lastRewardBlock,
-			currentBlock
-		);
-		uint256 emissionRate = getEmissionRate();
-		cumulativeExchangeRate +=
-			(emissionRate * tickBlockDelta) /
-			stakedVAssetSupply;
-		lastRewardBlock = currentBlock;
-	}
-
-	function _getTickBlockDelta(
-		uint256 from,
-		uint256 to
-	) internal view returns (uint256) {
-		if (to < endBlock) {
-			return to - from;
-		} else if (from >= endBlock) {
-			return 0;
-		}
-		return endBlock - from;
-	}
-
-	function claimLeftOverProjectToken() public onlyOwner afterPoolEnd {
+	function claimLeftoverProjectToken() public onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
 		projectToken.safeTransfer(owner(), balance);
 	}
@@ -198,13 +189,13 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 	function claimPlatformInterest()
 		public
-		onlyPlatform
+		onlyPlatformAdmin
 		nonReentrant
 		afterPoolEnd
 	{
 		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
 			(100 - ownerShareOfInterest)) / 100;
-		acceptedVAsset.safeTransfer(Defrost, balance);
+		acceptedVAsset.safeTransfer(platformAdminAddress, balance);
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -256,13 +247,49 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		);
 	}
 
+	function getClaimableProjectToken(
+		address investor
+	) public view returns (uint256) {}
+
+	function _tick() internal {
+		if (block.number <= endBlock) {
+			return;
+		}
+
+		uint256 stakedVAssetSupply = getTotalStaked();
+
+		if (stakedVAssetSupply == 0) {
+			lastRewardBlock = block.number;
+			return;
+		}
+
+		uint256 currentBlock = block.number;
+		uint256 tickBlockDelta = _getTickBlockDelta(
+			lastRewardBlock,
+			currentBlock
+		);
+		uint256 emissionRate = getEmissionRate();
+		cumulativeExchangeRate +=
+			(emissionRate * tickBlockDelta) /
+			stakedVAssetSupply;
+		lastRewardBlock = currentBlock;
+	}
+
 	function _getCumulativeExchangeRate() internal view returns (uint256) {
 		return cumulativeExchangeRate;
 	}
 
-	function claimableProjectToken(
-		address investor
-	) public view returns (uint256) {}
+	function _getTickBlockDelta(
+		uint256 from,
+		uint256 to
+	) internal view returns (uint256) {
+		if (to < endBlock) {
+			return to - from;
+		} else if (from >= endBlock) {
+			return 0;
+		}
+		return endBlock - from;
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	/////////////////////// INITIALIZE MODIFIER HELPER ///////////////////////
