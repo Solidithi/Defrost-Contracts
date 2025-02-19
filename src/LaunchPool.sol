@@ -18,8 +18,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////
 	////////////////// VALIDATE POOL INFO ERRORS ///////////////////
 	///////////////////////////////////////////////////////////////
-	error StartTimeMustBeInFuture();
-	error EndTimeMustBeAfterStartTime();
+	error startBlockMustBeInFuture();
+	error endBlockMustBeAfterstartBlock();
 	error InvalidProjectTokenAddress();
 	error InvalidAcceptedVAssetAddress();
 	error TotalProjectTokensMustBeGreaterThanZero();
@@ -29,9 +29,9 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	//////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// MODIFIERS ///////////////////////////////
 	////////////////////////////////////////////////////////////////////////
-	modifier validTimeFrame(uint256 _startTime, uint256 _endTime) {
-		if (_startTime <= block.timestamp) revert StartTimeMustBeInFuture();
-		if (_endTime <= _startTime) revert EndTimeMustBeAfterStartTime();
+	modifier validTimeFrame(uint128 _startBlock, uint128 _endBlock) {
+		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
+		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
 		_;
 	}
 
@@ -60,16 +60,16 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		address _projectOwner,
 		address _projectToken,
 		address _acceptedVAsset,
-		uint256 _startTime,
-		uint256 _endTime,
+		uint128 _startBlock,
+		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	) Ownable(_projectOwner) {
 		_initValidation(
 			_projectToken,
 			_acceptedVAsset,
-			_startTime,
-			_endTime,
+			_startBlock,
+			_endBlock,
 			_maxVTokensPerStaker,
 			_minVTokensPerStaker
 		);
@@ -78,18 +78,22 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	function _initValidation(
 		address _projectToken,
 		address _acceptedVAsset,
-		uint256 _startTime,
-		uint256 _endTime,
+		uint128 _startBlock,
+		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	)
 		internal
 		view
-		validTimeFrame(_startTime, _endTime)
+		validTimeFrame(_startBlock, _endBlock)
 		validTokenAddresses(_projectToken, _acceptedVAsset)
 		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
 		returns (bool)
 	{
 		return true;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	///////////////////////////// VIEW FUNCTION /////////////////////////////
+	////////////////////////////////////////////////////////////////////////
 }

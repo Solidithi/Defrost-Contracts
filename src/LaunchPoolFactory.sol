@@ -26,16 +26,16 @@ contract LaunchPoolFactory is Ownable {
 		address indexed projectToken,
 		address acceptedVAsset,
 		address poolAddress,
-		uint256 startTime,
-		uint256 endTime
+		uint256 startBlock,
+		uint256 endBlock
 	);
 
 	/////////////////////////////////////////////////////////////////
 	//////////////////////// CONTRACT ERRORS ///////////////////////
 	///////////////////////////////////////////////////////////////
 	error InvalidPoolId();
-	error StartTimeMustBeInFuture();
-	error EndTimeMustBeAfterStartTime();
+	error startBlockMustBeInFuture();
+	error endBlockMustBeAfterstartBlock();
 	error InvalidProjectTokenAddress();
 	error InvalidAcceptedVAssetAddress();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
@@ -50,9 +50,9 @@ contract LaunchPoolFactory is Ownable {
 		}
 		_;
 	}
-	modifier validTimeFrame(uint256 _startTime, uint256 _endTime) {
-		if (_startTime <= block.timestamp) revert StartTimeMustBeInFuture();
-		if (_endTime <= _startTime) revert EndTimeMustBeAfterStartTime();
+	modifier validTimeFrame(uint256 _startBlock, uint256 _endBlock) {
+		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
+		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
 		_;
 	}
 
@@ -84,16 +84,16 @@ contract LaunchPoolFactory is Ownable {
 	function createPool(
 		address _projectToken,
 		address _acceptedVAsset,
-		uint256 _startTime,
-		uint256 _endTime,
+		uint128 _startBlock,
+		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	) public returns (uint256 poolId) {
 		_initValidation(
 			_projectToken,
 			_acceptedVAsset,
-			_startTime,
-			_endTime,
+			_startBlock,
+			_endBlock,
 			_maxVTokensPerStaker,
 			_minVTokensPerStaker
 		);
@@ -105,8 +105,8 @@ contract LaunchPoolFactory is Ownable {
 				_msgSender(),
 				_projectToken,
 				_acceptedVAsset,
-				_startTime,
-				_endTime,
+				_startBlock,
+				_endBlock,
 				_maxVTokensPerStaker,
 				_minVTokensPerStaker
 			)
@@ -121,8 +121,8 @@ contract LaunchPoolFactory is Ownable {
 			_projectToken,
 			_acceptedVAsset,
 			poolAddress,
-			_startTime,
-			_endTime
+			_startBlock,
+			_endBlock
 		);
 
 		return poolId;
@@ -148,14 +148,14 @@ contract LaunchPoolFactory is Ownable {
 	function _initValidation(
 		address _projectToken,
 		address _acceptedVAsset,
-		uint256 _startTime,
-		uint256 _endTime,
+		uint256 _startBlock,
+		uint256 _endBlock,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	)
 		internal
 		view
-		validTimeFrame(_startTime, _endTime)
+		validTimeFrame(_startBlock, _endBlock)
 		validTokenAddresses(_projectToken, _acceptedVAsset)
 		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
 		returns (bool)
