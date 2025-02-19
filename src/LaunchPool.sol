@@ -23,7 +23,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////
 	//////////////////////// CONTRACT EVENTS ///////////////////////
 	///////////////////////////////////////////////////////////////
-
 	event Staked(address indexed user, uint256 amount);
 	event Withdrawn(address indexed user, uint256 amount);
 
@@ -105,6 +104,39 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		changeBlocks = _changeBlocks;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+	///////////////////////////// VIEW FUNCTION /////////////////////////////
+	////////////////////////////////////////////////////////////////////////
+
+	function getProjectToken() public view returns (address) {
+		return address(projectToken);
+	}
+
+	function getAcceptedVAsset() public view returns (address) {
+		return address(acceptedVAsset);
+	}
+
+	function getTotalStake() public view returns (uint256) {
+		return acceptedVAsset.balanceOf(address(this));
+	}
+
+	function getTotalProjectToken() public view returns (uint256) {
+		return projectToken.balanceOf(address(this));
+	}
+
+	function getEmissionRate() public view returns (uint256) {
+		uint256 currentBlock = block.number;
+		uint256 emissionRate = 0;
+		uint256 len = changeBlocks.length;
+		for (uint256 i = 0; i < len; ++i) {
+			if (currentBlock < changeBlocks[i]) {
+				break;
+			}
+			emissionRate = emissionRateChanges[changeBlocks[i]];
+		}
+		return emissionRate;
+	}
+
 	function _initValidation(
 		address _projectToken,
 		address _acceptedVAsset,
@@ -122,8 +154,4 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	{
 		return true;
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	///////////////////////////// VIEW FUNCTION /////////////////////////////
-	////////////////////////////////////////////////////////////////////////
 }
