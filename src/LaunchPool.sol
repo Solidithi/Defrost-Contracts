@@ -13,6 +13,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint256 public cumulativeExchangeRate;
 	uint128 public startBlock;
 	uint128 public endBlock;
+	uint256 public maxVTokensPerStaker;
+	uint256 public maxStakers;
 
 	mapping(uint128 => uint256) public emissionRateChanges;
 	uint128[] public changeBlocks;
@@ -124,6 +126,10 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 	function getTotalProjectToken() public view returns (uint256) {
 		return projectToken.balanceOf(address(this));
+	}
+
+	function getStakingRange() public view returns (uint256, uint256) {
+		return (maxVTokensPerStaker, maxStakers);
 	}
 
 	function getEmissionRate() public view returns (uint256) {
