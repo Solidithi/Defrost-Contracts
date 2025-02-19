@@ -15,6 +15,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint256 public cumulativeExchangeRate;
 	uint128 public startBlock;
 	uint128 public endBlock;
+	uint256 public lastRewardBlock;
 	uint256 public maxVTokensPerStaker;
 	uint256 public maxStakers;
 	address public Defrost; // @todo: change to our withdraw address, this currently implement as the factory which is not ideal
@@ -148,7 +149,30 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 	function unstakeWithoutProjectToken() public nonReentrant {}
 
-	function _tick() internal {}
+	function _tick() internal {
+		if (block.number <= endBlock) {
+			return;
+		}
+
+		uint256 stakedVAssetSupply = getTotalStaked();
+
+		if (stakedVAssetSupply == 0) {
+			lastRewardBlock = block.number;
+			return;
+		}
+
+		uint256 currentBlock = block.number;
+		uint256 tickBlockDelta = _getTickBlockDelta(
+			lastRewardBlock,
+			currentBlock
+		);
+		uint256 emissionRate = getEmissionRate();
+		cumulativeExchangeRate +=
+			(emissionRate * tickBlockDelta) /
+			stakedVAssetSupply;
+		lastRewardBlock = currentBlock;
+	}
+
 	function _getTickBlockDelta(
 		uint256 from,
 		uint256 to
@@ -230,6 +254,10 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			getTotalProjectToken(),
 			getEmissionRate()
 		);
+	}
+
+	function _getCumulativeExchangeRate() internal view returns (uint256) {
+		return cumulativeExchangeRate;
 	}
 
 	function claimableProjectToken(
