@@ -17,6 +17,9 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint128 public endBlock;
 	uint256 public maxVTokensPerStaker;
 	uint256 public maxStakers;
+	address public Defrost; // @todo: change to our withdraw address, this currently implement as the factory which is not ideal
+	uint256 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
+	// @todo: decide how much decimal should we take, this will affect some value
 
 	mapping(uint128 => uint256) public emissionRateChanges;
 	uint128[] public changeBlocks;
@@ -84,6 +87,11 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		_;
 	}
 
+	modifier onlyPlatform() {
+		require(msg.sender == Defrost, "Caller is not the platform");
+		_;
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// CONSTRUCTOR //////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
@@ -107,6 +115,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			_minVTokensPerStaker
 		);
 
+		Defrost = msg.sender;
 		projectToken = IERC20(_projectToken);
 		acceptedVAsset = IERC20(_acceptedVAsset);
 		startBlock = _startBlock;
@@ -155,6 +164,23 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	function claimLeftOverProjectToken() public onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
 		projectToken.safeTransfer(owner(), balance);
+	}
+
+	function claimOwnerInterest() public onlyOwner nonReentrant afterPoolEnd {
+		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
+			ownerShareOfInterest) / 100;
+		acceptedVAsset.safeTransfer(owner(), balance);
+	}
+
+	function claimPlatformInterest()
+		public
+		onlyPlatform
+		nonReentrant
+		afterPoolEnd
+	{
+		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
+			(100 - ownerShareOfInterest)) / 100;
+		acceptedVAsset.safeTransfer(Defrost, balance);
 	}
 
 	///////////////////////////////////////////////////////////////////////////
