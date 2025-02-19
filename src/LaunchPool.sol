@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract LaunchPool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////
@@ -23,6 +24,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	error InvalidAcceptedVAssetAddress();
 	error TotalProjectTokensMustBeGreaterThanZero();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
+	error MaxTokensPerStakerMustBeGreaterThanMin();
 
 	//////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// MODIFIERS ///////////////////////////////
@@ -33,22 +35,24 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		_;
 	}
 
-	modifier validAddresses(address _projectToken, address _acceptedVAsset) {
+	modifier validTokenAddresses(
+		address _projectToken,
+		address _acceptedVAsset
+	) {
 		if (_projectToken == address(0)) revert InvalidProjectTokenAddress();
 		if (_acceptedVAsset == address(0))
 			revert InvalidAcceptedVAssetAddress();
 		_;
 	}
 
-	modifier validTokenAmounts(
-		uint256 _totalProjectTokens,
+	modifier validStakingRange(
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	) {
-		if (_totalProjectTokens == 0)
-			revert TotalProjectTokensMustBeGreaterThanZero();
 		if (_maxVTokensPerStaker == 0 || _minVTokensPerStaker == 0)
 			revert MaxAndMinTokensPerStakerMustBeGreaterThanZero();
+		if (_maxVTokensPerStaker < _minVTokensPerStaker)
+			revert MaxTokensPerStakerMustBeGreaterThanMin();
 		_;
 	}
 
@@ -58,7 +62,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		address _acceptedVAsset,
 		uint256 _startTime,
 		uint256 _endTime,
-		uint256 _totalProjectTokens,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	) Ownable(_projectOwner) {
@@ -67,7 +70,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			_acceptedVAsset,
 			_startTime,
 			_endTime,
-			_totalProjectTokens,
 			_maxVTokensPerStaker,
 			_minVTokensPerStaker
 		);
@@ -78,19 +80,14 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		address _acceptedVAsset,
 		uint256 _startTime,
 		uint256 _endTime,
-		uint256 _totalProjectTokens,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	)
 		internal
 		view
 		validTimeFrame(_startTime, _endTime)
-		validAddresses(_projectToken, _acceptedVAsset)
-		validTokenAmounts(
-			_totalProjectTokens,
-			_maxVTokensPerStaker,
-			_minVTokensPerStaker
-		)
+		validTokenAddresses(_projectToken, _acceptedVAsset)
+		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
 		returns (bool)
 	{
 		return true;

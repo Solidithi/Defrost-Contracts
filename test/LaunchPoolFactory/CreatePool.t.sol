@@ -24,7 +24,6 @@ contract CreateLaunchPoolTest is Test {
 			block.timestamp + 1000,
 			block.timestamp + 2000,
 			1000,
-			1000,
 			1000
 		);
 
@@ -50,7 +49,6 @@ contract CreateLaunchPoolTest is Test {
 			block.timestamp + 1000,
 			block.timestamp + 2000,
 			1000,
-			1000,
 			1000
 		);
 
@@ -73,7 +71,6 @@ contract CreateLaunchPoolTest is Test {
 			block.timestamp + 1000,
 			block.timestamp + 2000,
 			1000,
-			1000,
 			1000
 		);
 		uint256 poolId2 = poolFactory.createPool(
@@ -81,7 +78,6 @@ contract CreateLaunchPoolTest is Test {
 			address(this),
 			block.timestamp + 1000,
 			block.timestamp + 2000,
-			1000,
 			1000,
 			1000
 		);
@@ -91,7 +87,6 @@ contract CreateLaunchPoolTest is Test {
 			block.timestamp + 1000,
 			block.timestamp + 2000,
 			1000,
-			1000,
 			1000
 		);
 		uint256 poolId4 = poolFactory.createPool(
@@ -99,7 +94,6 @@ contract CreateLaunchPoolTest is Test {
 			address(this),
 			block.timestamp + 1000,
 			block.timestamp + 2000,
-			1000,
 			1000,
 			1000
 		);
