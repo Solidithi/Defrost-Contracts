@@ -124,13 +124,15 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////////////
 	function stake() public {}
 	function unstake() public nonReentrant {}
-	function recoverToken(
+	function recoverWrongToken(
 		address _tokenAddress
 	) public onlyOwner notProjectToken(_tokenAddress) {
 		IERC20 token = IERC20(_tokenAddress);
 		uint256 balance = token.balanceOf(address(this));
 		token.safeTransfer(owner(), balance);
 	}
+
+	function unstakeWithoutProjectToken() public nonReentrant {}
 
 	///////////////////////////////////////////////////////////////////////////
 	///////////////////////////// VIEW FUNCTION //////////////////////////////
