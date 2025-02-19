@@ -38,7 +38,8 @@ contract LaunchPoolFactory is Ownable {
 	error EndTimeMustBeAfterStartTime();
 	error InvalidProjectTokenAddress();
 	error InvalidAcceptedVAssetAddress();
-	error InvalidTokenAmount();
+	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
+	error MaxTokensPerStakerMustBeGreaterThanMin();
 
 	//////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// MODIFIERS ///////////////////////////////
@@ -55,24 +56,24 @@ contract LaunchPoolFactory is Ownable {
 		_;
 	}
 
-	modifier validAddresses(address _projectToken, address _acceptedVAsset) {
+	modifier validTokenAddresses(
+		address _projectToken,
+		address _acceptedVAsset
+	) {
 		if (_projectToken == address(0)) revert InvalidProjectTokenAddress();
 		if (_acceptedVAsset == address(0))
 			revert InvalidAcceptedVAssetAddress();
 		_;
 	}
 
-	modifier validTokenAmounts(
-		uint256 _totalProjectTokens,
+	modifier validStakingRange(
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	) {
-		if (
-			(_totalProjectTokens == 0 ||
-				_maxVTokensPerStaker == 0 ||
-				_minVTokensPerStaker == 0) ||
-			(_maxVTokensPerStaker < _minVTokensPerStaker)
-		) revert InvalidTokenAmount();
+		if (_maxVTokensPerStaker == 0 || _minVTokensPerStaker == 0)
+			revert MaxAndMinTokensPerStakerMustBeGreaterThanZero();
+		if (_maxVTokensPerStaker < _minVTokensPerStaker)
+			revert MaxTokensPerStakerMustBeGreaterThanMin();
 		_;
 	}
 
@@ -85,7 +86,6 @@ contract LaunchPoolFactory is Ownable {
 		address _acceptedVAsset,
 		uint256 _startTime,
 		uint256 _endTime,
-		uint256 _totalProjectTokens,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	) public returns (uint256 poolId) {
@@ -94,7 +94,6 @@ contract LaunchPoolFactory is Ownable {
 			_acceptedVAsset,
 			_startTime,
 			_endTime,
-			_totalProjectTokens,
 			_maxVTokensPerStaker,
 			_minVTokensPerStaker
 		);
@@ -108,7 +107,6 @@ contract LaunchPoolFactory is Ownable {
 				_acceptedVAsset,
 				_startTime,
 				_endTime,
-				_totalProjectTokens,
 				_maxVTokensPerStaker,
 				_minVTokensPerStaker
 			)
@@ -152,19 +150,14 @@ contract LaunchPoolFactory is Ownable {
 		address _acceptedVAsset,
 		uint256 _startTime,
 		uint256 _endTime,
-		uint256 _totalProjectTokens,
 		uint256 _maxVTokensPerStaker,
 		uint256 _minVTokensPerStaker
 	)
 		internal
 		view
 		validTimeFrame(_startTime, _endTime)
-		validAddresses(_projectToken, _acceptedVAsset)
-		validTokenAmounts(
-			_totalProjectTokens,
-			_maxVTokensPerStaker,
-			_minVTokensPerStaker
-		)
+		validTokenAddresses(_projectToken, _acceptedVAsset)
+		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
 		returns (bool)
 	{
 		return true;
