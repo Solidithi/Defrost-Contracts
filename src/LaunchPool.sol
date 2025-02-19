@@ -134,6 +134,19 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 	function unstakeWithoutProjectToken() public nonReentrant {}
 
+	function _tick() internal {}
+	function _getTickBlockDelta(
+		uint256 from,
+		uint256 to
+	) internal view returns (uint256) {
+		if (to < endBlock) {
+			return to - from;
+		} else if (from >= endBlock) {
+			return 0;
+		}
+		return endBlock - from;
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	///////////////////////////// VIEW FUNCTION //////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
