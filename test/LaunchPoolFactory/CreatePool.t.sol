@@ -18,6 +18,15 @@ contract CreateLaunchPoolTest is Test {
 
 	function testCreatePool() public {
 		// Act: Call createPool function
+		uint128[] memory changedBlock = new uint128[](2);
+		uint256[] memory emissionRate = new uint256[](2);
+
+		changedBlock[0] = 0;
+		changedBlock[1] = 300;
+
+		emissionRate[0] = 5;
+		emissionRate[1] = 10;
+
 		uint256 poolId = poolFactory.createPool(
 			address(this),
 			address(this),
@@ -25,8 +34,8 @@ contract CreateLaunchPoolTest is Test {
 			2000,
 			1000,
 			1000,
-			new uint128[](2),
-			new uint256[](2)
+			changedBlock,
+			emissionRate
 		);
 
 		// Assert: Check if the pool count increased
@@ -69,6 +78,15 @@ contract CreateLaunchPoolTest is Test {
 
 	function testCreateSeveralPools() public {
 		// Act: Call createPool function several times
+		uint128[] memory changedBlock = new uint128[](2);
+		uint256[] memory emissionRate = new uint256[](2);
+
+		changedBlock[0] = 0;
+		changedBlock[1] = 300;
+
+		emissionRate[0] = 5;
+		emissionRate[1] = 10;
+
 		uint256 poolId1 = poolFactory.createPool(
 			address(this),
 			address(this),
@@ -76,8 +94,8 @@ contract CreateLaunchPoolTest is Test {
 			2000,
 			1000,
 			1000,
-			new uint128[](2),
-			new uint256[](2)
+			changedBlock,
+			emissionRate
 		);
 		uint256 poolId2 = poolFactory.createPool(
 			address(this),
@@ -86,8 +104,8 @@ contract CreateLaunchPoolTest is Test {
 			2000,
 			1000,
 			1000,
-			new uint128[](2),
-			new uint256[](2)
+			changedBlock,
+			emissionRate
 		);
 		uint256 poolId3 = poolFactory.createPool(
 			address(this),
@@ -96,8 +114,8 @@ contract CreateLaunchPoolTest is Test {
 			2000,
 			1000,
 			1000,
-			new uint128[](2),
-			new uint256[](2)
+			changedBlock,
+			emissionRate
 		);
 		uint256 poolId4 = poolFactory.createPool(
 			address(this),
@@ -106,8 +124,8 @@ contract CreateLaunchPoolTest is Test {
 			2000,
 			1000,
 			1000,
-			new uint128[](2),
-			new uint256[](2)
+			changedBlock,
+			emissionRate
 		);
 
 		// Assert: Check if the current pool count is 4
