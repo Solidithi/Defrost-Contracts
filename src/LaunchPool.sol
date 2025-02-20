@@ -60,17 +60,10 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	modifier validTimeFrame(uint128 _startBlock, uint128 _endBlock) {
-		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
-		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
-		_;
-	}
-
-	modifier validTokenAddresses(address _projectToken, address _acceptedVAsset)
-	{
-		if (_projectToken == address(0)) revert InvalidProjectTokenAddress();
-		if (_acceptedVAsset == address(0))
+	modifier validTokenAddress(address _tokenAdrees) {
+		if (_tokenAdrees == address(0)) {
 			revert InvalidAcceptedVAssetAddress();
+		}
 		_;
 	}
 
@@ -121,28 +114,14 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		uint256[] memory _emissionRateChanges
 	)
 		Ownable(_projectOwner)
-		validTimeFrame(_startBlock, _endBlock)
-		validTokenAddresses(_projectToken, _acceptedVAsset)
+		validTokenAddress(_projectToken)
+		validTokenAddress(_acceptedVAsset)
 		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
 	{
-		// _initValidation(
-		// 	_projectToken,
-		// 	_acceptedVAsset,
-		// 	_startBlock,
-		// 	_endBlock,
-		// 	_maxVTokensPerStaker,
-		// 	_minVTokensPerStaker
-		// );
-
-		platformAdminAddress = msg.sender;
-		projectToken = IERC20(_projectToken);
-		acceptedVAsset = IERC20(_acceptedVAsset);
-		startBlock = _startBlock;
-		endBlock = _endBlock;
+		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
+		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
 
 		uint256 len = _changeBlocks.length;
-		// require(len > 0, "No emission rate changes provided");
-		// require(_emissionRateChanges.length == len, "Arrays length mismatch");
 		if (len <= 0) {
 			revert NoEmissionRateChangesProvided();
 		}
@@ -157,6 +136,12 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			}
 		}
 		changeBlocks = _changeBlocks;
+
+		platformAdminAddress = msg.sender;
+		projectToken = IERC20(_projectToken);
+		acceptedVAsset = IERC20(_acceptedVAsset);
+		startBlock = _startBlock;
+		endBlock = _endBlock;
 	}
 
 	///////////////////////////////////////////////////////////////////////////
