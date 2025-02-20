@@ -18,7 +18,10 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint256 public lastRewardBlock;
 	uint256 public maxVTokensPerStaker;
 	uint256 public maxStakers;
-	address public Defrost; // @todo: change to our withdraw address, this currently implement as the factory which is not ideal
+	/**
+	 * TODO: change to our withdraw address, this currently implement as the factory which is not ideal
+	 */
+	address public platformAdminAddress;
 	uint256 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
 	// @todo: decide how much decimal should we take, this will affect some value
 
@@ -44,23 +47,23 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	error TotalProjectTokensMustBeGreaterThanZero();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 	error MaxTokensPerStakerMustBeGreaterThanMin();
+	error ArraysLengthMismatch();
+	error NoEmissionRateChangesProvided();
+
+	/////////////////////////////////////////////////////////////////////////////
+	//////////////////////// OTHER ERRORS //////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////
+	error ProjectTokenNotRecoverable();
+	error MustBeAfterPoolEnd();
+	error NotPlatformAdmin();
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	modifier validTimeFrame(uint128 _startBlock, uint128 _endBlock) {
-		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
-		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
-		_;
-	}
-
-	modifier validTokenAddresses(
-		address _projectToken,
-		address _acceptedVAsset
-	) {
-		if (_projectToken == address(0)) revert InvalidProjectTokenAddress();
-		if (_acceptedVAsset == address(0))
+	modifier validTokenAddress(address _tokenAdrees) {
+		if (_tokenAdrees == address(0)) {
 			revert InvalidAcceptedVAssetAddress();
+		}
 		_;
 	}
 
@@ -76,20 +79,23 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	}
 
 	modifier notProjectToken(address _tokenAddress) {
-		require(
-			_tokenAddress != address(projectToken),
-			"Project token cannot be recovered"
-		);
+		if (_tokenAddress == address(acceptedVAsset)) {
+			revert ProjectTokenNotRecoverable();
+		}
 		_;
 	}
 
 	modifier afterPoolEnd() {
-		require(block.number >= endBlock, "Pool is still active");
+		if (block.number < endBlock) {
+			revert MustBeAfterPoolEnd();
+		}
 		_;
 	}
 
-	modifier onlyPlatform() {
-		require(msg.sender == Defrost, "Caller is not the platform");
+	modifier onlyPlatformAdmin() {
+		if (msg.sender != platformAdminAddress) {
+			revert NotPlatformAdmin();
+		}
 		_;
 	}
 
@@ -106,25 +112,23 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		uint256 _minVTokensPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
-	) Ownable(_projectOwner) {
-		_initValidation(
-			_projectToken,
-			_acceptedVAsset,
-			_startBlock,
-			_endBlock,
-			_maxVTokensPerStaker,
-			_minVTokensPerStaker
-		);
-
-		Defrost = msg.sender;
-		projectToken = IERC20(_projectToken);
-		acceptedVAsset = IERC20(_acceptedVAsset);
-		startBlock = _startBlock;
-		endBlock = _endBlock;
+	)
+		Ownable(_projectOwner)
+		validTokenAddress(_projectToken)
+		validTokenAddress(_acceptedVAsset)
+		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
+	{
+		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
+		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
 
 		uint256 len = _changeBlocks.length;
-		require(len > 0, "No emission rate changes provided");
-		require(_emissionRateChanges.length == len, "Arrays length mismatch");
+		if (len <= 0) {
+			revert NoEmissionRateChangesProvided();
+		}
+
+		if (_emissionRateChanges.length != len) {
+			revert ArraysLengthMismatch();
+		}
 
 		unchecked {
 			for (uint256 i = 0; i < len; ++i) {
@@ -132,91 +136,73 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			}
 		}
 		changeBlocks = _changeBlocks;
+
+		platformAdminAddress = msg.sender;
+		projectToken = IERC20(_projectToken);
+		acceptedVAsset = IERC20(_acceptedVAsset);
+		startBlock = _startBlock;
+		endBlock = _endBlock;
 	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	function stake() public {}
-	function unstake() public nonReentrant {}
+	function stake() external {}
+
+	function unstake() external nonReentrant {}
+
 	function recoverWrongToken(
 		address _tokenAddress
-	) public onlyOwner notProjectToken(_tokenAddress) {
+	) external onlyOwner notProjectToken(_tokenAddress) {
 		IERC20 token = IERC20(_tokenAddress);
 		uint256 balance = token.balanceOf(address(this));
 		token.safeTransfer(owner(), balance);
 	}
 
-	function unstakeWithoutProjectToken() public nonReentrant {}
+	function unstakeWithoutProjectToken() external nonReentrant {}
 
-	function _tick() internal {
-		if (block.number <= endBlock) {
-			return;
-		}
-
-		uint256 stakedVAssetSupply = getTotalStaked();
-
-		if (stakedVAssetSupply == 0) {
-			lastRewardBlock = block.number;
-			return;
-		}
-
-		uint256 currentBlock = block.number;
-		uint256 tickBlockDelta = _getTickBlockDelta(
-			lastRewardBlock,
-			currentBlock
-		);
-		uint256 emissionRate = getEmissionRate();
-		cumulativeExchangeRate +=
-			(emissionRate * tickBlockDelta) /
-			stakedVAssetSupply;
-		lastRewardBlock = currentBlock;
-	}
-
-	function _getTickBlockDelta(
-		uint256 from,
-		uint256 to
-	) internal view returns (uint256) {
-		if (to < endBlock) {
-			return to - from;
-		} else if (from >= endBlock) {
-			return 0;
-		}
-		return endBlock - from;
-	}
-
-	function claimLeftOverProjectToken() public onlyOwner afterPoolEnd {
+	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
 		projectToken.safeTransfer(owner(), balance);
 	}
 
-	function claimOwnerInterest() public onlyOwner nonReentrant afterPoolEnd {
+	function claimOwnerInterest() external onlyOwner nonReentrant afterPoolEnd {
 		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
 			ownerShareOfInterest) / 100;
 		acceptedVAsset.safeTransfer(owner(), balance);
 	}
 
 	function claimPlatformInterest()
-		public
-		onlyPlatform
+		external
+		onlyPlatformAdmin
 		nonReentrant
 		afterPoolEnd
 	{
 		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
 			(100 - ownerShareOfInterest)) / 100;
-		acceptedVAsset.safeTransfer(Defrost, balance);
+		acceptedVAsset.safeTransfer(platformAdminAddress, balance);
 	}
 
-	///////////////////////////////////////////////////////////////////////////
-	///////////////////////////// VIEW FUNCTION //////////////////////////////
-	/////////////////////////////////////////////////////////////////////////
-	function getProjectToken() public view returns (address) {
-		return address(projectToken);
+	function getPoolInfo()
+		external
+		view
+		returns (uint128, uint128, uint256, uint256)
+	{
+		return (
+			startBlock,
+			endBlock,
+			getTotalProjectToken(),
+			getEmissionRate()
+		);
 	}
 
-	function getAcceptedVAsset() public view returns (address) {
-		return address(acceptedVAsset);
-	}
+	// function getProjectToken() public view returns (address) {
+	// 	return address(projectToken);
+	// }
+
+	// function getAcceptedVAsset() public view returns (address) {
+	// 	return address(acceptedVAsset);
+	// }
 
 	function getTotalStaked() public view returns (uint256) {
 		return acceptedVAsset.balanceOf(address(this));
@@ -243,45 +229,73 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		return emissionRate;
 	}
 
-	function getPoolInfo()
-		public
-		view
-		returns (uint128, uint128, uint256, uint256)
-	{
-		return (
-			startBlock,
-			endBlock,
-			getTotalProjectToken(),
-			getEmissionRate()
+	function getClaimableProjectToken(
+		address investor
+	) public view returns (uint256) {}
+
+	function _tick() internal {
+		if (block.number <= endBlock) {
+			return;
+		}
+
+		uint256 stakedVAssetSupply = getTotalStaked();
+
+		if (stakedVAssetSupply == 0) {
+			lastRewardBlock = block.number;
+			return;
+		}
+
+		uint256 currentBlock = block.number;
+		uint256 tickBlockDelta = _getTickBlockDelta(
+			lastRewardBlock,
+			currentBlock
 		);
+		uint256 emissionRate = getEmissionRate();
+		cumulativeExchangeRate +=
+			(emissionRate * tickBlockDelta) /
+			stakedVAssetSupply;
+		lastRewardBlock = currentBlock;
 	}
 
+	/**
+	 * @dev Comment: read https://defrostian.atlassian.net/browse/SCRUM-87
+	 * @notice 🔥🔥 SCRUM-87 should be marked completed when this function is implemented
+	 * and adapts to the changning emissionRate
+	 */
 	function _getCumulativeExchangeRate() internal view returns (uint256) {
 		return cumulativeExchangeRate;
 	}
 
-	function claimableProjectToken(
-		address investor
-	) public view returns (uint256) {}
+	function _getTickBlockDelta(
+		uint256 from,
+		uint256 to
+	) internal view returns (uint256) {
+		if (to < endBlock) {
+			return to - from;
+		} else if (from >= endBlock) {
+			return 0;
+		}
+		return endBlock - from;
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	/////////////////////// INITIALIZE MODIFIER HELPER ///////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	function _initValidation(
-		address _projectToken,
-		address _acceptedVAsset,
-		uint128 _startBlock,
-		uint128 _endBlock,
-		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker
-	)
-		internal
-		view
-		validTimeFrame(_startBlock, _endBlock)
-		validTokenAddresses(_projectToken, _acceptedVAsset)
-		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
-		returns (bool)
-	{
-		return true;
-	}
+	// function _initValidation(
+	// 	address _projectToken,
+	// 	address _acceptedVAsset,
+	// 	uint128 _startBlock,
+	// 	uint128 _endBlock,
+	// 	uint256 _maxVTokensPerStaker,
+	// 	uint256 _minVTokensPerStaker
+	// )
+	// 	internal
+	// 	view
+	// 	validTimeFrame(_startBlock, _endBlock)
+	// 	validTokenAddresses(_projectToken, _acceptedVAsset)
+	// 	validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
+	// 	returns (bool)
+	// {
+	// 	return true;
+	// }
 }
