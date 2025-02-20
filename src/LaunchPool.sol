@@ -15,7 +15,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint256 public cumulativeExchangeRate;
 	uint128 public startBlock;
 	uint128 public endBlock;
-	uint256 public lastRewardBlock;
+	uint256 public tickBlock;
 	uint256 public maxVTokensPerStaker;
 	uint256 public maxStakers;
 
@@ -244,28 +244,25 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		uint256 stakedVAssetSupply = getTotalStaked();
 
 		if (stakedVAssetSupply == 0) {
-			lastRewardBlock = block.number;
+			tickBlock = block.number;
 			_updateLastProcessedIndex();
 			return;
 		}
 
 		uint256 currentBlock = block.number;
-		uint256 tickBlockDelta = _getTickBlockDelta(
-			lastRewardBlock,
-			currentBlock
-		);
+		uint256 tickBlockDelta = _getTickBlockDelta(tickBlock, currentBlock);
 		uint256 emissionRate = getEmissionRate();
 		cumulativeExchangeRate +=
 			(emissionRate * tickBlockDelta) /
 			stakedVAssetSupply;
-		lastRewardBlock = currentBlock;
+		tickBlock = currentBlock;
 		_updateLastProcessedIndex();
 	}
 
 	function _updateLastProcessedIndex() internal {
 		uint256 len = changeBlocks.length;
 		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
-			if (changeBlocks[i] > lastRewardBlock) {
+			if (changeBlocks[i] > tickBlock) {
 				break;
 			}
 			lastProcessedChangeBlockIndex = i;
@@ -289,7 +286,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 		uint256 currentBlock = block.number;
 		uint256 accumulatedRate = cumulativeExchangeRate;
-		uint256 tickBlock = lastRewardBlock;
+		uint256 tickBlock = tickBlock;
 		uint256 len = changeBlocks.length;
 
 		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
