@@ -287,19 +287,18 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 		uint256 currentBlock = block.number;
 		uint256 accumulatedRate = cumulativeExchangeRate;
-		uint256 latestTickBlock = tickBlock;
+		uint256 periodStartBlock = tickBlock;
 		uint256 len = changeBlocks.length;
 
 		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
-			uint256 changeBlock = changeBlocks[i];
+			uint256 periodEndBlock = changeBlocks[i];
 
-			if (changeBlock >= currentBlock) {
+			if (periodEndBlock >= currentBlock) {
 				break;
 			}
 
-			uint256 periodEndBlock = changeBlock;
 			uint256 tickBlockDelta = _getTickBlockDelta(
-				latestTickBlock,
+				periodStartBlock,
 				periodEndBlock
 			);
 
@@ -311,12 +310,12 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 				(emissionRate * tickBlockDelta) /
 				stakedVAssetSupply;
 
-			latestTickBlock = changeBlock;
+			periodStartBlock = periodEndBlock;
 		}
 
-		if (latestTickBlock < currentBlock) {
+		if (periodStartBlock < currentBlock) {
 			uint256 finalDelta = _getTickBlockDelta(
-				latestTickBlock,
+				periodStartBlock,
 				currentBlock
 			);
 			uint256 finalEmissionRate = getEmissionRate();
