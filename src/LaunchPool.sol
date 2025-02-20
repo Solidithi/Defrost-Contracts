@@ -162,33 +162,33 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	function stake() public {}
+	function stake() external {}
 
-	function unstake() public nonReentrant {}
+	function unstake() external nonReentrant {}
 
 	function recoverWrongToken(
 		address _tokenAddress
-	) public onlyOwner notProjectToken(_tokenAddress) {
+	) external onlyOwner notProjectToken(_tokenAddress) {
 		IERC20 token = IERC20(_tokenAddress);
 		uint256 balance = token.balanceOf(address(this));
 		token.safeTransfer(owner(), balance);
 	}
 
-	function unstakeWithoutProjectToken() public nonReentrant {}
+	function unstakeWithoutProjectToken() external nonReentrant {}
 
-	function claimLeftoverProjectToken() public onlyOwner afterPoolEnd {
+	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
 		projectToken.safeTransfer(owner(), balance);
 	}
 
-	function claimOwnerInterest() public onlyOwner nonReentrant afterPoolEnd {
+	function claimOwnerInterest() external onlyOwner nonReentrant afterPoolEnd {
 		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
 			ownerShareOfInterest) / 100;
 		acceptedVAsset.safeTransfer(owner(), balance);
 	}
 
 	function claimPlatformInterest()
-		public
+		external
 		onlyPlatformAdmin
 		nonReentrant
 		afterPoolEnd
@@ -198,16 +198,26 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		acceptedVAsset.safeTransfer(platformAdminAddress, balance);
 	}
 
-	///////////////////////////////////////////////////////////////////////////
-	///////////////////////////// VIEW FUNCTION //////////////////////////////
-	/////////////////////////////////////////////////////////////////////////
-	function getProjectToken() public view returns (address) {
-		return address(projectToken);
+	function getPoolInfo()
+		external
+		view
+		returns (uint128, uint128, uint256, uint256)
+	{
+		return (
+			startBlock,
+			endBlock,
+			getTotalProjectToken(),
+			getEmissionRate()
+		);
 	}
 
-	function getAcceptedVAsset() public view returns (address) {
-		return address(acceptedVAsset);
-	}
+	// function getProjectToken() public view returns (address) {
+	// 	return address(projectToken);
+	// }
+
+	// function getAcceptedVAsset() public view returns (address) {
+	// 	return address(acceptedVAsset);
+	// }
 
 	function getTotalStaked() public view returns (uint256) {
 		return acceptedVAsset.balanceOf(address(this));
@@ -232,19 +242,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			emissionRate = emissionRateChanges[changeBlocks[i]];
 		}
 		return emissionRate;
-	}
-
-	function getPoolInfo()
-		public
-		view
-		returns (uint128, uint128, uint256, uint256)
-	{
-		return (
-			startBlock,
-			endBlock,
-			getTotalProjectToken(),
-			getEmissionRate()
-		);
 	}
 
 	function getClaimableProjectToken(
@@ -275,6 +272,11 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		lastRewardBlock = currentBlock;
 	}
 
+	/**
+	 * @dev Comment: read https://defrostian.atlassian.net/browse/SCRUM-87
+	 * @notice 🔥🔥 SCRUM-87 should be marked completed when this function is implemented
+	 * and adapts to the changning emissionRate
+	 */
 	function _getCumulativeExchangeRate() internal view returns (uint256) {
 		return cumulativeExchangeRate;
 	}
@@ -294,21 +296,21 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	/////////////////////// INITIALIZE MODIFIER HELPER ///////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	function _initValidation(
-		address _projectToken,
-		address _acceptedVAsset,
-		uint128 _startBlock,
-		uint128 _endBlock,
-		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker
-	)
-		internal
-		view
-		validTimeFrame(_startBlock, _endBlock)
-		validTokenAddresses(_projectToken, _acceptedVAsset)
-		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
-		returns (bool)
-	{
-		return true;
-	}
+	// function _initValidation(
+	// 	address _projectToken,
+	// 	address _acceptedVAsset,
+	// 	uint128 _startBlock,
+	// 	uint128 _endBlock,
+	// 	uint256 _maxVTokensPerStaker,
+	// 	uint256 _minVTokensPerStaker
+	// )
+	// 	internal
+	// 	view
+	// 	validTimeFrame(_startBlock, _endBlock)
+	// 	validTokenAddresses(_projectToken, _acceptedVAsset)
+	// 	validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
+	// 	returns (bool)
+	// {
+	// 	return true;
+	// }
 }
