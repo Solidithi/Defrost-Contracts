@@ -273,6 +273,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	 * @dev Comment: read https://defrostian.atlassian.net/browse/SCRUM-87
 	 * @notice 🔥🔥 SCRUM-87 should be marked completed when this function is implemented
 	 * and adapts to the changning emissionRate
+	 * @notice Should think of better variable naming
 	 */
 	function _getCumulativeExchangeRate() internal view returns (uint256) {
 		if (block.number <= endBlock) {
@@ -286,7 +287,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 		uint256 currentBlock = block.number;
 		uint256 accumulatedRate = cumulativeExchangeRate;
-		uint256 tickBlock = tickBlock;
+		uint256 latestTickBlock = tickBlock;
 		uint256 len = changeBlocks.length;
 
 		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
@@ -298,7 +299,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 			uint256 periodEndBlock = changeBlock;
 			uint256 tickBlockDelta = _getTickBlockDelta(
-				tickBlock,
+				latestTickBlock,
 				periodEndBlock
 			);
 
@@ -310,11 +311,14 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 				(emissionRate * tickBlockDelta) /
 				stakedVAssetSupply;
 
-			tickBlock = changeBlock;
+			latestTickBlock = changeBlock;
 		}
 
-		if (tickBlock < currentBlock) {
-			uint256 finalDelta = _getTickBlockDelta(tickBlock, currentBlock);
+		if (latestTickBlock < currentBlock) {
+			uint256 finalDelta = _getTickBlockDelta(
+				latestTickBlock,
+				currentBlock
+			);
 			uint256 finalEmissionRate = getEmissionRate();
 			accumulatedRate +=
 				(finalEmissionRate * finalDelta) /
