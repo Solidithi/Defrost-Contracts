@@ -18,6 +18,9 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint256 public lastRewardBlock;
 	uint256 public maxVTokensPerStaker;
 	uint256 public maxStakers;
+
+	uint256 public lastProcessedChangeBlockIndex;
+
 	/**
 	 * TODO: change to our withdraw address, this currently implement as the factory which is not ideal
 	 */
@@ -242,6 +245,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 		if (stakedVAssetSupply == 0) {
 			lastRewardBlock = block.number;
+			_updateLastProcessedIndex();
 			return;
 		}
 
@@ -255,6 +259,17 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			(emissionRate * tickBlockDelta) /
 			stakedVAssetSupply;
 		lastRewardBlock = currentBlock;
+		_updateLastProcessedIndex();
+	}
+
+	function _updateLastProcessedIndex() internal {
+		uint256 len = changeBlocks.length;
+		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
+			if (changeBlocks[i] > lastRewardBlock) {
+				break;
+			}
+			lastProcessedChangeBlockIndex = i;
+		}
 	}
 
 	/**
@@ -263,7 +278,53 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	 * and adapts to the changning emissionRate
 	 */
 	function _getCumulativeExchangeRate() internal view returns (uint256) {
-		return cumulativeExchangeRate;
+		if (block.number <= endBlock) {
+			return cumulativeExchangeRate;
+		}
+
+		uint256 stakedVAssetSupply = getTotalStaked();
+		if (stakedVAssetSupply == 0) {
+			return cumulativeExchangeRate;
+		}
+
+		uint256 currentBlock = block.number;
+		uint256 accumulatedRate = cumulativeExchangeRate;
+		uint256 tickBlock = lastRewardBlock;
+		uint256 len = changeBlocks.length;
+
+		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
+			uint256 changeBlock = changeBlocks[i];
+
+			if (changeBlock >= currentBlock) {
+				break;
+			}
+
+			uint256 periodEndBlock = changeBlock;
+			uint256 tickBlockDelta = _getTickBlockDelta(
+				tickBlock,
+				periodEndBlock
+			);
+
+			uint256 emissionRate = i == 0
+				? emissionRateChanges[changeBlocks[0]]
+				: emissionRateChanges[changeBlocks[i - 1]];
+
+			accumulatedRate +=
+				(emissionRate * tickBlockDelta) /
+				stakedVAssetSupply;
+
+			tickBlock = changeBlock;
+		}
+
+		if (tickBlock < currentBlock) {
+			uint256 finalDelta = _getTickBlockDelta(tickBlock, currentBlock);
+			uint256 finalEmissionRate = getEmissionRate();
+			accumulatedRate +=
+				(finalEmissionRate * finalDelta) /
+				stakedVAssetSupply;
+		}
+
+		return accumulatedRate;
 	}
 
 	function _getTickBlockDelta(
