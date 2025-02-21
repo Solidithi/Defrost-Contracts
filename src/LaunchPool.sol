@@ -10,7 +10,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	using SafeERC20 for IERC20;
 
 	struct Staker {
-		uint256 amount;
+		uint256 vAssetAmount;
 		uint256 nativeTokenAmount;
 		uint256 claimOffset;
 	}
@@ -163,8 +163,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 		_tick();
 
-		if (investor.amount > 0) {
-			uint256 claimableProjectTokenAmount = (investor.amount *
+		if (investor.vAssetAmount > 0) {
+			uint256 claimableProjectTokenAmount = (investor.vAssetAmount *
 				cumulativeExchangeRate) - investor.claimOffset;
 
 			if (claimableProjectTokenAmount > 0) {
@@ -175,8 +175,11 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			}
 		}
 
-		if (_amount > 0 && investor.amount + _amount <= maxVTokensPerStaker) {
-			investor.amount += _amount;
+		if (
+			_amount > 0 &&
+			investor.vAssetAmount + _amount <= maxVTokensPerStaker
+		) {
+			investor.vAssetAmount += _amount;
 			acceptedVAsset.safeTransferFrom(
 				address(msg.sender),
 				address(this),
@@ -187,7 +190,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			 */
 		}
 
-		investor.claimOffset = investor.amount * cumulativeExchangeRate;
+		investor.claimOffset = investor.vAssetAmount * cumulativeExchangeRate;
 
 		emit Staked(address(msg.sender), _amount);
 	}
@@ -276,12 +279,12 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	) public view returns (uint256) {
 		Staker memory investor = stakers[_investor];
 
-		if (investor.amount == 0) {
+		if (investor.vAssetAmount == 0) {
 			return 0;
 		}
 
 		return
-			investor.amount *
+			investor.vAssetAmount *
 			(cumulativeExchangeRate + _getCumulativeExchangeRate()) -
 			investor.claimOffset;
 	}
