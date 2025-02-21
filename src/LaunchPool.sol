@@ -165,9 +165,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 		if (investor.amount > 0) {
 			uint256 claimableProjectTokenAmount = (investor.amount *
-				cumulativeExchangeRate) /
-				projectToken.balanceOf(address(this)) -
-				investor.claimOffset;
+				cumulativeExchangeRate) - investor.claimOffset;
 
 			if (claimableProjectTokenAmount > 0) {
 				projectToken.safeTransfer(
@@ -293,9 +291,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			return;
 		}
 
-		uint256 stakedVAssetSupply = getTotalStaked();
-
-		if (stakedVAssetSupply == 0) {
+		if (acceptedVAsset.balanceOf(address(this)) == 0) {
 			tickBlock = block.number;
 			_updateLastProcessedIndex();
 			return;
