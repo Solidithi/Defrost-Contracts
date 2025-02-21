@@ -346,6 +346,10 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 				break;
 			}
 
+			if (periodEndBlock <= periodStartBlock) {
+				continue;
+			}
+
 			uint256 tickBlockDelta = _getTickBlockDelta(
 				periodStartBlock,
 				periodEndBlock
