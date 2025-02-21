@@ -274,8 +274,19 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	}
 
 	function getClaimableProjectToken(
-		address investor
-	) public view returns (uint256) {}
+		address _investor
+	) public view returns (uint256) {
+		Staker memory investor = stakers[_investor];
+
+		if (investor.amount == 0) {
+			return 0;
+		}
+
+		return
+			investor.amount *
+			(cumulativeExchangeRate + _getCumulativeExchangeRate()) -
+			investor.claimOffset;
+	}
 
 	function _tick() internal {
 		if (block.number <= tickBlock) {
