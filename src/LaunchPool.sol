@@ -262,6 +262,13 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	}
 
 	function getEmissionRate() public view returns (uint256) {
+		/**
+		 * TODO: should make this into a modifier for launchpool end scenario
+		 */
+		if (block.number <= endBlock) {
+			return 0;
+		}
+
 		uint256 currentBlock = block.number;
 		uint256 emissionRate = 0;
 		uint256 len = changeBlocks.length;
