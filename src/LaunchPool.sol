@@ -265,7 +265,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		uint256 currentBlock = block.number;
 		uint256 emissionRate = 0;
 		uint256 len = changeBlocks.length;
-		for (uint256 i = 0; i < len; ++i) {
+		for (uint256 i = lastProcessedChangeBlockIndex; i < len; ++i) {
 			if (currentBlock < changeBlocks[i]) {
 				break;
 			}
