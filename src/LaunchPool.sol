@@ -175,7 +175,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			}
 		}
 
-		if (_amount > 0) {
+		if (_amount > 0 && investor.amount + _amount <= maxVTokensPerStaker) {
 			investor.amount += _amount;
 			acceptedVAsset.safeTransferFrom(
 				address(msg.sender),
