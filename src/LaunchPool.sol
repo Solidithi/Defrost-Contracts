@@ -21,7 +21,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint256 public cumulativeExchangeRate;
 	uint128 public startBlock;
 	uint128 public endBlock;
-	uint256 public tickBlock;
+	uint128 public tickBlock;
+	uint128 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
 	uint256 public maxVTokensPerStaker;
 	uint256 public maxStakers;
 
@@ -31,7 +32,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	 * TODO: change to our withdraw address, this currently implement as the factory which is not ideal
 	 */
 	address public platformAdminAddress;
-	uint256 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
 	// @todo: decide how much decimal should we take, this will affect some value
 
 	mapping(uint128 => uint256) public emissionRateChanges;
@@ -292,13 +292,17 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		}
 
 		if (acceptedVAsset.balanceOf(address(this)) == 0) {
-			tickBlock = block.number;
+			unchecked {
+				tickBlock = uint128(block.number);
+			}
 			_updateLastProcessedIndex();
 			return;
 		}
 
 		cumulativeExchangeRate += _getCumulativeExchangeRate();
-		tickBlock = block.number;
+		unchecked {
+			tickBlock = uint128(block.number);
+		}
 		_updateLastProcessedIndex();
 	}
 
@@ -319,8 +323,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		}
 
 		uint256 currentBlock = block.number;
-		uint256 periodStartBlock = tickBlock;
-		uint256 periodEndBlock;
+		uint128 periodStartBlock = tickBlock;
+		uint128 periodEndBlock;
 		uint256 len = changeBlocks.length;
 		uint256 accumulatedIncrease = 0;
 
@@ -352,7 +356,9 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		}
 
 		uint256 finalDelta = _getTickBlockDelta(periodStartBlock, currentBlock);
-		uint256 finalEmissionRate = getEmissionRate();
+		uint256 finalEmissionRate = periodEndBlock <= currentBlock
+			? emissionRateChanges[periodEndBlock] // Get rate for the period that started at periodEndBlock
+			: emissionRateChanges[periodStartBlock]; // Get rate after the last processed change block
 		accumulatedIncrease +=
 			(finalEmissionRate * finalDelta) /
 			stakedVAssetSupply;
