@@ -320,11 +320,12 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 
 		uint256 currentBlock = block.number;
 		uint256 periodStartBlock = tickBlock;
+		uint256 periodEndBlock;
 		uint256 len = changeBlocks.length;
 		uint256 accumulatedIncrease = 0;
 
 		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
-			uint256 periodEndBlock = changeBlocks[i];
+			periodEndBlock = changeBlocks[i];
 
 			if (periodEndBlock >= currentBlock) {
 				break;
@@ -350,16 +351,11 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			periodStartBlock = periodEndBlock;
 		}
 
-		if (periodStartBlock < currentBlock) {
-			uint256 finalDelta = _getTickBlockDelta(
-				periodStartBlock,
-				currentBlock
-			);
-			uint256 finalEmissionRate = getEmissionRate();
-			accumulatedIncrease +=
-				(finalEmissionRate * finalDelta) /
-				stakedVAssetSupply;
-		}
+		uint256 finalDelta = _getTickBlockDelta(periodStartBlock, currentBlock);
+		uint256 finalEmissionRate = getEmissionRate();
+		accumulatedIncrease +=
+			(finalEmissionRate * finalDelta) /
+			stakedVAssetSupply;
 
 		return accumulatedIncrease;
 	}
