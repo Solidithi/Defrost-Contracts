@@ -158,7 +158,41 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	function stake() external {}
+	function stake(uint256 _amount) external {
+		Staker storage investor = stakers[msg.sender];
+
+		_tick();
+
+		if (investor.amount > 0) {
+			uint256 claimableProjectTokenAmount = (investor.amount *
+				cumulativeExchangeRate) /
+				projectToken.balanceOf(address(this)) -
+				investor.claimOffset;
+
+			if (claimableProjectTokenAmount > 0) {
+				projectToken.safeTransfer(
+					address(msg.sender),
+					claimableProjectTokenAmount
+				);
+			}
+		}
+
+		if (_amount > 0) {
+			investor.amount += _amount;
+			acceptedVAsset.safeTransferFrom(
+				address(msg.sender),
+				address(this),
+				_amount
+			);
+			/**
+			 * TODO: implement native amount increase here
+			 */
+		}
+
+		investor.claimOffset = investor.amount * cumulativeExchangeRate;
+
+		emit Staked(address(msg.sender), _amount);
+	}
 
 	function unstake() external nonReentrant {}
 
