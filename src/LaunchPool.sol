@@ -241,14 +241,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		);
 	}
 
-	// function getProjectToken() public view returns (address) {
-	// 	return address(projectToken);
-	// }
-
-	// function getAcceptedVAsset() public view returns (address) {
-	// 	return address(acceptedVAsset);
-	// }
-
 	function getTotalStaked() public view returns (uint256) {
 		return acceptedVAsset.balanceOf(address(this));
 	}
@@ -265,7 +257,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		/**
 		 * TODO: should make this into a modifier for launchpool end scenario
 		 */
-		if (block.number <= endBlock) {
+		if (block.number >= endBlock) {
 			return 0;
 		}
 
@@ -286,7 +278,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	) public view returns (uint256) {}
 
 	function _tick() internal {
-		if (block.number <= endBlock) {
+		if (block.number <= tickBlock) {
 			return;
 		}
 
@@ -298,13 +290,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 			return;
 		}
 
-		uint256 currentBlock = block.number;
-		uint256 tickBlockDelta = _getTickBlockDelta(tickBlock, currentBlock);
-		uint256 emissionRate = getEmissionRate();
-		cumulativeExchangeRate +=
-			(emissionRate * tickBlockDelta) /
-			stakedVAssetSupply;
-		tickBlock = currentBlock;
+		cumulativeExchangeRate += _getCumulativeExchangeRate();
+		tickBlock = block.number;
 		_updateLastProcessedIndex();
 	}
 
@@ -318,26 +305,16 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		}
 	}
 
-	/**
-	 * @dev Comment: read https://defrostian.atlassian.net/browse/SCRUM-87
-	 * @notice 🔥🔥 SCRUM-87 should be marked completed when this function is implemented
-	 * and adapts to the changning emissionRate
-	 * @notice Should think of better variable naming
-	 */
 	function _getCumulativeExchangeRate() internal view returns (uint256) {
-		if (block.number <= endBlock) {
-			return cumulativeExchangeRate;
-		}
-
 		uint256 stakedVAssetSupply = getTotalStaked();
 		if (stakedVAssetSupply == 0) {
-			return cumulativeExchangeRate;
+			return 0;
 		}
 
 		uint256 currentBlock = block.number;
-		uint256 accumulatedRate = cumulativeExchangeRate;
 		uint256 periodStartBlock = tickBlock;
 		uint256 len = changeBlocks.length;
+		uint256 accumulatedIncrease = 0;
 
 		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
 			uint256 periodEndBlock = changeBlocks[i];
@@ -355,11 +332,11 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 				periodEndBlock
 			);
 
-			uint256 emissionRate = i == 0
-				? emissionRateChanges[changeBlocks[0]]
-				: emissionRateChanges[changeBlocks[i - 1]];
+			uint256 emissionRate = emissionRateChanges[
+				i == 0 ? changeBlocks[0] : changeBlocks[i - 1]
+			];
 
-			accumulatedRate +=
+			accumulatedIncrease +=
 				(emissionRate * tickBlockDelta) /
 				stakedVAssetSupply;
 
@@ -372,12 +349,12 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 				currentBlock
 			);
 			uint256 finalEmissionRate = getEmissionRate();
-			accumulatedRate +=
+			accumulatedIncrease +=
 				(finalEmissionRate * finalDelta) /
 				stakedVAssetSupply;
 		}
 
-		return accumulatedRate;
+		return accumulatedIncrease;
 	}
 
 	function _getTickBlockDelta(
@@ -391,25 +368,4 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		}
 		return endBlock - from;
 	}
-
-	///////////////////////////////////////////////////////////////////////////
-	/////////////////////// INITIALIZE MODIFIER HELPER ///////////////////////
-	/////////////////////////////////////////////////////////////////////////
-	// function _initValidation(
-	// 	address _projectToken,
-	// 	address _acceptedVAsset,
-	// 	uint128 _startBlock,
-	// 	uint128 _endBlock,
-	// 	uint256 _maxVTokensPerStaker,
-	// 	uint256 _minVTokensPerStaker
-	// )
-	// 	internal
-	// 	view
-	// 	validTimeFrame(_startBlock, _endBlock)
-	// 	validTokenAddresses(_projectToken, _acceptedVAsset)
-	// 	validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
-	// 	returns (bool)
-	// {
-	// 	return true;
-	// }
 }
