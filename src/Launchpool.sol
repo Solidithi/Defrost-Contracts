@@ -145,6 +145,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		acceptedVAsset = IERC20(_acceptedVAsset);
 		startBlock = _startBlock;
 		endBlock = _endBlock;
+		maxVAssetPerStaker = _maxVAssetPerStaker;
 	}
 
 	///////////////////////////////////////////////////////////////////////////
