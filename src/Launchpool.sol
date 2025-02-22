@@ -121,7 +121,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		validTokenAddress(_acceptedVAsset)
 		validStakingRange(_maxVAssetPerStaker)
 	{
-		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
+		if (_startBlock <= block.number) revert startBlockMustBeInFuture();
 		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
 
 		uint256 len = _changeBlocks.length;
