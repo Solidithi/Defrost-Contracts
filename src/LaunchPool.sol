@@ -23,7 +23,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	uint128 public endBlock;
 	uint128 public tickBlock;
 	uint128 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
-	uint256 public maxVTokensPerStaker;
+	uint256 public maxVAssetPerStaker;
 	uint256 public maxStakers;
 
 	uint256 public lastProcessedChangeBlockIndex;
@@ -77,8 +77,8 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		_;
 	}
 
-	modifier validStakingRange(uint256 _maxVTokensPerStaker) {
-		if (_maxVTokensPerStaker == 0)
+	modifier validStakingRange(uint256 _maxVAssetPerStaker) {
+		if (_maxVAssetPerStaker == 0)
 			revert MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 		_;
 	}
@@ -113,14 +113,14 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		address _acceptedVAsset,
 		uint128 _startBlock,
 		uint128 _endBlock,
-		uint256 _maxVTokensPerStaker,
+		uint256 _maxVAssetPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
 	)
 		Ownable(_projectOwner)
 		validTokenAddress(_projectToken)
 		validTokenAddress(_acceptedVAsset)
-		validStakingRange(_maxVTokensPerStaker)
+		validStakingRange(_maxVAssetPerStaker)
 	{
 		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
 		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
@@ -169,8 +169,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		}
 
 		if (
-			_amount > 0 &&
-			investor.vAssetAmount + _amount <= maxVTokensPerStaker
+			_amount > 0 && investor.vAssetAmount + _amount <= maxVAssetPerStaker
 		) {
 			investor.vAssetAmount += _amount;
 			acceptedVAsset.safeTransferFrom(
@@ -244,7 +243,7 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	}
 
 	function getStakingRange() public view returns (uint256, uint256) {
-		return (maxVTokensPerStaker, maxStakers);
+		return (maxVAssetPerStaker, maxStakers);
 	}
 
 	function getEmissionRate() public view returns (uint256) {
