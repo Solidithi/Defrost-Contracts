@@ -33,7 +33,6 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000,
 			changedBlock,
 			emissionRate
 		);
@@ -59,7 +58,6 @@ contract CreateLaunchPoolTest is Test {
 			address(this),
 			1000,
 			2000,
-			1000,
 			1000,
 			new uint128[](2),
 			new uint256[](2)
@@ -93,7 +91,6 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000,
 			changedBlock,
 			emissionRate
 		);
@@ -102,7 +99,6 @@ contract CreateLaunchPoolTest is Test {
 			address(this),
 			1000,
 			2000,
-			1000,
 			1000,
 			changedBlock,
 			emissionRate
@@ -113,7 +109,6 @@ contract CreateLaunchPoolTest is Test {
 			1000,
 			2000,
 			1000,
-			1000,
 			changedBlock,
 			emissionRate
 		);
@@ -122,7 +117,6 @@ contract CreateLaunchPoolTest is Test {
 			address(this),
 			1000,
 			2000,
-			1000,
 			1000,
 			changedBlock,
 			emissionRate

@@ -57,7 +57,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	error InvalidAcceptedVAssetAddress();
 	error TotalProjectTokensMustBeGreaterThanZero();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
-	error MaxTokensPerStakerMustBeGreaterThanMin();
 	error ArraysLengthMismatch();
 	error NoEmissionRateChangesProvided();
 
@@ -78,14 +77,9 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		_;
 	}
 
-	modifier validStakingRange(
-		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker
-	) {
-		if (_maxVTokensPerStaker == 0 || _minVTokensPerStaker == 0)
+	modifier validStakingRange(uint256 _maxVTokensPerStaker) {
+		if (_maxVTokensPerStaker == 0)
 			revert MaxAndMinTokensPerStakerMustBeGreaterThanZero();
-		if (_maxVTokensPerStaker < _minVTokensPerStaker)
-			revert MaxTokensPerStakerMustBeGreaterThanMin();
 		_;
 	}
 
@@ -120,14 +114,13 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 		uint128 _startBlock,
 		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
 	)
 		Ownable(_projectOwner)
 		validTokenAddress(_projectToken)
 		validTokenAddress(_acceptedVAsset)
-		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
+		validStakingRange(_maxVTokensPerStaker)
 	{
 		if (_startBlock <= block.timestamp) revert startBlockMustBeInFuture();
 		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();

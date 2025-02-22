@@ -39,7 +39,6 @@ contract LaunchPoolFactory is Ownable {
 	error InvalidProjectTokenAddress();
 	error InvalidAcceptedVAssetAddress();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
-	error MaxTokensPerStakerMustBeGreaterThanMin();
 
 	//////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// MODIFIERS ///////////////////////////////
@@ -64,14 +63,9 @@ contract LaunchPoolFactory is Ownable {
 		_;
 	}
 
-	modifier validStakingRange(
-		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker
-	) {
-		if (_maxVTokensPerStaker == 0 || _minVTokensPerStaker == 0)
+	modifier validStakingRange(uint256 _maxVTokensPerStaker) {
+		if (_maxVTokensPerStaker == 0)
 			revert MaxAndMinTokensPerStakerMustBeGreaterThanZero();
-		if (_maxVTokensPerStaker < _minVTokensPerStaker)
-			revert MaxTokensPerStakerMustBeGreaterThanMin();
 		_;
 	}
 
@@ -85,7 +79,6 @@ contract LaunchPoolFactory is Ownable {
 		uint128 _startBlock,
 		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
 	) public returns (uint256 poolId) {
@@ -94,8 +87,7 @@ contract LaunchPoolFactory is Ownable {
 			_acceptedVAsset,
 			_startBlock,
 			_endBlock,
-			_maxVTokensPerStaker,
-			_minVTokensPerStaker
+			_maxVTokensPerStaker
 		);
 
 		poolId = _nextPoolId++;
@@ -108,7 +100,6 @@ contract LaunchPoolFactory is Ownable {
 				_startBlock,
 				_endBlock,
 				_maxVTokensPerStaker,
-				_minVTokensPerStaker,
 				_changeBlocks,
 				_emissionRateChanges
 			)
@@ -152,14 +143,13 @@ contract LaunchPoolFactory is Ownable {
 		address _acceptedVAsset,
 		uint256 _startBlock,
 		uint256 _endBlock,
-		uint256 _maxVTokensPerStaker,
-		uint256 _minVTokensPerStaker
+		uint256 _maxVTokensPerStaker
 	)
 		internal
 		view
 		validTimeFrame(_startBlock, _endBlock)
 		validTokenAddresses(_projectToken, _acceptedVAsset)
-		validStakingRange(_maxVTokensPerStaker, _minVTokensPerStaker)
+		validStakingRange(_maxVTokensPerStaker)
 		returns (bool)
 	{
 		return true;
