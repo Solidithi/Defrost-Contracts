@@ -2,18 +2,18 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import { LaunchPoolFactory } from "../../src/LaunchPoolFactory.sol";
-import { LaunchPool } from "../../src/LaunchPool.sol";
+import { LaunchpoolFactory } from "../../src/LaunchpoolFactory.sol";
+import { Launchpool } from "../../src/Launchpool.sol";
 
 import { StdCheats } from "forge-std/StdCheats.sol";
 
 // @todo: Improve testcase later on when implementation for valid vAsset
 contract CreateLaunchPoolTest is Test {
-	LaunchPoolFactory public poolFactory;
-	LaunchPool public launchPool;
+	LaunchpoolFactory public poolFactory;
+	Launchpool public launchPool;
 
 	function setUp() public {
-		poolFactory = new LaunchPoolFactory();
+		poolFactory = new LaunchpoolFactory();
 	}
 
 	function testCreatePool() public {
@@ -52,7 +52,7 @@ contract CreateLaunchPoolTest is Test {
 	function testCreatePoolWithInvalidProjectToken() public {
 		// Act: Call createPool function with invalid project token
 		// Assert: Expect revert
-		vm.expectRevert(LaunchPool.InvalidAcceptedVAssetAddress.selector);
+		vm.expectRevert(Launchpool.InvalidAcceptedVAssetAddress.selector);
 		uint256 poolId = poolFactory.createPool(
 			address(0),
 			address(this),

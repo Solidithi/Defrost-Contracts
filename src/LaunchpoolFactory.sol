@@ -2,9 +2,9 @@
 pragma solidity ^0.8.24;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { LaunchPool } from "./LaunchPool.sol";
+import { Launchpool } from "./Launchpool.sol";
 
-contract LaunchPoolFactory is Ownable {
+contract LaunchpoolFactory is Ownable {
 	/////////////////////////////////////////////////////////////////
 	//////////////////////// CONTRACT STATES ///////////////////////
 	///////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ contract LaunchPoolFactory is Ownable {
 		poolId = _nextPoolId++;
 
 		address poolAddress = address(
-			new LaunchPool(
+			new Launchpool(
 				_msgSender(),
 				_projectToken,
 				_acceptedVAsset,
