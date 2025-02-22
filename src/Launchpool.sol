@@ -65,6 +65,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	error ProjectTokenNotRecoverable();
 	error MustBeAfterPoolEnd();
 	error NotPlatformAdmin();
+	error ZeroAmountNotAllowed();
+	error ExceedsMaximumAllowedStakePerUser();
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
@@ -99,6 +101,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	modifier onlyPlatformAdmin() {
 		if (msg.sender != platformAdminAddress) {
 			revert NotPlatformAdmin();
+		}
+		_;
+	}
+
+	modifier nonZeroAmount(uint256 _amount) {
+		if (_amount == 0) {
+			revert ZeroAmountNotAllowed();
 		}
 		_;
 	}
@@ -151,7 +160,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	function stake(uint256 _amount) external {
+	function stake(
+		uint256 _amount
+	) external nonZeroAmount(_amount) nonReentrant {
+		if (_amount > maxVAssetPerStaker) {
+			revert ExceedsMaximumAllowedStakePerUser();
+		}
+
 		Staker storage investor = stakers[msg.sender];
 
 		_tick();
@@ -168,26 +183,24 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			}
 		}
 
-		if (
-			_amount > 0 && investor.vAssetAmount + _amount <= maxVAssetPerStaker
-		) {
-			investor.vAssetAmount += _amount;
-			acceptedVAsset.safeTransferFrom(
-				address(msg.sender),
-				address(this),
-				_amount
-			);
-			/**
-			 * TODO: implement native amount increase here
-			 */
-		}
+		investor.vAssetAmount += _amount;
+		acceptedVAsset.safeTransferFrom(
+			address(msg.sender),
+			address(this),
+			_amount
+		);
+		/**
+		 * TODO: implement native amount increase here
+		 */
 
 		investor.claimOffset = investor.vAssetAmount * cumulativeExchangeRate;
 
 		emit Staked(address(msg.sender), _amount);
 	}
 
-	function unstake() external nonReentrant {}
+	function unstake(
+		uint256 _amount
+	) external nonZeroAmount(_amount) nonReentrant {}
 
 	function recoverWrongToken(
 		address _tokenAddress
