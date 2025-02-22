@@ -52,7 +52,7 @@ contract CreateLaunchPoolTest is Test {
 	function testCreatePoolWithInvalidProjectToken() public {
 		// Act: Call createPool function with invalid project token
 		// Assert: Expect revert
-		vm.expectRevert(LaunchPoolFactory.InvalidProjectTokenAddress.selector);
+		vm.expectRevert(LaunchPool.InvalidAcceptedVAssetAddress.selector);
 		uint256 poolId = poolFactory.createPool(
 			address(0),
 			address(this),

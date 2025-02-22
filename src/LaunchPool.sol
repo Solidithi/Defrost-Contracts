@@ -53,7 +53,6 @@ contract LaunchPool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	error startBlockMustBeInFuture();
 	error endBlockMustBeAfterstartBlock();
-	error InvalidProjectTokenAddress();
 	error InvalidAcceptedVAssetAddress();
 	error TotalProjectTokensMustBeGreaterThanZero();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
