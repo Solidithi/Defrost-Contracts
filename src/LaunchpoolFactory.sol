@@ -49,44 +49,51 @@ contract LaunchpoolFactory is Ownable {
 		_nextPoolId = 1; // Start pool IDs from 1
 	}
 
-	function createPool(
+	function createPools(
 		address _projectToken,
-		address _acceptedVAsset,
+		address[] memory _acceptedVAssets,
 		uint128 _startBlock,
 		uint128 _endBlock,
 		uint256 _maxVTokensPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
-	) public returns (uint256 poolId) {
-		poolId = _nextPoolId++;
+	) public returns (uint256[] memory poolIds) {
+		uint256 assetCount = _acceptedVAssets.length;
+		poolIds = new uint256[](assetCount);
 
-		address poolAddress = address(
-			new Launchpool(
-				_msgSender(),
+		for (uint256 i = 0; i < assetCount; i++) {
+			uint256 poolId = _nextPoolId++;
+
+			address poolAddress = address(
+				new Launchpool(
+					_msgSender(),
+					_projectToken,
+					_acceptedVAssets[i],
+					_startBlock,
+					_endBlock,
+					_maxVTokensPerStaker,
+					_changeBlocks,
+					_emissionRateChanges
+				)
+			);
+
+			pools[poolId] = poolAddress;
+			_poolIsValid[poolAddress] = true;
+
+			emit PoolCreated(
+				poolId,
+				msg.sender,
 				_projectToken,
-				_acceptedVAsset,
+				_acceptedVAssets[i],
+				poolAddress,
 				_startBlock,
-				_endBlock,
-				_maxVTokensPerStaker,
-				_changeBlocks,
-				_emissionRateChanges
-			)
-		);
+				_endBlock
+			);
 
-		pools[poolId] = poolAddress;
-		_poolIsValid[poolAddress] = true;
+			poolIds[i] = poolId;
+		}
 
-		emit PoolCreated(
-			poolId,
-			msg.sender,
-			_projectToken,
-			_acceptedVAsset,
-			poolAddress,
-			_startBlock,
-			_endBlock
-		);
-
-		return poolId;
+		return poolIds;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
