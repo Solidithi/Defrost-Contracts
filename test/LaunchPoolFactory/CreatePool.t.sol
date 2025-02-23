@@ -16,8 +16,11 @@ contract CreateLaunchPoolTest is Test {
 		poolFactory = new LaunchpoolFactory();
 	}
 
-	function testCreatePool() public {
-		// Act: Call createPool function
+	function testCreateSinglePool() public {
+		// Arrange
+		address[] memory acceptedVAssets = new address[](1);
+		acceptedVAssets[0] = address(this);
+
 		uint128[] memory changedBlock = new uint128[](2);
 		uint256[] memory emissionRate = new uint256[](2);
 
@@ -27,9 +30,10 @@ contract CreateLaunchPoolTest is Test {
 		emissionRate[0] = 5;
 		emissionRate[1] = 10;
 
-		uint256 poolId = poolFactory.createPool(
+		// Act: Call createPool function
+		uint256[] memory poolIds = poolFactory.createPools(
 			address(this),
-			address(this),
+			acceptedVAssets,
 			1000,
 			2000,
 			1000,
@@ -40,9 +44,10 @@ contract CreateLaunchPoolTest is Test {
 		// Assert: Check if the pool count increased
 		uint256 currentPoolId = poolFactory.getPoolCount();
 		assertTrue(currentPoolId == 1, "Pool count is not 1");
+		assertTrue(poolIds.length == 1, "Pool id length is not 1");
 
 		// Assert: Check if the pool id return the pool address
-		address poolAddress = poolFactory.pools(poolId);
+		address poolAddress = poolFactory.getPoolAddress(poolIds[0]);
 		assertTrue(poolAddress != address(0), "Pool address is 0");
 
 		// Assert: Check if the pool address is valid
@@ -50,12 +55,15 @@ contract CreateLaunchPoolTest is Test {
 	}
 
 	function testCreatePoolWithInvalidProjectToken() public {
-		// Act: Call createPool function with invalid project token
-		// Assert: Expect revert
+		// Arrange
+		address[] memory acceptedVAssets = new address[](1);
+		acceptedVAssets[0] = address(this);
+
+		// Act & Assert: Expect revert
 		vm.expectRevert(Launchpool.InvalidAcceptedVAssetAddress.selector);
-		uint256 poolId = poolFactory.createPool(
+		poolFactory.createPools(
 			address(0),
-			address(this),
+			acceptedVAssets,
 			1000,
 			2000,
 			1000,
@@ -65,16 +73,14 @@ contract CreateLaunchPoolTest is Test {
 
 		// Assert: Check if the current pool count is 0
 		uint256 currentPoolId = poolFactory.getPoolCount();
-		assertTrue(
-			currentPoolId == 0,
-			"Pool created with invalid project token"
-		);
-
-		// Assert: Check if the pool id value is 0
-		assertTrue(poolId == 0, "Pool id is not 0");
+		assertEq(currentPoolId, 0, "Pool created with invalid project token");
 	}
 
-	function testCreateSeveralPools() public {
+	function testCreateSeveralPoolSeparately() public {
+		// Arrange
+		address[] memory acceptedVAssets = new address[](1);
+		acceptedVAssets[0] = address(this);
+
 		// Act: Call createPool function several times
 		uint128[] memory changedBlock = new uint128[](2);
 		uint256[] memory emissionRate = new uint256[](2);
@@ -85,36 +91,36 @@ contract CreateLaunchPoolTest is Test {
 		emissionRate[0] = 5;
 		emissionRate[1] = 10;
 
-		uint256 poolId1 = poolFactory.createPool(
+		uint256[] memory poolId1s = poolFactory.createPools(
 			address(this),
-			address(this),
+			acceptedVAssets,
 			1000,
 			2000,
 			1000,
 			changedBlock,
 			emissionRate
 		);
-		uint256 poolId2 = poolFactory.createPool(
+		uint256[] memory poolId2s = poolFactory.createPools(
 			address(this),
-			address(this),
+			acceptedVAssets,
 			1000,
 			2000,
 			1000,
 			changedBlock,
 			emissionRate
 		);
-		uint256 poolId3 = poolFactory.createPool(
+		uint256[] memory poolId3s = poolFactory.createPools(
 			address(this),
-			address(this),
+			acceptedVAssets,
 			1000,
 			2000,
 			1000,
 			changedBlock,
 			emissionRate
 		);
-		uint256 poolId4 = poolFactory.createPool(
+		uint256[] memory poolId4s = poolFactory.createPools(
 			address(this),
-			address(this),
+			acceptedVAssets,
 			1000,
 			2000,
 			1000,
@@ -128,7 +134,10 @@ contract CreateLaunchPoolTest is Test {
 
 		// Assert: Check if the pool id increase sequentially
 		assertTrue(
-			poolId1 == 1 && poolId2 == 2 && poolId3 == 3 && poolId4 == 4,
+			poolId1s[0] == 1 &&
+				poolId2s[0] == 2 &&
+				poolId3s[0] == 3 &&
+				poolId4s[0] == 4,
 			"Pool id is not 1"
 		);
 	}
