@@ -12,9 +12,15 @@
 		"solhint-plugin-prettier": "^0.1.0"
 	},
 	"lint-staged": {
-		"*.sol": [
+		"src/**/*.sol": [
 			"prettier --write --plugin=prettier-plugin-solidity",
 			"solhint"
+		],
+		"test/**/*.sol": [
+			"prettier --write --plugin=prettier-plugin-solidity"
+		],
+		"script/**/*.sol": [
+			"prettier --write --plugin=prettier-plugin-solidity"
 		]
 	},
 	"scripts": {
