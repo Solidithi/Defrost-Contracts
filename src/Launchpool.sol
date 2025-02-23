@@ -336,8 +336,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint128 periodEndBlock;
 		uint256 len = changeBlocks.length;
 		uint256 accumulatedIncrease = 0;
+		uint256 i = lastProcessedChangeBlockIndex;
 
-		for (uint256 i = lastProcessedChangeBlockIndex; i < len; i++) {
+		for (; i < len; i++) {
 			periodEndBlock = changeBlocks[i];
 
 			if (periodEndBlock >= currentBlock) {
@@ -367,7 +368,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 finalDelta = _getTickBlockDelta(periodStartBlock, currentBlock);
 		uint256 finalEmissionRate = periodEndBlock <= currentBlock
 			? emissionRateChanges[periodEndBlock] // Get rate for the period that started at periodEndBlock
-			: emissionRateChanges[periodStartBlock]; // Get rate after the last processed change block
+			: emissionRateChanges[changeBlocks[i - 1]]; // Get rate after the last processed change block
 		accumulatedIncrease +=
 			(finalEmissionRate * finalDelta) /
 			stakedVAssetSupply;
