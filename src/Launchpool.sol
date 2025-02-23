@@ -5,6 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IXCMOracle } from "./interfaces/IXCMOracle.sol";
 
 contract Launchpool is Ownable, ReentrancyGuard {
 	using SafeERC20 for IERC20;
@@ -39,6 +40,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 	IERC20 public projectToken;
 	IERC20 public acceptedVAsset;
+	IXCMOracle public xcmOracle =
+		IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
 
 	mapping(address => Staker) public stakers;
 
@@ -67,6 +70,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	error NotPlatformAdmin();
 	error ZeroAmountNotAllowed();
 	error ExceedsMaximumAllowedStakePerUser();
+	error VAssetAmountNotSufficient();
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
@@ -201,7 +205,30 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 	function unstake(
 		uint256 _amount
-	) external nonZeroAmount(_amount) nonReentrant {}
+	) external nonZeroAmount(_amount) nonReentrant {
+
+		//Transfer withdraw amount of vAsset
+		// stakers[msg.sender].vAssetAmount -= _amount;
+		// acceptedVAsset.safeTransfer(address(msg.sender), _amount);
+		uint256 withdrawableNativeAmount = stakers[msg.sender].nativeTokenAmount;
+		uint256 withDrawableVAsset = xcmOracle.getVTokenByToken(address(acceptedVAsset), withdrawableNativeAmount); //DOT to vDOT amount
+		if (withDrawableVAsset < _amount) {
+			revert VAssetAmountNotSufficient();
+		}
+
+		stakers[msg.sender].vAssetAmount -= withDrawableVAsset;
+		IERC20(acceptedVAsset).transfer(address(msg.sender), withDrawableVAsset);
+		
+
+		//Transfer Project Token reward
+		uint256 withdrawProjectToken = projectToken.balanceOf(address(this));
+		projectToken.transfer(address(msg.sender), withdrawProjectToken);
+
+		stakers[msg.sender].claimOffset = stakers[msg.sender].vAssetAmount * cumulativeExchangeRate;
+
+
+		emit Unstaked(address(msg.sender), _amount);
+	}
 
 	function recoverWrongToken(
 		address _tokenAddress
@@ -211,7 +238,16 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		token.transfer(owner(), balance);
 	}
 
-	function unstakeWithoutProjectToken() external nonReentrant {}
+	function unstakeWithoutProjectToken() external nonReentrant {
+		//Check if user have stake vAsset or not
+		if (stakers[msg.sender].vAssetAmount == 0) {
+			revert("No vAsset to withdrawn");
+		}
+
+		uint256 vAssetWithDrawAmount = stakers[msg.sender].vAssetAmount;
+		stakers[msg.sender].vAssetAmount = 0;
+		acceptedVAsset.transfer(address(msg.sender), vAssetWithDrawAmount);
+	}
 
 	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
@@ -233,6 +269,10 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
 			(100 - ownerShareOfInterest)) / 100;
 		acceptedVAsset.transfer(platformAdminAddress, balance);
+	}
+
+	function setXCMOracleAddress(address _xcmOracleAddress) external onlyPlatformAdmin {
+		xcmOracle = IXCMOracle(_xcmOracleAddress);
 	}
 
 	function getPoolInfo()
