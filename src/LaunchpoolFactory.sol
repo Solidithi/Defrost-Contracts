@@ -12,7 +12,7 @@ contract LaunchpoolFactory is Ownable {
 	uint256 private _nextPoolId;
 
 	// Mapping from pool ID => pool address
-	mapping(uint256 => address) public pools;
+	mapping(uint256 => address) internal _pools;
 
 	// Mapping from project pool address => is valid/not valid || Check whether the pool is derived from this contract
 	mapping(address => bool) internal _poolIsValid;
@@ -77,7 +77,7 @@ contract LaunchpoolFactory is Ownable {
 				)
 			);
 
-			pools[poolId] = poolAddress;
+			_pools[poolId] = poolAddress;
 			_poolIsValid[poolAddress] = true;
 
 			emit PoolCreated(
@@ -102,7 +102,7 @@ contract LaunchpoolFactory is Ownable {
 	function getPoolAddress(
 		uint256 poolId
 	) public view isValidPoolId(poolId) returns (address) {
-		return pools[poolId];
+		return _pools[poolId];
 	}
 
 	function isPoolValid(address poolAddress) public view returns (bool) {
