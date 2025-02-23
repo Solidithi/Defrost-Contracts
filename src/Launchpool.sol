@@ -155,6 +155,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		startBlock = _startBlock;
 		endBlock = _endBlock;
 		maxVAssetPerStaker = _maxVAssetPerStaker;
+		tickBlock = _startBlock;
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -176,7 +177,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 				cumulativeExchangeRate) - investor.claimOffset;
 
 			if (claimableProjectTokenAmount > 0) {
-				projectToken.safeTransfer(
+				projectToken.transfer(
 					address(msg.sender),
 					claimableProjectTokenAmount
 				);
@@ -184,7 +185,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		investor.vAssetAmount += _amount;
-		acceptedVAsset.safeTransferFrom(
+		acceptedVAsset.transferFrom(
 			address(msg.sender),
 			address(this),
 			_amount
@@ -207,20 +208,20 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	) external onlyOwner notProjectToken(_tokenAddress) {
 		IERC20 token = IERC20(_tokenAddress);
 		uint256 balance = token.balanceOf(address(this));
-		token.safeTransfer(owner(), balance);
+		token.transfer(owner(), balance);
 	}
 
 	function unstakeWithoutProjectToken() external nonReentrant {}
 
 	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
-		projectToken.safeTransfer(owner(), balance);
+		projectToken.transfer(owner(), balance);
 	}
 
 	function claimOwnerInterest() external onlyOwner nonReentrant afterPoolEnd {
 		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
 			ownerShareOfInterest) / 100;
-		acceptedVAsset.safeTransfer(owner(), balance);
+		acceptedVAsset.transfer(owner(), balance);
 	}
 
 	function claimPlatformInterest()
@@ -231,7 +232,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	{
 		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
 			(100 - ownerShareOfInterest)) / 100;
-		acceptedVAsset.safeTransfer(platformAdminAddress, balance);
+		acceptedVAsset.transfer(platformAdminAddress, balance);
 	}
 
 	function getPoolInfo()
