@@ -358,127 +358,148 @@ contract CumulativeExchangeRateTest is Test {
 		);
 	}
 
-	// function testVariableEmissionRateWith4StakersAtDifferentBlocks() public {
-	// 	// Arrange: deploy pool with same config as previous tests
-	// 	uint128 poolDurationBlocks = uint128(14 days / BLOCK_TIME);
-	// 	uint128 startBlock = uint128(block.number) + 100; // Start later to allow pre-start actions
-	// 	uint128 endBlock = startBlock + poolDurationBlocks;
-	// 	uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
+	function testVariableEmissionRateWith4StakersAtDifferentBlocks() public {
+		// Arrange: deploy pool with same config as previous tests
+		uint128 poolDurationBlocks = uint128(14 days / BLOCK_TIME);
+		uint128 startBlock = uint128(block.number) + 1; // Start later to allow pre-start actions
+		uint128 endBlock = startBlock + poolDurationBlocks;
+		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 
-	// 	uint128[] memory changeBlocks = new uint128[](3);
-	// 	changeBlocks[0] = startBlock;
-	// 	changeBlocks[1] = startBlock + poolDurationBlocks / 3;
-	// 	changeBlocks[2] = startBlock + (poolDurationBlocks * 3) / 4;
+		uint128[] memory changeBlocks = new uint128[](3);
+		changeBlocks[0] = startBlock;
+		changeBlocks[1] = startBlock + poolDurationBlocks / 3;
+		changeBlocks[2] = startBlock + (poolDurationBlocks * 3) / 4;
 
-	// 	uint256[] memory emissionRateChanges = new uint256[](3);
-	// 	emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
-	// 	emissionRateChanges[1] = 1e3 * (10 ** vAsset.decimals());
-	// 	emissionRateChanges[2] = 9e2 * (10 ** vAsset.decimals());
+		uint256[] memory emissionRateChanges = new uint256[](3);
+		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
+		emissionRateChanges[1] = 1e3 * (10 ** vAsset.decimals());
+		emissionRateChanges[2] = 9e2 * (10 ** vAsset.decimals());
 
-	// 	launchpool = new MockLaunchpool(
-	// 		address(this),
-	// 		address(projectToken),
-	// 		address(vAsset),
-	// 		startBlock,
-	// 		endBlock,
-	// 		maxVTokensPerStaker,
-	// 		changeBlocks,
-	// 		emissionRateChanges
-	// 	);
+		launchpool = new MockLaunchpool(
+			address(this),
+			address(projectToken),
+			address(vAsset),
+			startBlock,
+			endBlock,
+			maxVTokensPerStaker,
+			changeBlocks,
+			emissionRateChanges
+		);
 
-	// 	projectToken.transfer(
-	// 		address(launchpool),
-	// 		1e4 * (10 ** projectToken.decimals())
-	// 	);
+		projectToken.transfer(
+			address(launchpool),
+			1e6 * (10 ** projectToken.decimals())
+		);
 
-	// 	// Create test addresses
-	// 	address alice = makeAddr("alice");
-	// 	address bob = makeAddr("bob");
-	// 	address charlie = makeAddr("charlie");
-	// 	address dave = makeAddr("dave");
+		// Create test addresses
+		address alice = makeAddr("alice");
+		address bob = makeAddr("bob");
+		address charlie = makeAddr("charlie");
+		address dave = makeAddr("dave");
 
-	// 	// Act:
-	// 	// 1. First staker (alice) joins at block startBlock + 50 with 750 tokens
-	// 	vm.roll(startBlock + 50);
-	// 	uint256 aliceStake = 750 * (10 ** vAsset.decimals());
-	// 	vAsset.freeMintTo(alice, aliceStake);
-	// 	vm.prank(alice);
-	// 	vAsset.approve(address(launchpool), aliceStake);
-	// 	vm.prank(alice);
-	// 	launchpool.stake(aliceStake);
+		// Act:
+		// 1. First staker (alice) joins at block startBlock + 50 with 750 tokens
+		vm.roll(startBlock);
+		uint256 aliceStake = 750 * (10 ** vAsset.decimals());
+		vAsset.freeMintTo(alice, aliceStake);
+		vm.startPrank(alice);
+		vAsset.approve(address(launchpool), aliceStake);
+		launchpool.stake(aliceStake);
+		console.log(
+			"Adjusted cumulative exchange after staking: %d",
+			launchpool.cumulativeExchangeRate()
+		);
+		vm.stopPrank();
 
-	// 	// 2. Bob joins right before first emission rate change with 300 tokens
-	// 	vm.roll(changeBlocks[1] - 1);
-	// 	uint256 bobStake = 300 * (10 ** vAsset.decimals());
-	// 	vAsset.freeMintTo(bob, bobStake);
-	// 	vm.prank(bob);
-	// 	vAsset.approve(address(launchpool), bobStake);
-	// 	vm.prank(bob);
-	// 	launchpool.stake(bobStake);
+		// 2. Bob joins right before first emission rate change with 300 tokens
+		vm.roll(changeBlocks[1] - 1);
+		uint256 bobStake = 300 * (10 ** vAsset.decimals());
+		vAsset.freeMintTo(bob, bobStake);
+		vm.startPrank(bob);
+		vAsset.approve(address(launchpool), bobStake);
+		launchpool.stake(bobStake);
+		console.log(
+			"Adjusted cumulative exchange after staking: %d",
+			launchpool.cumulativeExchangeRate()
+		);
+		vm.stopPrank();
 
-	// 	// 3. Charlie joins between rate changes with 523 tokens
-	// 	vm.roll(startBlock + (poolDurationBlocks * 1) / 2);
-	// 	uint256 charlieStake = 523 * (10 ** vAsset.decimals());
-	// 	vAsset.freeMintTo(charlie, charlieStake);
-	// 	vm.prank(charlie);
-	// 	vAsset.approve(address(launchpool), charlieStake);
-	// 	vm.prank(charlie);
-	// 	launchpool.stake(charlieStake);
+		// 3. Charlie joins at halfway through the pool with 523 tokens
+		vm.roll(startBlock + (poolDurationBlocks * 1) / 2);
+		uint256 charlieStake = 523 * (10 ** vAsset.decimals());
+		vAsset.freeMintTo(charlie, charlieStake);
+		vm.prank(charlie);
+		vAsset.approve(address(launchpool), charlieStake);
+		vm.prank(charlie);
+		launchpool.stake(charlieStake);
 
-	// 	// 4. Dave joins after second rate change with remaining allowance
-	// 	vm.roll(changeBlocks[2] + 100);
-	// 	uint256 daveStake = maxVTokensPerStaker -
-	// 		50 *
-	// 		(10 ** vAsset.decimals());
-	// 	vAsset.freeMintTo(dave, daveStake);
-	// 	vm.prank(dave);
-	// 	vAsset.approve(address(launchpool), daveStake);
-	// 	vm.prank(dave);
-	// 	launchpool.stake(daveStake);
+		// 4. Dave joins after second rate change with remaining allowance
+		vm.roll(changeBlocks[2] + 100);
+		uint256 daveStake = maxVTokensPerStaker -
+			50 *
+			(10 ** vAsset.decimals());
+		vAsset.freeMintTo(dave, daveStake);
+		vm.prank(dave);
+		vAsset.approve(address(launchpool), daveStake);
+		vm.prank(dave);
+		launchpool.stake(daveStake);
 
-	// 	// Calculate expected exchange rate segments
-	// 	// First period: startBlock+50 to first change, Alice and Bob
-	// 	uint256 period1Blocks = changeBlocks[1] - (startBlock + 50);
-	// 	uint256 period1Rate = (emissionRateChanges[0] * period1Blocks) /
-	// 		aliceStake;
+		// Calculate expected exchange rate segments
+		// First period: startBlock+50 to first change, Alice and Bob involved
+		uint256 period1Rate = ((emissionRateChanges[0] *
+			(changeBlocks[1] - 1 - startBlock)) / aliceStake) +
+			((emissionRateChanges[0] * 1) / (aliceStake + bobStake));
 
-	// 	// Second period: first change to halfway, Alice and Bob
-	// 	uint256 halfwayBlock = startBlock + (poolDurationBlocks * 1) / 2;
-	// 	uint256 period2Blocks = halfwayBlock - changeBlocks[1];
-	// 	uint256 period2TotalStake = aliceStake + bobStake;
-	// 	uint256 period2Rate = (emissionRateChanges[1] * period2Blocks) /
-	// 		period2TotalStake;
+		// Second period: first change to halfway, Alice and Bob involved
+		uint256 halfwayBlock = startBlock + poolDurationBlocks / 2;
+		uint256 period2Blocks = halfwayBlock - changeBlocks[1];
+		uint256 period2TotalStake = aliceStake + bobStake;
+		uint256 period2Rate = (emissionRateChanges[1] * period2Blocks) /
+			period2TotalStake;
 
-	// 	// Third period: halfway to second change, Alice, Bob, and Charlie
-	// 	uint256 period3Blocks = changeBlocks[2] - halfwayBlock;
-	// 	uint256 period3TotalStake = aliceStake + bobStake + charlieStake;
-	// 	uint256 period3Rate = (emissionRateChanges[1] * period3Blocks) /
-	// 		period3TotalStake;
+		// Third period: halfway to end of pool, Alice and Bob involved
+		// uint256 period3Rate = ((emissionRateChanges[1] *
+		// 	(changeBlocks[2] - halfwayBlock)) / (bobStake + aliceStake)) +
+		// 	((emissionRateChanges[2] * (endBlock - changeBlocks[2])) /
+		// 		(aliceStake + bobStake));
 
-	// 	// Fourth period: second change to end, all stakers
-	// 	uint256 period4Blocks = endBlock - changeBlocks[2];
-	// 	uint256 period4TotalStake = aliceStake +
-	// 		bobStake +
-	// 		charlieStake +
-	// 		daveStake;
-	// 	uint256 period4Rate = (emissionRateChanges[2] * period4Blocks) /
-	// 		period4TotalStake;
+		// Third period: halfway to second change, Alice, Bob, and Charlie
+		uint256 period3Blocks = changeBlocks[2] - halfwayBlock;
+		uint256 period3TotalStake = aliceStake + bobStake + charlieStake;
+		uint256 period3Rate = (emissionRateChanges[1] * period3Blocks) /
+			period3TotalStake;
 
-	// 	// Sum all periods
-	// 	uint256 expectedRate = period1Rate +
-	// 		period2Rate +
-	// 		period3Rate +
-	// 		period4Rate;
+		// Fourth period: second change to when Dave stakes. Alice, Bob and Charlie involved
+		uint256 period4Blocks = 100;
+		uint256 period4TotalStake = aliceStake + bobStake + charlieStake;
+		uint256 period4Rate = (emissionRateChanges[2] * period4Blocks) /
+			period4TotalStake;
 
-	// 	// Assert final rates
-	// 	vm.roll(endBlock);
-	// 	uint256 pendingRate = launchpool.getPendingExchangeRate();
-	// 	uint256 finalRate = launchpool.cumulativeExchangeRate() + pendingRate;
+		// Fifth period: After Dave stakes to the end of pool . Alice, Bob, Charlie, and Dave involved
+		uint256 period5Block = endBlock - (changeBlocks[2] + 100);
+		uint256 period5TotalStake = aliceStake +
+			bobStake +
+			charlieStake +
+			daveStake;
+		uint256 period5Stake = (emissionRateChanges[2] * period5Block) /
+			period5TotalStake;
 
-	// 	assertEq(
-	// 		finalRate,
-	// 		expectedRate,
-	// 		"Cumulative exchange rate at pool end different from expectation"
-	// 	);
-	// }
+		// Sum all periods
+		uint256 expectedRate = period1Rate +
+			period2Rate +
+			period3Rate +
+			period4Rate +
+			period5Stake;
+
+		// Assert final rates
+		vm.roll(endBlock);
+		uint256 pendingRate = launchpool.getPendingExchangeRate();
+		uint256 finalRate = launchpool.cumulativeExchangeRate() + pendingRate;
+
+		assertEq(
+			finalRate,
+			expectedRate,
+			"Cumulative exchange rate at pool end different from expectation"
+		);
+	}
 }
