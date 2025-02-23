@@ -11,6 +11,9 @@ contract LaunchpoolFactory is Ownable {
 	// Counter for pool IDs
 	uint256 private _nextPoolId;
 
+	// Mapping from vAsset address => is valid/not valid
+	mapping(address => bool) public acceptedVAssets;
+
 	// Mapping from pool ID => pool address
 	mapping(uint256 => address) internal _pools;
 
@@ -34,6 +37,9 @@ contract LaunchpoolFactory is Ownable {
 	//////////////////////// CONTRACT ERRORS ///////////////////////
 	///////////////////////////////////////////////////////////////
 	error InvalidPoolId();
+	error InvalidVAsset(address vAsset);
+	error InvalidBlockRange(uint128 startBlock, uint128 endBlock);
+	error InvalidArrayLengths();
 
 	//////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// MODIFIERS ///////////////////////////////
@@ -45,55 +51,49 @@ contract LaunchpoolFactory is Ownable {
 		_;
 	}
 
-	constructor() Ownable(_msgSender()) {
+	constructor(address initialVAsset) Ownable(_msgSender()) {
 		_nextPoolId = 1; // Start pool IDs from 1
+		acceptedVAssets[initialVAsset] = true;
 	}
 
 	function createPools(
-		address _projectToken,
-		address[] memory _acceptedVAssets,
-		uint128 _startBlock,
-		uint128 _endBlock,
-		uint256 _maxVTokensPerStaker,
-		uint128[] memory _changeBlocks,
-		uint256[] memory _emissionRateChanges
+		address projectToken,
+		address[] calldata vAssets,
+		uint128 startBlock,
+		uint128 endBlock,
+		uint256 maxVTokensPerStaker,
+		uint128[] calldata changeBlocks,
+		uint256[] calldata emissionRateChanges
 	) public returns (uint256[] memory poolIds) {
-		uint256 assetCount = _acceptedVAssets.length;
-		poolIds = new uint256[](assetCount);
-
-		for (uint256 i = 0; i < assetCount; i++) {
-			uint256 poolId = _nextPoolId++;
-
-			address poolAddress = address(
-				new Launchpool(
-					_msgSender(),
-					_projectToken,
-					_acceptedVAssets[i],
-					_startBlock,
-					_endBlock,
-					_maxVTokensPerStaker,
-					_changeBlocks,
-					_emissionRateChanges
-				)
-			);
-
-			_pools[poolId] = poolAddress;
-			_poolIsValid[poolAddress] = true;
-
-			emit PoolCreated(
-				poolId,
-				msg.sender,
-				_projectToken,
-				_acceptedVAssets[i],
-				poolAddress,
-				_startBlock,
-				_endBlock
-			);
-
-			poolIds[i] = poolId;
+		if (startBlock >= endBlock) {
+			revert InvalidBlockRange(startBlock, endBlock);
+		}
+		if (changeBlocks.length != emissionRateChanges.length) {
+			revert InvalidArrayLengths();
 		}
 
-		return poolIds;
+		uint256 assetCount = vAssets.length;
+		poolIds = new uint256[](assetCount);
+
+		for (uint256 i; i < assetCount; ) {
+			if (!acceptedVAssets[vAssets[i]]) {
+				revert InvalidVAsset(vAssets[i]);
+			}
+
+			poolIds[i] = _createPool(
+				projectToken,
+				vAssets[i],
+				startBlock,
+				endBlock,
+				maxVTokensPerStaker,
+				changeBlocks,
+				emissionRateChanges
+			);
+
+			unchecked {
+				++i;
+			}
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -111,5 +111,52 @@ contract LaunchpoolFactory is Ownable {
 
 	function getPoolCount() public view returns (uint256) {
 		return _nextPoolId - 1;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	//////////////////////// INTERNAL FUNCTIONS /////////////////////////////
+	////////////////////////////////////////////////////////////////////////
+
+	function _createPool(
+		address projectToken,
+		address vAsset,
+		uint128 startBlock,
+		uint128 endBlock,
+		uint256 maxVTokensPerStaker,
+		uint128[] calldata changeBlocks,
+		uint256[] calldata emissionRateChanges
+	) internal returns (uint256) {
+		uint256 poolId = _nextPoolId;
+		unchecked {
+			++_nextPoolId;
+		}
+
+		address poolAddress = address(
+			new Launchpool(
+				_msgSender(),
+				projectToken,
+				vAsset,
+				startBlock,
+				endBlock,
+				maxVTokensPerStaker,
+				changeBlocks,
+				emissionRateChanges
+			)
+		);
+
+		_pools[poolId] = poolAddress;
+		_poolIsValid[poolAddress] = true;
+
+		emit PoolCreated(
+			poolId,
+			msg.sender,
+			projectToken,
+			vAsset,
+			poolAddress,
+			startBlock,
+			endBlock
+		);
+
+		return poolId;
 	}
 }
