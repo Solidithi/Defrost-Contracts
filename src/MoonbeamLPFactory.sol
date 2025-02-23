@@ -64,6 +64,10 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 		acceptedVAssets[0xFffffFffCd0aD0EA6576B7b285295c85E94cf4c1] = true; // vFIL
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+	/////////////////////////////// FUNCTIONS ///////////////////////////////
+	////////////////////////////////////////////////////////////////////////
+
 	function createPools(
 		address projectToken,
 		address[] calldata vAssets,
@@ -102,6 +106,14 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 				++i;
 			}
 		}
+	}
+
+	function addAcceptedVAsset(address vAsset) public onlyOwner {
+		acceptedVAssets[vAsset] = true;
+	}
+
+	function removeAcceptedVAsset(address vAsset) public onlyOwner {
+		acceptedVAssets[vAsset] = false;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

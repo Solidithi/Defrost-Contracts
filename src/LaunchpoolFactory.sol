@@ -96,6 +96,14 @@ contract LaunchpoolFactory is Ownable {
 		}
 	}
 
+	function addAcceptedVAsset(address vAsset) public onlyOwner {
+		acceptedVAssets[vAsset] = true;
+	}
+
+	function removeAcceptedVAsset(address vAsset) public onlyOwner {
+		acceptedVAssets[vAsset] = false;
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////// REGULAR VIEW FUNCTIONS /////////////////////////
 	////////////////////////////////////////////////////////////////////////
