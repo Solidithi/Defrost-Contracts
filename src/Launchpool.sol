@@ -290,7 +290,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 		return
 			investor.vAssetAmount *
-			(cumulativeExchangeRate + _getCumulativeExchangeRate()) -
+			(cumulativeExchangeRate + _getPendingExchangeRate()) -
 			investor.claimOffset;
 	}
 
@@ -307,7 +307,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			return;
 		}
 
-		cumulativeExchangeRate += _getCumulativeExchangeRate();
+		cumulativeExchangeRate += _getPendingExchangeRate();
 		unchecked {
 			tickBlock = uint128(block.number);
 		}
@@ -324,7 +324,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 	}
 
-	function _getCumulativeExchangeRate() internal view returns (uint256) {
+	function _getPendingExchangeRate() internal view returns (uint256) {
 		uint256 stakedVAssetSupply = getTotalStaked();
 		if (stakedVAssetSupply == 0) {
 			return 0;
