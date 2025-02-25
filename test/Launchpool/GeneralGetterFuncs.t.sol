@@ -140,6 +140,41 @@ contract GeneralGetterFuncsTest is Test {
 		);
 	}
 
+	function testGetPoolInfo() public {
+		// Act:
+		// Deposit project tokens into the pool
+		uint256 depositAmount = projectToken.balanceOf(address(this));
+		projectToken.transfer(address(launchpool), depositAmount);
+
+		// Assert:
+		(
+			uint256 _startBlock,
+			uint256 _endBlock,
+			uint256 _totalProjectToken,
+			uint256 _emissionRate
+		) = launchpool.getPoolInfo();
+		assertEq(
+			_startBlock,
+			startBlock,
+			"Start block is not identical to that passed into constructor"
+		);
+		assertEq(
+			_endBlock,
+			endBlock,
+			"End block is not identical to that passed into constructor"
+		);
+		assertEq(
+			_totalProjectToken,
+			depositAmount,
+			"Total project token is not identical to the amount deposited into the launchpool"
+		);
+		assertEq(
+			_emissionRate,
+			emissionRateChanges[0],
+			"Emission rate is not identical to that passed into constructor"
+		);
+	}
+
 	function testGetTotalProjectToken() public {
 		// Act: Deposit project tokens to launchpool
 		uint256 depositAmount = projectToken.balanceOf(address(this));
