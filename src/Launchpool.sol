@@ -27,6 +27,10 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	uint256 public maxVAssetPerStaker;
 	uint256 public maxStakers;
 
+	// _DECIMALS represents the precision factor for internal calculations
+	// Using 1e30 allows for high precision while avoiding overflow
+	uint256 private constant _DECIMALS = 1e30;
+
 	uint256 public lastProcessedChangeBlockIndex;
 
 	/**
@@ -178,7 +182,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 		if (investor.vAssetAmount > 0) {
 			uint256 claimableProjectTokenAmount = (investor.vAssetAmount *
-				cumulativeExchangeRate) - investor.claimOffset;
+				cumulativeExchangeRate) /
+				_DECIMALS -
+				investor.claimOffset;
 
 			if (claimableProjectTokenAmount > 0) {
 				projectToken.transfer(
@@ -206,26 +212,32 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	function unstake(
 		uint256 _amount
 	) external nonZeroAmount(_amount) nonReentrant {
-
 		//Transfer withdraw amount of vAsset
 		// stakers[msg.sender].vAssetAmount -= _amount;
 		// acceptedVAsset.safeTransfer(address(msg.sender), _amount);
-		uint256 withdrawableNativeAmount = stakers[msg.sender].nativeTokenAmount;
-		uint256 withDrawableVAsset = xcmOracle.getVTokenByToken(address(acceptedVAsset), withdrawableNativeAmount); //DOT to vDOT amount
+		uint256 withdrawableNativeAmount = stakers[msg.sender]
+			.nativeTokenAmount;
+		uint256 withDrawableVAsset = xcmOracle.getVTokenByToken(
+			address(acceptedVAsset),
+			withdrawableNativeAmount
+		); //DOT to vDOT amount
 		if (withDrawableVAsset < _amount) {
 			revert VAssetAmountNotSufficient();
 		}
 
 		stakers[msg.sender].vAssetAmount -= withDrawableVAsset;
-		IERC20(acceptedVAsset).transfer(address(msg.sender), withDrawableVAsset);
-		
+		IERC20(acceptedVAsset).transfer(
+			address(msg.sender),
+			withDrawableVAsset
+		);
 
 		//Transfer Project Token reward
 		uint256 withdrawProjectToken = projectToken.balanceOf(address(this));
 		projectToken.transfer(address(msg.sender), withdrawProjectToken);
 
-		stakers[msg.sender].claimOffset = stakers[msg.sender].vAssetAmount * cumulativeExchangeRate;
-
+		stakers[msg.sender].claimOffset =
+			stakers[msg.sender].vAssetAmount *
+			cumulativeExchangeRate;
 
 		emit Unstaked(address(msg.sender), _amount);
 	}
@@ -271,7 +283,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		acceptedVAsset.transfer(platformAdminAddress, balance);
 	}
 
-	function setXCMOracleAddress(address _xcmOracleAddress) external onlyPlatformAdmin {
+	function setXCMOracleAddress(
+		address _xcmOracleAddress
+	) external onlyPlatformAdmin {
 		xcmOracle = IXCMOracle(_xcmOracleAddress);
 	}
 
@@ -330,8 +344,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		return
-			investor.vAssetAmount *
-			(cumulativeExchangeRate + _getPendingExchangeRate()) -
+			(investor.vAssetAmount *
+				(cumulativeExchangeRate + _getPendingExchangeRate())) /
+			_DECIMALS -
 			investor.claimOffset;
 	}
 
@@ -399,7 +414,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			];
 
 			accumulatedIncrease +=
-				(emissionRate * tickBlockDelta) /
+				(emissionRate * tickBlockDelta * _DECIMALS) /
 				stakedVAssetSupply;
 
 			periodStartBlock = periodEndBlock;
@@ -410,7 +425,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			? emissionRateChanges[periodEndBlock] // Get rate for the period that started at periodEndBlock
 			: emissionRateChanges[changeBlocks[i - 1]]; // Get rate after the last processed change block
 		accumulatedIncrease +=
-			(finalEmissionRate * finalDelta) /
+			(finalEmissionRate * finalDelta * _DECIMALS) /
 			stakedVAssetSupply;
 
 		return accumulatedIncrease;
