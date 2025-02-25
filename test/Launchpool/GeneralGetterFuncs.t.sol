@@ -19,7 +19,8 @@ contract GeneralGetterFuncsTest is Test {
 	uint128 poolDurationBlocks = 70;
 	uint128 startBlock = uint128(block.number) + 1;
 	uint128 endBlock = startBlock + poolDurationBlocks;
-	uint256 maxVTokensPerStaker = 1e4 * (10 ** vAsset.decimals());
+	uint256 maxVAssetPerStaker = 1e4 * (10 ** vAsset.decimals());
+	uint256 maxStakers = 0;
 
 	constructor() {
 		changeBlocks[0] = 0;
@@ -33,7 +34,7 @@ contract GeneralGetterFuncsTest is Test {
 			address(vAsset),
 			startBlock,
 			endBlock,
-			maxVTokensPerStaker,
+			maxVAssetPerStaker,
 			changeBlocks,
 			emissionRateChanges
 		);
@@ -41,7 +42,7 @@ contract GeneralGetterFuncsTest is Test {
 
 	function testGetTotalStaked() public {
 		// Act: Stake vTokens at pool start
-		uint256 stakeAmount = maxVTokensPerStaker - 1;
+		uint256 stakeAmount = maxVAssetPerStaker - 1;
 		vAsset.approve(address(launchpool), stakeAmount);
 		launchpool.stake(stakeAmount);
 
@@ -54,7 +55,7 @@ contract GeneralGetterFuncsTest is Test {
 		);
 
 		// Act 2: Stake vTokens at half of pool duration
-		uint256 stakeAmount2 = (maxVTokensPerStaker * 6) / 7;
+		uint256 stakeAmount2 = (maxVAssetPerStaker * 6) / 7;
 		vAsset.approve(address(launchpool), stakeAmount2);
 		launchpool.stake(stakeAmount2);
 
@@ -86,7 +87,7 @@ contract GeneralGetterFuncsTest is Test {
 			address(vAsset),
 			startBlock,
 			endBlock,
-			maxVTokensPerStaker,
+			maxVAssetPerStaker,
 			_changeBlocks,
 			_emissionRates
 		);
@@ -189,6 +190,19 @@ contract GeneralGetterFuncsTest is Test {
 		);
 	}
 
+	function testGetStakingRange() public {
+		// Assert:
+		(uint256 _maxVAssetPerStaker, uint256 _maxStakers) = launchpool
+			.getStakingRange();
+
+		assertEq(
+			_maxVAssetPerStaker,
+			maxVAssetPerStaker,
+			"Max vAsset per staker is not correct"
+		);
+		assertEq(_maxStakers, maxStakers, "Max stakers is not correct");
+	}
+
 	function testGetClaimableProjectToken() public {
 		// Arrange: Set up a new launchpool with multiple rate changes
 		uint128 _poolDurationBlocks = uint128(21 days / BLOCK_TIME);
@@ -214,7 +228,7 @@ contract GeneralGetterFuncsTest is Test {
 			address(vAsset),
 			_startBlock,
 			_endBlock,
-			maxVTokensPerStaker,
+			maxVAssetPerStaker,
 			_changeBlocks,
 			_emissionRates
 		);
