@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -27,9 +28,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	uint256 public maxVAssetPerStaker;
 	uint256 public maxStakers;
 
-	// _DECIMALS represents the precision factor for internal calculations
-	// Using 1e30 allows for high precision while avoiding overflow
-	uint256 private constant _DECIMALS = 1e30;
+	uint256 private immutable scalingFactor;
+	uint256 private constant MAXscalingFactor = 30;
+	uint256 private constant BASE_PRECISION = 1e30;
 
 	uint256 public lastProcessedChangeBlockIndex;
 
@@ -65,6 +66,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 	error ArraysLengthMismatch();
 	error NoEmissionRateChangesProvided();
+	error DecimalsTooHigh(); // 30 is the max
+	error InvalidTokenDecimals(); // if decimals can't be fetched
 
 	/////////////////////////////////////////////////////////////////////////////
 	//////////////////////// OTHER ERRORS //////////////////////////////////////
@@ -150,6 +153,19 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert ArraysLengthMismatch();
 		}
 
+		uint8 decimals;
+		try IERC20Metadata(_projectToken).decimals() returns (uint8 dec) {
+			decimals = dec;
+		} catch {
+			revert InvalidTokenDecimals();
+		}
+
+		if (decimals > MAXscalingFactor) {
+			revert DecimalsTooHigh();
+		}
+
+		scalingFactor = BASE_PRECISION / (10 ** decimals);
+
 		unchecked {
 			for (uint256 i = 0; i < len; ++i) {
 				emissionRateChanges[_changeBlocks[i]] = _emissionRateChanges[i];
@@ -183,7 +199,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		if (investor.vAssetAmount > 0) {
 			uint256 claimableProjectTokenAmount = (investor.vAssetAmount *
 				cumulativeExchangeRate) /
-				_DECIMALS -
+				scalingFactor -
 				investor.claimOffset;
 
 			if (claimableProjectTokenAmount > 0) {
@@ -346,7 +362,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		return
 			(investor.vAssetAmount *
 				(cumulativeExchangeRate + _getPendingExchangeRate())) /
-			_DECIMALS -
+			scalingFactor -
 			investor.claimOffset;
 	}
 
@@ -414,7 +430,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			];
 
 			accumulatedIncrease +=
-				(emissionRate * tickBlockDelta * _DECIMALS) /
+				(emissionRate * tickBlockDelta * scalingFactor) /
 				stakedVAssetSupply;
 
 			periodStartBlock = periodEndBlock;
@@ -425,7 +441,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			? emissionRateChanges[periodEndBlock] // Get rate for the period that started at periodEndBlock
 			: emissionRateChanges[changeBlocks[i - 1]]; // Get rate after the last processed change block
 		accumulatedIncrease +=
-			(finalEmissionRate * finalDelta * _DECIMALS) /
+			(finalEmissionRate * finalDelta * scalingFactor) /
 			stakedVAssetSupply;
 
 		return accumulatedIncrease;
