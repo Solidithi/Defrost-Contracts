@@ -1,6 +1,5 @@
 {
-	"dependencies": {
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"@nomiclabs/hardhat-solhint": "^4.0.1",
 		"@commitlint/cli": "^19.7.1",
@@ -24,7 +23,7 @@
 		]
 	},
 	"scripts": {
-		"prepare": "husky install",
+		"prepare": "husky",
 		"lint": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
 		"lint:fix": "solhint 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol' --fix --noPrompt",
 		"format:sol": "prettier --write * --plugin=prettier-plugin-solidity"
