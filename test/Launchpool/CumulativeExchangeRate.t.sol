@@ -40,6 +40,7 @@ contract CumulativeExchangeRateTest is Test {
 			changeBlocks,
 			emissionRateChanges
 		);
+		uint256 scalingFactor = launchpool.SCALING_FACTOR();
 
 		projectToken.transfer(
 			address(launchpool),
@@ -66,7 +67,8 @@ contract CumulativeExchangeRateTest is Test {
 		vm.roll(startBlock + poolDurationBlocks / 2);
 		actualExchangeRate = launchpool.getPendingExchangeRate();
 		uint256 expectedExchangeRate = (emissionRateChanges[0] *
-			(poolDurationBlocks / 2)) / stakeAmount;
+			(poolDurationBlocks / 2) *
+			scalingFactor) / stakeAmount;
 
 		assertEq(
 			actualExchangeRate,
@@ -96,6 +98,7 @@ contract CumulativeExchangeRateTest is Test {
 			changeBlocks,
 			emissionRateChanges
 		);
+		uint256 scalingFactor = launchpool.SCALING_FACTOR();
 
 		projectToken.transfer(
 			address(launchpool),
@@ -131,7 +134,8 @@ contract CumulativeExchangeRateTest is Test {
 		vm.roll(startBlock + poolDurationBlocks / 2);
 		actualExchangeRate = launchpool.getPendingExchangeRate();
 		uint256 expectedExchangeRate = (emissionRateChanges[0] *
-			(poolDurationBlocks / 2)) / (stakeAmount + stakeAmount2);
+			(poolDurationBlocks / 2) *
+			scalingFactor) / (stakeAmount + stakeAmount2);
 		assertEq(
 			actualExchangeRate,
 			expectedExchangeRate,
@@ -160,6 +164,7 @@ contract CumulativeExchangeRateTest is Test {
 			changeBlocks,
 			emissionRateChanges
 		);
+		uint256 scalingFactor = launchpool.SCALING_FACTOR();
 
 		projectToken.transfer(
 			address(launchpool),
@@ -187,7 +192,8 @@ contract CumulativeExchangeRateTest is Test {
 		// (there staking shouldn't has any effect on cumulativeExchangeRate yet)
 		uint256 actualExchangeRate = launchpool.cumulativeExchangeRate();
 		uint256 expectedExchangeRate = (emissionRateChanges[0] *
-			(poolDurationBlocks / 2)) / (stakeAmount);
+			(poolDurationBlocks / 2) *
+			scalingFactor) / (stakeAmount);
 		assertEq(
 			actualExchangeRate,
 			expectedExchangeRate,
@@ -221,6 +227,7 @@ contract CumulativeExchangeRateTest is Test {
 			changeBlocks,
 			emissionRateChanges
 		);
+		uint256 scalingFactor = launchpool.SCALING_FACTOR();
 
 		projectToken.transfer(
 			address(launchpool),
@@ -247,13 +254,13 @@ contract CumulativeExchangeRateTest is Test {
 		vm.roll(startBlock + poolDurationBlocks / 2);
 		uint256 pendingExchangeRate = launchpool.getPendingExchangeRate();
 		// Calculate expected rate at halfway point
-		uint256 expectedPendingExchangeRate = (// First period: from startBlock to first change
-			emissionRateChanges[0] *
-				(changeBlocks[1] - changeBlocks[0]) +
-				// Second period: from first change to halfway point
-				emissionRateChanges[1] *
-				(startBlock + (poolDurationBlocks / 2) - changeBlocks[1])) /
-				stakeAmount;
+		uint256 expectedPendingExchangeRate = ((emissionRateChanges[0] *
+			(changeBlocks[1] - changeBlocks[0]) +
+			emissionRateChanges[1] *
+			(startBlock + (poolDurationBlocks / 2) - changeBlocks[1])) *
+			scalingFactor) / // First period: from startBlock to first change
+			// Second period: from first change to halfway point
+			stakeAmount;
 		assertEq(
 			pendingExchangeRate,
 			expectedPendingExchangeRate,
@@ -265,15 +272,15 @@ contract CumulativeExchangeRateTest is Test {
 		pendingExchangeRate = launchpool.getPendingExchangeRate();
 		// Calculate expected rate at halfway point
 		expectedPendingExchangeRate =
-			(// First period: from startBlock to first change (1/3 of pool duration)
-			emissionRateChanges[0] *
+			((emissionRateChanges[0] *
 				(changeBlocks[1] - changeBlocks[0]) +
-				// Second period: from first change to second change (2/3 of pool duration)
 				emissionRateChanges[1] *
 				(changeBlocks[2] - changeBlocks[1]) +
-				// Third period: from second chagne to 6/7 of pool duration
 				emissionRateChanges[2] *
-				(startBlock + (poolDurationBlocks * 6) / 7 - changeBlocks[2])) /
+				(startBlock + (poolDurationBlocks * 6) / 7 - changeBlocks[2])) *
+				scalingFactor) / // First period: from startBlock to first change (1/3 of pool duration)
+			// Second period: from first change to second change (2/3 of pool duration)
+			// Third period: from second chagne to 6/7 of pool duration
 			stakeAmount;
 		assertEq(
 			pendingExchangeRate,
@@ -307,6 +314,7 @@ contract CumulativeExchangeRateTest is Test {
 			changeBlocks,
 			emissionRateChanges
 		);
+		uint256 scalingFactor = launchpool.SCALING_FACTOR();
 
 		projectToken.transfer(
 			address(launchpool),
@@ -337,19 +345,21 @@ contract CumulativeExchangeRateTest is Test {
 		uint256 actualCumulativeExchangeRate = launchpool
 			.cumulativeExchangeRate() + pendingExchangeRate;
 		// Calculate expected rate at pool end
-		uint256 expectedCumulativeExchangeRate = (emissionRateChanges[0] * // First period: from startBlock to first change of emission rate
+		uint256 expectedCumulativeExchangeRate = ((emissionRateChanges[0] *
 			(changeBlocks[1] - changeBlocks[0]) +
-			// Second period: from first change to when someoneElse stakes
 			emissionRateChanges[1] *
-			(startBlock + (poolDurationBlocks * 3) / 7 - changeBlocks[1])) /
+			(startBlock + (poolDurationBlocks * 3) / 7 - changeBlocks[1])) *
+			scalingFactor) / // First period: from startBlock to first change of emission rate
+			// Second period: from first change to when someoneElse stakes
 			(stakeAmount) +
 			// Third period: from when someoneElse stakes to second change of emission rate
-			(emissionRateChanges[1] *
+			((emissionRateChanges[1] *
 				(changeBlocks[2] -
 					(startBlock + (poolDurationBlocks * 3) / 7)) +
-				// Fourth period: from second chagne to the end of the pool
 				emissionRateChanges[2] *
-				(startBlock + poolDurationBlocks - changeBlocks[2])) /
+				(startBlock + poolDurationBlocks - changeBlocks[2])) *
+				scalingFactor) /
+			// Fourth period: from second chagne to the end of the pool
 			(stakeAmount + stakeAmount2);
 		assertEq(
 			actualCumulativeExchangeRate,
@@ -385,6 +395,7 @@ contract CumulativeExchangeRateTest is Test {
 			changeBlocks,
 			emissionRateChanges
 		);
+		uint256 scalingFactor = launchpool.SCALING_FACTOR();
 
 		projectToken.transfer(
 			address(launchpool),
@@ -447,33 +458,29 @@ contract CumulativeExchangeRateTest is Test {
 		// Calculate expected exchange rate segments
 		// First period: startBlock+50 to first change, Alice and Bob involved
 		uint256 period1Rate = ((emissionRateChanges[0] *
-			(changeBlocks[1] - 1 - startBlock)) / aliceStake) +
-			((emissionRateChanges[0] * 1) / (aliceStake + bobStake));
+			(changeBlocks[1] - 1 - startBlock) *
+			scalingFactor) / aliceStake) +
+			(((emissionRateChanges[0] * 1) * scalingFactor) /
+				(aliceStake + bobStake));
 
 		// Second period: first change to halfway, Alice and Bob involved
 		uint256 halfwayBlock = startBlock + poolDurationBlocks / 2;
 		uint256 period2Blocks = halfwayBlock - changeBlocks[1];
 		uint256 period2TotalStake = aliceStake + bobStake;
-		uint256 period2Rate = (emissionRateChanges[1] * period2Blocks) /
-			period2TotalStake;
-
-		// Third period: halfway to end of pool, Alice and Bob involved
-		// uint256 period3Rate = ((emissionRateChanges[1] *
-		// 	(changeBlocks[2] - halfwayBlock)) / (bobStake + aliceStake)) +
-		// 	((emissionRateChanges[2] * (endBlock - changeBlocks[2])) /
-		// 		(aliceStake + bobStake));
+		uint256 period2Rate = ((emissionRateChanges[1] * period2Blocks) *
+			scalingFactor) / period2TotalStake;
 
 		// Third period: halfway to second change, Alice, Bob, and Charlie
 		uint256 period3Blocks = changeBlocks[2] - halfwayBlock;
 		uint256 period3TotalStake = aliceStake + bobStake + charlieStake;
-		uint256 period3Rate = (emissionRateChanges[1] * period3Blocks) /
-			period3TotalStake;
+		uint256 period3Rate = ((emissionRateChanges[1] * period3Blocks) *
+			scalingFactor) / period3TotalStake;
 
 		// Fourth period: second change to when Dave stakes. Alice, Bob and Charlie involved
 		uint256 period4Blocks = 100;
 		uint256 period4TotalStake = aliceStake + bobStake + charlieStake;
-		uint256 period4Rate = (emissionRateChanges[2] * period4Blocks) /
-			period4TotalStake;
+		uint256 period4Rate = ((emissionRateChanges[2] * period4Blocks) *
+			scalingFactor) / period4TotalStake;
 
 		// Fifth period: After Dave stakes to the end of pool . Alice, Bob, Charlie, and Dave involved
 		uint256 period5Block = endBlock - (changeBlocks[2] + 100);
@@ -481,8 +488,8 @@ contract CumulativeExchangeRateTest is Test {
 			bobStake +
 			charlieStake +
 			daveStake;
-		uint256 period5Stake = (emissionRateChanges[2] * period5Block) /
-			period5TotalStake;
+		uint256 period5Stake = ((emissionRateChanges[2] * period5Block) *
+			scalingFactor) / period5TotalStake;
 
 		// Sum all periods
 		uint256 expectedRate = period1Rate +
