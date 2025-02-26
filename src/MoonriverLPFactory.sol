@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Launchpool } from "./Launchpool.sol";
 
-contract MoonbeamLaunchpoolFactory is Ownable {
+contract MoonriverLaunchpoolFactory is Ownable {
 	/////////////////////////////////////////////////////////////////
 	//////////////////////// CONTRACT STATES ///////////////////////
 	///////////////////////////////////////////////////////////////
@@ -12,7 +12,7 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 	uint256 private _nextPoolId;
 
 	// Mapping from vAsset address => is valid/not valid
-	mapping(address => bool) public acceptedVAssets;
+	mapping(address => address) public vAssetToAsset;
 
 	// Mapping from pool ID => pool address
 	mapping(uint256 => address) internal _pools;
@@ -28,6 +28,7 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 		address indexed projectOwner,
 		address indexed projectToken,
 		address acceptedVAsset,
+		address acceptedNativeAsset,
 		address poolAddress,
 		uint256 startBlock,
 		uint256 endBlock
@@ -51,25 +52,18 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 		_;
 	}
 
-	/**
-	 * @dev vAsset addresses last updated on 23rd Feb 2022
-	 */
 	constructor() Ownable(_msgSender()) {
 		_nextPoolId = 1; // Start pool IDs from 1
-
 		// Moonbeam vAssets that are accepted
-		acceptedVAssets[0xFfFfFfff00000000000000010000000000000008] = true; // vDOT
-		acceptedVAssets[0xfFFFFFFF00000000000000010000000000000015] = true; // vGLMR
-		acceptedVAssets[0xfffFffff00000000000000010000000000000010] = true; // vASTR
+		vAssetToAsset[0xFFffffff3646A00f78caDf8883c5A2791BfCDdc4] = 0xFFfFFfFFF075423be54811EcB478e911F22dDe7D; // vBNC -> xcBNC
+		vAssetToAsset[0xFFffffFFC6DEec7Fc8B11A2C8ddE9a59F8c62EFe] = 0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080; // vKSM -> xcKSM
+		vAssetToAsset[0xfFfffFfF98e37bF6a393504b5aDC5B53B4D0ba11] = 0x0000000000000000000000000000000000000802; // vMVR -> MVR
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	/////////////////////////////// FUNCTIONS ///////////////////////////////
-	////////////////////////////////////////////////////////////////////////
 
 	function createPools(
 		address projectToken,
 		address[] calldata vAssets,
+		address[] calldata nativeAssets,
 		uint128 startBlock,
 		uint128 endBlock,
 		uint256 maxVTokensPerStaker,
@@ -87,13 +81,14 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 		poolIds = new uint256[](assetCount);
 
 		for (uint256 i; i < assetCount; ) {
-			if (!acceptedVAssets[vAssets[i]]) {
+			if (vAssetToAsset[vAssets[i]] == address(0)) {
 				revert InvalidVAsset(vAssets[i]);
 			}
 
 			poolIds[i] = _createPool(
 				projectToken,
 				vAssets[i],
+				nativeAssets[i],
 				startBlock,
 				endBlock,
 				maxVTokensPerStaker,
@@ -107,12 +102,15 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 		}
 	}
 
-	function addAcceptedVAsset(address vAsset) public onlyOwner {
-		acceptedVAssets[vAsset] = true;
+	function addAcceptedVAsset(
+		address vAsset,
+		address nativeAsset
+	) public onlyOwner {
+		vAssetToAsset[vAsset] = nativeAsset;
 	}
 
 	function removeAcceptedVAsset(address vAsset) public onlyOwner {
-		acceptedVAssets[vAsset] = false;
+		vAssetToAsset[vAsset] = address(0);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -139,6 +137,7 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 	function _createPool(
 		address projectToken,
 		address vAsset,
+		address nativeAsset,
 		uint128 startBlock,
 		uint128 endBlock,
 		uint256 maxVTokensPerStaker,
@@ -155,6 +154,7 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 				_msgSender(),
 				projectToken,
 				vAsset,
+				nativeAsset,
 				startBlock,
 				endBlock,
 				maxVTokensPerStaker,
@@ -171,6 +171,7 @@ contract MoonbeamLaunchpoolFactory is Ownable {
 			msg.sender,
 			projectToken,
 			vAsset,
+			nativeAsset,
 			poolAddress,
 			startBlock,
 			endBlock

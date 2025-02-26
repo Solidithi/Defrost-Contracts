@@ -12,6 +12,7 @@ contract CumulativeExchangeRateTest is Test {
 	// Default pool init values, use different values in test cases if needed
 	MockERC20 public projectToken = new MockERC20("PROJECT", "PRO");
 	MockERC20 public vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
+	MockERC20 public nativeAsset = new MockERC20("Native Imaginary", "nImaginary");
 	MockLaunchpool public launchpool;
 	uint128[] changeBlocks = new uint128[](1);
 	uint256[] emissionRateChanges = new uint256[](1);
@@ -30,6 +31,7 @@ contract CumulativeExchangeRateTest is Test {
 			address(this),
 			address(projectToken),
 			address(vAsset),
+			address(nativeAsset),
 			startBlock,
 			endBlock,
 			maxVTokensPerStaker,

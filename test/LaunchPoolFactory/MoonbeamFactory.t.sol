@@ -17,6 +17,11 @@ contract CreateLaunchPoolTest is Test {
 	IERC20 vASTR = IERC20(0xFffFffff55C732C47639231a4C4373245763d26E);
 	IERC20 vFIL = IERC20(0xFffffFffCd0aD0EA6576B7b285295c85E94cf4c1);
 
+	IERC20 xcDOT = IERC20(0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080);
+	IERC20 GMLR = IERC20(0x0000000000000000000000000000000000000802);
+	IERC20 ASTR = IERC20(0xFfFFFfffA893AD19e540E172C10d78D4d479B5Cf);
+	IERC20 FIL = IERC20(0xfFFfFFFF6C57e17D210DF507c82807149fFd70B2);
+
 	function setUp() public {
 		projectToken = new MockERC20("PROJECT", "PRO");
 		poolFactory = new MoonbeamLaunchpoolFactory();
@@ -26,6 +31,9 @@ contract CreateLaunchPoolTest is Test {
 		// Arrange
 		address[] memory acceptedVAssets = new address[](1);
 		acceptedVAssets[0] = address(vDOT);
+
+		address[] memory acceptedNativeAssets = new address[](1);
+		acceptedNativeAssets[0] = address(xcDOT);
 
 		uint128[] memory changeBlocks = new uint128[](2);
 		changeBlocks[0] = 1110;
@@ -39,6 +47,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,
@@ -60,6 +69,12 @@ contract CreateLaunchPoolTest is Test {
 		acceptedVAssets[2] = address(vASTR);
 		acceptedVAssets[3] = address(vFIL);
 
+		address[] memory acceptedNativeAssets = new address[](4);
+		acceptedNativeAssets[0] = address(xcDOT);
+		acceptedNativeAssets[1] = address(GMLR);
+		acceptedNativeAssets[2] = address(ASTR);
+		acceptedNativeAssets[3] = address(FIL);
+
 		uint128[] memory changeBlocks = new uint128[](2);
 		changeBlocks[0] = 1110;
 		changeBlocks[1] = 3000;
@@ -72,6 +87,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,
@@ -91,6 +107,9 @@ contract CreateLaunchPoolTest is Test {
 		address[] memory acceptedVAssets = new address[](1);
 		acceptedVAssets[0] = address(vDOT);
 
+		address[] memory acceptedNativeAssets = new address[](1);
+		acceptedNativeAssets[0] = address(xcDOT);
+
 		uint128[] memory changeBlocks = new uint128[](2);
 		changeBlocks[0] = 1110;
 		changeBlocks[1] = 3000;
@@ -102,6 +121,10 @@ contract CreateLaunchPoolTest is Test {
 		// Pool 2
 		address[] memory acceptedVAssets1 = new address[](1);
 		acceptedVAssets1[0] = address(vASTR);
+
+		address[] memory acceptedNativeAssets1 = new address[](1);
+		acceptedNativeAssets1[0] = address(ASTR);
+
 		uint128[] memory changeBlocks1 = new uint128[](2);
 
 		changeBlocks1[0] = 1115;
@@ -115,6 +138,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,
@@ -125,6 +149,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds1 = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets1,
+			acceptedNativeAssets1,
 			1000,
 			5000,
 			20000,
@@ -146,6 +171,10 @@ contract CreateLaunchPoolTest is Test {
 		acceptedVAssets[0] = address(vDOT);
 		acceptedVAssets[1] = address(0x0000002);
 
+		address[] memory acceptedNativeAssets = new address[](2);
+		acceptedNativeAssets[0] = address(xcDOT);
+		acceptedNativeAssets[1] = address(0x0000002);
+
 		uint128[] memory changeBlocks = new uint128[](2);
 		changeBlocks[0] = 1110;
 		changeBlocks[1] = 3000;
@@ -158,6 +187,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,
@@ -171,6 +201,9 @@ contract CreateLaunchPoolTest is Test {
 		address[] memory acceptedVAssets = new address[](1);
 		acceptedVAssets[0] = address(vDOT);
 
+		address[] memory acceptedNativeAssets = new address[](1);
+		acceptedNativeAssets[0] = address(xcDOT);
+
 		uint128[] memory changeBlocks = new uint128[](2);
 		changeBlocks[0] = 1110;
 		changeBlocks[1] = 3000;
@@ -183,6 +216,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			5000,
 			1000,
 			20000,
@@ -195,6 +229,9 @@ contract CreateLaunchPoolTest is Test {
 		// Arrange: Set up the pool factory and project token
 		address[] memory acceptedVAssets = new address[](1);
 		acceptedVAssets[0] = address(vDOT);
+
+		address[] memory acceptedNativeAssets = new address[](1);
+		acceptedNativeAssets[0] = address(xcDOT);
 
 		uint128[] memory changeBlock = new uint128[](1);
 		changeBlock[0] = 1110;
@@ -215,6 +252,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,
@@ -226,6 +264,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds1 = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,
@@ -237,13 +276,14 @@ contract CreateLaunchPoolTest is Test {
 	function testAddAcceptedVAsset() public {
 		// Arrange
 		IERC20 vCAFE = IERC20(0xCAfEcAfeCAfECaFeCaFecaFecaFECafECafeCaFe);
+		IERC20 CAFE = IERC20(0xb1542dEfE423c8372a90E05086587C569809cafe);
 
 		// Act: Add a new vAsset
-		poolFactory.addAcceptedVAsset(address(vCAFE));
+		poolFactory.addAcceptedVAsset(address(vCAFE), address(CAFE));
 
 		// Assert: Check if the vAsset is added
 		assertTrue(
-			poolFactory.acceptedVAssets(address(vCAFE)),
+			poolFactory.vAssetToAsset(address(vCAFE)) == address(CAFE),
 			"vCAFE is not added"
 		);
 	}
@@ -253,8 +293,9 @@ contract CreateLaunchPoolTest is Test {
 		poolFactory.removeAcceptedVAsset(address(vDOT));
 
 		// Assert
-		assertFalse(
-			poolFactory.acceptedVAssets(address(vDOT)),
+		assertEq(
+			poolFactory.vAssetToAsset(address(vDOT)) == address(0),
+			true,
 			"vDOT is not removed"
 		);
 	}
@@ -265,6 +306,9 @@ contract CreateLaunchPoolTest is Test {
 
 		address[] memory acceptedVAssets = new address[](1);
 		acceptedVAssets[0] = address(vDOT);
+
+		address[] memory acceptedNativeAssets = new address[](1);
+		acceptedNativeAssets[0] = address(xcDOT);
 
 		uint128[] memory changeBlocks = new uint128[](2);
 		changeBlocks[0] = 1110;
@@ -278,6 +322,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,

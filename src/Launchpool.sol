@@ -40,6 +40,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 	IERC20 public projectToken;
 	IERC20 public acceptedVAsset;
+	IERC20 public acceptedNativeAsset; //For XCMOracle call
 	IXCMOracle public xcmOracle =
 		IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
 
@@ -123,6 +124,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		address _projectOwner,
 		address _projectToken,
 		address _acceptedVAsset,
+		address _acceptedNativeAsset,
 		uint128 _startBlock,
 		uint128 _endBlock,
 		uint256 _maxVAssetPerStaker,
@@ -156,6 +158,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		platformAdminAddress = msg.sender;
 		projectToken = IERC20(_projectToken);
 		acceptedVAsset = IERC20(_acceptedVAsset);
+		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
 		startBlock = _startBlock;
 		endBlock = _endBlock;
 		maxVAssetPerStaker = _maxVAssetPerStaker;
@@ -187,6 +190,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 				);
 			}
 		}
+
+		uint256 nativeAmount = xcmOracle.getTokenByVToken(
+			address(acceptedVAsset),
+			_amount
+		);
+
+		investor.nativeTokenAmount += nativeAmount;
 
 		investor.vAssetAmount += _amount;
 		acceptedVAsset.transferFrom(

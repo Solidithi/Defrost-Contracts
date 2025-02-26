@@ -11,17 +11,22 @@ contract CreateLaunchPoolTest is Test {
 	LaunchpoolFactory public poolFactory;
 	MockERC20 public projectToken;
 	MockERC20 public vAsset;
+	MockERC20 public nativeAsset;
 
 	function setUp() public {
 		projectToken = new MockERC20("PROJECT", "PRO");
 		vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
-		poolFactory = new LaunchpoolFactory(address(vAsset));
+		nativeAsset = new MockERC20("Native Imaginary", "Imaginary");
+		poolFactory = new LaunchpoolFactory(address(vAsset), address(nativeAsset));
 	}
 
 	function testCreateSinglePool() public {
 		// Arrange
 		address[] memory acceptedVAssets = new address[](1);
 		acceptedVAssets[0] = address(vAsset);
+
+		address[] memory acceptedNativeAssets = new address[](1);
+		acceptedNativeAssets[0] = address(nativeAsset);
 
 		uint128[] memory changeBlocks = new uint128[](2);
 		changeBlocks[0] = 1110;
@@ -35,6 +40,7 @@ contract CreateLaunchPoolTest is Test {
 		uint256[] memory poolIds = poolFactory.createPools(
 			address(projectToken),
 			acceptedVAssets,
+			acceptedNativeAssets,
 			1000,
 			5000,
 			20000,

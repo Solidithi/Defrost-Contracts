@@ -12,7 +12,7 @@ contract LaunchpoolFactory is Ownable {
 	uint256 private _nextPoolId;
 
 	// Mapping from vAsset address => is valid/not valid
-	mapping(address => bool) public acceptedVAssets;
+	mapping(address => address) public vAssetToAsset;
 
 	// Mapping from pool ID => pool address
 	mapping(uint256 => address) internal _pools;
@@ -28,6 +28,7 @@ contract LaunchpoolFactory is Ownable {
 		address indexed projectOwner,
 		address indexed projectToken,
 		address acceptedVAsset,
+		address acceptedNativeAsset,
 		address poolAddress,
 		uint256 startBlock,
 		uint256 endBlock
@@ -51,14 +52,15 @@ contract LaunchpoolFactory is Ownable {
 		_;
 	}
 
-	constructor(address initialVAsset) Ownable(_msgSender()) {
+	constructor(address initialVAsset, address nativeAsset) Ownable(_msgSender()) {
 		_nextPoolId = 1; // Start pool IDs from 1
-		acceptedVAssets[initialVAsset] = true;
+		vAssetToAsset[initialVAsset] = nativeAsset;
 	}
 
 	function createPools(
 		address projectToken,
 		address[] calldata vAssets,
+		address[] calldata nativeAssets,
 		uint128 startBlock,
 		uint128 endBlock,
 		uint256 maxVTokensPerStaker,
@@ -76,13 +78,14 @@ contract LaunchpoolFactory is Ownable {
 		poolIds = new uint256[](assetCount);
 
 		for (uint256 i; i < assetCount; ) {
-			if (!acceptedVAssets[vAssets[i]]) {
+			if (vAssetToAsset[vAssets[i]] == address(0)) {
 				revert InvalidVAsset(vAssets[i]);
 			}
 
 			poolIds[i] = _createPool(
 				projectToken,
 				vAssets[i],
+				nativeAssets[i],
 				startBlock,
 				endBlock,
 				maxVTokensPerStaker,
@@ -96,12 +99,12 @@ contract LaunchpoolFactory is Ownable {
 		}
 	}
 
-	function addAcceptedVAsset(address vAsset) public onlyOwner {
-		acceptedVAssets[vAsset] = true;
+	function addAcceptedVAsset(address vAsset, address nativeAsset) public onlyOwner {
+		vAssetToAsset[vAsset] = nativeAsset;
 	}
 
 	function removeAcceptedVAsset(address vAsset) public onlyOwner {
-		acceptedVAssets[vAsset] = false;
+		vAssetToAsset[vAsset] = address(0);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -128,6 +131,7 @@ contract LaunchpoolFactory is Ownable {
 	function _createPool(
 		address projectToken,
 		address vAsset,
+		address nativeAsset,
 		uint128 startBlock,
 		uint128 endBlock,
 		uint256 maxVTokensPerStaker,
@@ -144,6 +148,7 @@ contract LaunchpoolFactory is Ownable {
 				_msgSender(),
 				projectToken,
 				vAsset,
+				nativeAsset,
 				startBlock,
 				endBlock,
 				maxVTokensPerStaker,
@@ -160,6 +165,7 @@ contract LaunchpoolFactory is Ownable {
 			msg.sender,
 			projectToken,
 			vAsset,
+			nativeAsset,
 			poolAddress,
 			startBlock,
 			endBlock

@@ -12,6 +12,7 @@ contract CumulativeExchangeRateTest is Test {
 	MockLaunchpool public launchpool;
 	MockERC20 public projectToken;
 	MockERC20 public vAsset;
+	MockERC20 public nativeAsset;
 	uint256 constant BLOCK_TIME = 6 seconds;
 
 	function setUp() public {
@@ -34,6 +35,7 @@ contract CumulativeExchangeRateTest is Test {
 			address(this),
 			address(projectToken),
 			address(vAsset),
+			address(nativeAsset),
 			startBlock,
 			endBlock,
 			maxVTokensPerStaker,
@@ -90,6 +92,7 @@ contract CumulativeExchangeRateTest is Test {
 			address(this),
 			address(projectToken),
 			address(vAsset),
+			address(nativeAsset),
 			startBlock,
 			endBlock,
 			maxVTokensPerStaker,
@@ -154,6 +157,7 @@ contract CumulativeExchangeRateTest is Test {
 			address(this),
 			address(projectToken),
 			address(vAsset),
+			address(nativeAsset),
 			startBlock,
 			endBlock,
 			maxVTokensPerStaker,
@@ -215,6 +219,7 @@ contract CumulativeExchangeRateTest is Test {
 			address(this),
 			address(projectToken),
 			address(vAsset),
+			address(nativeAsset),
 			startBlock,
 			endBlock,
 			maxVTokensPerStaker,
@@ -301,6 +306,7 @@ contract CumulativeExchangeRateTest is Test {
 			address(this),
 			address(projectToken),
 			address(vAsset),
+			address(nativeAsset),
 			startBlock,
 			endBlock,
 			maxVTokensPerStaker,
@@ -379,6 +385,7 @@ contract CumulativeExchangeRateTest is Test {
 			address(this),
 			address(projectToken),
 			address(vAsset),
+			address(nativeAsset),
 			startBlock,
 			endBlock,
 			maxVTokensPerStaker,
