@@ -6,6 +6,7 @@ import { Launchpool } from "@src/Launchpool.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
 
 import { MockXCMOracle } from "../mocks/MockXCMOracle.sol";
+import { MockERC20 } from "../mocks/MockERC20.sol";
 
 contract MockLaunchpool is Launchpool {
 	constructor(
