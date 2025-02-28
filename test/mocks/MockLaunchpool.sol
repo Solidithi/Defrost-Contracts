@@ -42,4 +42,8 @@ contract MockLaunchpool is Launchpool {
 	function getPendingExchangeRate() public view returns (uint256) {
 		return _getPendingExchangeRate();
 	}
+
+	function getClaimableProjectToken() public view returns (uint256) {
+		return getClaimableProjectToken();
+	}
 }

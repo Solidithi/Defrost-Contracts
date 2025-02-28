@@ -12,6 +12,7 @@ contract MockXCMOracle {
 
 	constructor() {
 		// DECIMALS = 1;
+		EXCHANGE_RATE = 15;
 		
 	}
 
