@@ -214,7 +214,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		uint256 nativeAmount = xcmOracle.getTokenByVToken(
-			address(acceptedVAsset),
+			address(acceptedNativeAsset),
 			_amount
 		);
 
@@ -244,19 +244,27 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 withdrawableNativeAmount = stakers[msg.sender]
 			.nativeTokenAmount;
 		uint256 withDrawableVAsset = xcmOracle.getVTokenByToken(
-			address(acceptedVAsset),
+			address(acceptedNativeAsset),
 			withdrawableNativeAmount
 		); //DOT to vDOT amount
-		if (withDrawableVAsset < _amount) {
+		if (
+			withDrawableVAsset >
+			_amount * IERC20Metadata(address(acceptedNativeAsset)).decimals()
+		) {
 			revert VAssetAmountNotSufficient();
 		}
 
-		stakers[msg.sender].vAssetAmount -= withDrawableVAsset;
-		acceptedVAsset.safeTransfer(address(msg.sender), withDrawableVAsset);
+		stakers[msg.sender].nativeTokenAmount -= withDrawableVAsset;
+		acceptedVAsset.transfer(address(msg.sender), withDrawableVAsset);
 
 		//Transfer Project Token reward
-		uint256 withdrawProjectToken = projectToken.balanceOf(address(this));
-		projectToken.safeTransfer(address(msg.sender), withdrawProjectToken);
+		uint256 withdrawableProjectTokenAmount = getClaimableProjectToken(
+			msg.sender
+		);
+		projectToken.transfer(
+			address(msg.sender),
+			withdrawableProjectTokenAmount
+		);
 
 		stakers[msg.sender].claimOffset =
 			stakers[msg.sender].vAssetAmount *
@@ -464,5 +472,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			return 0;
 		}
 		return endBlock - from;
+	}
+
+	function getInvestorTotalVAssetStaked() public view returns (uint256) {
+		return stakers[msg.sender].vAssetAmount;
 	}
 }
