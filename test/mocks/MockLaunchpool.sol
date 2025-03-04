@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.26;
 
-import { Launchpool } from "@src/Launchpool.sol";
+import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 
 contract MockLaunchpool is Launchpool {
 	constructor(
