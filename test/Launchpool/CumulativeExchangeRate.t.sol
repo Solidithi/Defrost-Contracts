@@ -20,7 +20,7 @@ contract CumulativeExchangeRateTest is Test {
 		vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
 	}
 
-	function testConstantEmissionRateWithOneStaker() public {
+	function test_constant_emission_rate_with_one_staker() public {
 		// Arrange: deploy pool
 		uint128[] memory changeBlocks = new uint128[](1);
 		changeBlocks[0] = 0;
@@ -79,7 +79,9 @@ contract CumulativeExchangeRateTest is Test {
 		);
 	}
 
-	function testConstantEmissionRateWithTwoStakersAtSameBlock() public {
+	function test_constant_emission_rate_with_two_stakers_at_the_same_block()
+		public
+	{
 		// Arrange: deploy pool
 		uint128[] memory changeBlocks = new uint128[](1);
 		changeBlocks[0] = 0;
@@ -146,7 +148,9 @@ contract CumulativeExchangeRateTest is Test {
 		);
 	}
 
-	function testConstantEmissionRateWithTwoStakersAtDifferentBlocks() public {
+	function test_constant_emission_rate_with_two_stakers_at_different_blocks()
+		public
+	{
 		// Arrange: deploy pool
 		uint128[] memory changeBlocks = new uint128[](1);
 		changeBlocks[0] = 0;
@@ -206,7 +210,7 @@ contract CumulativeExchangeRateTest is Test {
 		vm.stopPrank(); // return to original investor/signer
 	}
 
-	function testVariableEmissionRateWithOneStaker() public {
+	function test_variable_emission_rate_with_one_staker() public {
 		// Arrange: deploy pool
 		uint128 poolDurationBlocks = uint128(14 days / BLOCK_TIME);
 		uint128 startBlock = uint128(block.number) + 1;
@@ -294,7 +298,9 @@ contract CumulativeExchangeRateTest is Test {
 		);
 	}
 
-	function testVariableEmissionRateWithTwoStakersAtDifferentBlocks() public {
+	function test_variable_emission_rate_with_two_stakers_at_different_blocks()
+		public
+	{
 		// Arrange: deploy pool
 		uint128 poolDurationBlocks = uint128(14 days / BLOCK_TIME);
 		uint128 startBlock = uint128(block.number) + 1;
@@ -374,7 +380,9 @@ contract CumulativeExchangeRateTest is Test {
 		);
 	}
 
-	function testVariableEmissionRateWith4StakersAtDifferentBlocks() public {
+	function test_variable_emission_rate_with_4_stakers_at_different_blocks()
+		public
+	{
 		// Arrange: deploy pool with same config as previous tests
 		uint128 poolDurationBlocks = uint128(14 days / BLOCK_TIME);
 		uint128 startBlock = uint128(block.number) + 1; // Start later to allow pre-start actions

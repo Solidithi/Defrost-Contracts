@@ -12,7 +12,8 @@ contract GeneralGetterFuncsTest is Test {
 	// Default pool init values, use different values in test cases if needed
 	MockERC20 public projectToken = new MockERC20("PROJECT", "PRO");
 	MockERC20 public vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
-	MockERC20 public nativeAsset = new MockERC20("Native Imaginary", "nImaginary");
+	MockERC20 public nativeAsset =
+		new MockERC20("Native Imaginary", "nImaginary");
 	MockLaunchpool public launchpool;
 	uint128[] changeBlocks = new uint128[](1);
 	uint256[] emissionRateChanges = new uint256[](1);
@@ -42,7 +43,7 @@ contract GeneralGetterFuncsTest is Test {
 		);
 	}
 
-	function testGetTotalStaked() public {
+	function test_get_total_staked() public {
 		// Act: Stake vTokens at pool start
 		uint256 stakeAmount = maxVAssetPerStaker - 1;
 		vAsset.approve(address(launchpool), stakeAmount);
@@ -70,7 +71,7 @@ contract GeneralGetterFuncsTest is Test {
 		);
 	}
 
-	function testGetEmissionRate() public {
+	function test_get_emission_rate() public {
 		// Arrange: Set up a new launchpool with multiple rate changes
 		uint128[] memory _changeBlocks = new uint128[](3);
 		uint256[] memory _emissionRates = new uint256[](3);
@@ -144,7 +145,7 @@ contract GeneralGetterFuncsTest is Test {
 		);
 	}
 
-	function testGetPoolInfo() public {
+	function test_get_pool_info() public {
 		// Act:
 		// Deposit project tokens into the pool
 		uint256 depositAmount = projectToken.balanceOf(address(this));
@@ -179,7 +180,7 @@ contract GeneralGetterFuncsTest is Test {
 		);
 	}
 
-	function testGetTotalProjectToken() public {
+	function test_get_total_project_token() public {
 		// Act: Deposit project tokens to launchpool
 		uint256 depositAmount = projectToken.balanceOf(address(this));
 		projectToken.transfer(address(launchpool), depositAmount);
@@ -193,7 +194,7 @@ contract GeneralGetterFuncsTest is Test {
 		);
 	}
 
-	function testGetStakingRange() public {
+	function test_get_staking_range() public {
 		// Assert:
 		(uint256 _maxVAssetPerStaker, uint256 _maxStakers) = launchpool
 			.getStakingRange();
@@ -206,7 +207,7 @@ contract GeneralGetterFuncsTest is Test {
 		assertEq(_maxStakers, maxStakers, "Max stakers is not correct");
 	}
 
-	function testGetClaimableProjectToken() public {
+	function test_get_claimable_project_token() public {
 		// Arrange: Set up a new launchpool with multiple rate changes
 		uint128 _poolDurationBlocks = uint128(21 days / BLOCK_TIME);
 		uint128 _startBlock = uint128(block.number) + 1;
