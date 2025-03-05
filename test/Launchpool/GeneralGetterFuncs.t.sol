@@ -50,7 +50,7 @@ contract GeneralGetterFuncsTest is Test {
 		launchpool.stake(stakeAmount);
 
 		// Assert: Check total staked amount
-		uint256 retrievedStakeAmount = launchpool.getTotalStaked();
+		uint256 retrievedStakeAmount = launchpool.getTotalVAssetStaked();
 		assertEq(
 			retrievedStakeAmount,
 			stakeAmount,
@@ -63,7 +63,7 @@ contract GeneralGetterFuncsTest is Test {
 		launchpool.stake(stakeAmount2);
 
 		// Assert 2: Check total staked amount
-		retrievedStakeAmount = launchpool.getTotalStaked();
+		retrievedStakeAmount = launchpool.getTotalVAssetStaked();
 		assertEq(
 			retrievedStakeAmount,
 			stakeAmount + stakeAmount2,
@@ -283,38 +283,48 @@ contract GeneralGetterFuncsTest is Test {
 		);
 
 		// Calculate expected claimable project token amount for Alice
+		uint256 aliceNativeStake = launchpool.getStakerNativeAmount(alice);
+		uint256 bobNativeStake = launchpool.getStakerNativeAmount(bob);
+		uint256 daveNativeStake = launchpool.getStakerNativeAmount(dave);
+		uint256 totalNativeStake = aliceNativeStake +
+			bobNativeStake +
+			daveNativeStake;
+
+		// Calculate expected claimable project token amount for Alice
 		uint256 period1Blocks = _changeBlocks[1] - (_startBlock + 100);
 		uint256 period1ExchangeRate = ((_emissionRates[0] * period1Blocks) *
-			scalingFactor) / aliceStake;
+			scalingFactor) / aliceNativeStake;
 
 		uint256 period2Blocks = _changeBlocks[2] - _changeBlocks[1];
 		uint256 period2ExchangeRate = ((_emissionRates[1] * period2Blocks) *
-			scalingFactor) / aliceStake;
+			scalingFactor) / aliceNativeStake;
 
 		uint256 period3Blocks = 1;
 		uint256 period3ExchangeRate = ((_emissionRates[2] * period3Blocks) *
-			scalingFactor) / aliceStake;
+			scalingFactor) / aliceNativeStake;
 
 		// Bob joins here
 		uint256 period4Blocks = _changeBlocks[3] - 1 - (_changeBlocks[2] + 1);
 		uint256 period4ExchangeRate = ((_emissionRates[2] * period4Blocks) *
-			scalingFactor) / (aliceStake + bobStake);
+			scalingFactor) / (aliceNativeStake + bobNativeStake);
 
 		// Dave joins here
 		uint256 period5Blocks = 1;
 		uint256 period5ExchangeRate = ((_emissionRates[2] * period5Blocks) *
-			scalingFactor) / (aliceStake + daveStake + bobStake);
+			scalingFactor) /
+			(aliceNativeStake + bobNativeStake + daveNativeStake);
 
 		uint256 period6Blocks = _endBlock - _changeBlocks[3];
 		uint256 period6ExchangeRate = ((_emissionRates[3] * period6Blocks) *
-			scalingFactor) / (aliceStake + daveStake + bobStake);
+			scalingFactor) /
+			(aliceNativeStake + bobNativeStake + daveNativeStake);
 
 		uint256 expectedAliceClaimables = ((period1ExchangeRate +
 			period2ExchangeRate +
 			period3ExchangeRate +
 			period4ExchangeRate +
 			period5ExchangeRate +
-			period6ExchangeRate) * aliceStake) / scalingFactor;
+			period6ExchangeRate) * aliceNativeStake) / scalingFactor;
 		assertEq(
 			actualAliceClaimables,
 			expectedAliceClaimables,
