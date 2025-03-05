@@ -420,6 +420,12 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			investor.claimOffset;
 	}
 
+	function getStakerNativeAmount(
+		address _investor
+	) public view returns (uint256) {
+		return stakers[_investor].amount;
+	}
+
 	function _tick() internal {
 		if (block.number <= tickBlock) {
 			return;
