@@ -13,30 +13,27 @@ contract DeployProjectHub is Context, Script {
 
 	function run(address[] calldata _vAssets) external {
 		setVAssets(_vAssets);
-		deployProjectHubProxy();
+		deployProjectHub();
 	}
 
 	function setVAssets(address[] memory _vAssets) public {
 		vAssets = _vAssets;
 	}
 
-	function deployProjectHubProxy() public returns (address proxyAddress) {
-		proxyAddress = Upgrades.deployUUPSProxy(
-			"ProjectHubUpgradeable.sol:ProjectHubUpgradeable",
-			abi.encodeCall(
-				ProjectHubUpgradeable.initialize,
-				(_msgSender(), vAssets)
-			)
-		);
+	/**
+	 * @notice for testing purpose only
+	 */
+	function deployProjectHub() public returns (address projectHubAddress) {
+		projectHubAddress = address(new ProjectHubUpgradeable());
 
 		console.log(
-			"Deployed UUPS ProjectHubUpgradable at address: %s",
-			proxyAddress
+			"Deployed ProjectHubUpgradable at address: %s",
+			projectHubAddress
 		);
-		return proxyAddress;
+		return projectHubAddress;
 	}
 
 	function run() public {
-		deployProjectHubProxy();
+		deployProjectHub();
 	}
 }
