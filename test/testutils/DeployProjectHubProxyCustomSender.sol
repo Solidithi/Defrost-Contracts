@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { DeployProjectHub } from "../../script/DeployProjectHub.sol";
+import { DeployProjectHubProxy } from "../../script/DeployProjectHubProxy.sol";
 
-contract DeployProjectHubModifiedSender is DeployProjectHub {
+contract DeployProjectHubProxyCustomSender is DeployProjectHubProxy {
 	address sender;
 
-	constructor(address[] memory _vAssets, address _sender) DeployProjectHub() {
+	constructor(
+		address[] memory _vAssets,
+		address _sender
+	) DeployProjectHubProxy() {
 		setSender(_sender);
 		setVAssets(_vAssets);
 	}

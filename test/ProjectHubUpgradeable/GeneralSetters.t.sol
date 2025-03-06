@@ -7,7 +7,7 @@ import { ProjectHubUpgradeable } from "../../src/upgradeable/v1/ProjectHubUpgrad
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
-import { DeployProjectHubModifiedSender } from "../testutils/DeployProjectHubModifiedSender.sol";
+import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHubProxyCustomSender.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ILaunchpool } from "@src/interfaces/ILaunchpool.sol";
 
@@ -18,7 +18,7 @@ contract GeneralSetters is Test {
 	MockERC20 vGMLR = new MockERC20("Voucher GMLR", "vGMLR");
 	MockERC20 vASTR = new MockERC20("Voucher ASTR", "vASTR");
 	MockERC20 vFIL = new MockERC20("Voucher FIL", "vFIL");
-	DeployProjectHubModifiedSender public hubDeployScript;
+	DeployProjectHubProxyCustomSender public hubDeployScript;
 	address[] vAssets;
 	address public projectHubProxy;
 	uint256 public constant BLOCK_TIME = 6;
@@ -28,7 +28,7 @@ contract GeneralSetters is Test {
 		vAssets.push(address(vGMLR));
 		vAssets.push(address(vASTR));
 		vAssets.push(address(vFIL));
-		hubDeployScript = new DeployProjectHubModifiedSender(
+		hubDeployScript = new DeployProjectHubProxyCustomSender(
 			vAssets,
 			address(this)
 		);
