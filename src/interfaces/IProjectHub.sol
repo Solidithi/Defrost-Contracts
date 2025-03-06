@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.26;
 
-import { ProjectHubUpgradeable } from "@src/upgradeable/v1/ProjectHubUpgradeable.sol";
-
 interface IProjectHub {
 	// Type definitions
 	enum PoolType {
