@@ -276,32 +276,105 @@ contract CreateLaunchpoolTest is Test {
 		);
 	}
 
-	// function testCreatePoolFailsWithoutProject() public {
-	// 	// Arrange
-	// 	address[] memory acceptedVAssets = new address[](1);
-	// 	acceptedVAssets[0] = address(vAsset);
+	function test_revert_create_launchpool_not_project_owner() public {
+		// Arrange:
+		// 1. Create a project
+		IProjectHub(projectHubProxy).createProject();
+		uint64 projectId = IProjectHub(projectHubProxy).nextProjectId() - 1;
+		uint128[] memory changeBlocks = new uint128[](2);
+		uint256[] memory emissionRateChanges = new uint256[](2);
+		uint128 startBlock = uint128(block.number + 1);
+		uint128 endBlock = uint128(block.number + 100);
 
-	// 	uint128[] memory changeBlocks = new uint128[](2);
-	// 	changeBlocks[0] = 1110;
-	// 	changeBlocks[1] = 3000;
+		// 2. Prepare a set of params for launchpool creation
+		LaunchpoolLibrary.LaunchpoolCreationParams
+			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
+				projectId: uint64(projectId),
+				projectToken: address(projectToken),
+				vAsset: address(vDOT),
+				startBlock: startBlock,
+				endBlock: endBlock,
+				maxVTokensPerStaker: 1000 * 1e18,
+				changeBlocks: changeBlocks,
+				emissionRateChanges: emissionRateChanges,
+				isListed: true
+			});
 
-	// 	uint256[] memory emissionRate = new uint256[](2);
-	// 	emissionRate[0] = 5;
-	// 	emissionRate[1] = 10;
+		// Act:
+		// 1. Expect revert with custom error NotProjectOwner()
+		vm.expectRevert(
+			abi.encodeWithSelector(ProjectLibrary.NotProjectOwner.selector)
+		);
 
-	// 	// Act & Assert
-	// 	vm.expectRevert(ProjectHubUpgradeable.ProjectNotFound.selector);
-	// 	projectHubProxy.createLaunchpools(
-	// 		999, // Non-existent project ID
-	// 		address(projectToken),
-	// 		acceptedVAssets,
-	// 		1000,
-	// 		5000,
-	// 		20000,
-	// 		changeBlocks,
-	// 		emissionRate
-	// 	);
-	// }
+		// 2. Impersonate a non-owner account, create a launchpool and see revert
+		vm.prank(address(1));
+		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
+	}
+
+	function test_revert_create_launchpool_not_accepted_vAsset() public {
+		// Arrange:
+		// 1. Create a project
+		IProjectHub(projectHubProxy).createProject();
+		uint64 projectId = IProjectHub(projectHubProxy).nextProjectId() - 1;
+
+		// 2. Create a shitcoin for demonstration
+		MockERC20 shitcoin = new MockERC20("Shit coin", "SHIT");
+
+		// 3. Prepare a set of params for launchpool creation (insert shitcoin into params)
+		uint128[] memory changeBlocks = new uint128[](2);
+		uint256[] memory emissionRateChanges = new uint256[](2);
+		uint128 startBlock = uint128(block.number + 1);
+		uint128 endBlock = uint128(block.number + 100);
+		LaunchpoolLibrary.LaunchpoolCreationParams
+			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
+				projectId: uint64(projectId),
+				projectToken: address(projectToken),
+				vAsset: address(shitcoin), // put shitcoin here
+				startBlock: startBlock,
+				endBlock: endBlock,
+				maxVTokensPerStaker: 1000 * 1e18,
+				changeBlocks: changeBlocks,
+				emissionRateChanges: emissionRateChanges,
+				isListed: true
+			});
+
+		// Act:
+		// 1.expect revert with custom error NotAcceptedVAsset()
+		vm.expectRevert(LaunchpoolLibrary.NotAcceptedVAsset.selector);
+		//2. Create a launchpool with a non-accepted vAsset (shitcoin)
+		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
+	}
+
+	function test_revert_create_launchpool_project_not_found() public {
+		// Arrange:
+		// 1. Retrieve a non-existent project ID
+		uint64 projectId = ProjectHubUpgradeable(projectHubProxy)
+			.nextProjectId();
+
+		// 2. Prepare a set of params for launchpool creation
+		uint128 startBlock = uint128(block.number + 1);
+		uint128 endBlock = uint128(block.number + 100);
+		uint128[] memory changeBlocks = new uint128[](2);
+		uint256[] memory emissionRateChanges = new uint256[](2);
+		LaunchpoolLibrary.LaunchpoolCreationParams
+			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
+				projectId: uint64(projectId),
+				projectToken: address(projectToken),
+				vAsset: address(vDOT),
+				startBlock: startBlock,
+				endBlock: endBlock,
+				maxVTokensPerStaker: 1000 * 1e18,
+				changeBlocks: changeBlocks,
+				emissionRateChanges: emissionRateChanges,
+				isListed: true
+			});
+		// 3. Expect revert with custom error ProjectNotFound()
+		vm.expectRevert(ProjectLibrary.ProjectNotFound.selector);
+
+		// Act & Assert:
+		// 1. Call createLaunchpool with non-existent project ID and wait for revert
+		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
+	}
 
 	// function testFailCreatePoolWithInvalidVAsset() public {
 	// 	// Arrange
