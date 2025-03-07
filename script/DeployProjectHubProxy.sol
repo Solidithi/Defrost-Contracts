@@ -3,6 +3,7 @@
 pragma solidity ^0.8.26;
 
 import { Upgrades } from "@openzeppelin-foundry-upgrades/Upgrades.sol";
+import { Options } from "@openzeppelin-foundry-upgrades/Options.sol";
 import { ProjectHubUpgradeable } from "@src/upgradeable/v1/ProjectHubUpgradeable.sol";
 import { Context } from "@openzeppelin/contracts/access/Ownable.sol";
 import { console } from "forge-std/console.sol";
@@ -11,28 +12,29 @@ import { Script } from "forge-std/Script.sol";
 contract DeployProjectHubProxy is Context, Script {
 	address[] public vAssets;
 
-	function run(address[] calldata _vAssets) external {
-		setVAssets(_vAssets);
-		deployProjectHubProxy();
-	}
-
 	function setVAssets(address[] memory _vAssets) public {
 		vAssets = _vAssets;
 	}
 
 	function deployProjectHubProxy() public returns (address proxyAddress) {
-		proxyAddress = Upgrades.deployUUPSProxy(
+		vm.startBroadcast();
+		Options memory opt;
+		opt.unsafeAllow = "external-library-linking";
+		proxyAddress = Upgrades.deployTransparentProxy(
 			"ProjectHubUpgradeable.sol:ProjectHubUpgradeable",
+			_msgSender(),
 			abi.encodeCall(
 				ProjectHubUpgradeable.initialize,
 				(_msgSender(), vAssets)
-			)
+			),
+			opt
 		);
 
 		console.log(
-			"Deployed UUPS ProjectHubUpgradable at address: %s",
+			"Deployed UUPS ProjectHubUpgradable proxy at address: %s",
 			proxyAddress
 		);
+		vm.stopBroadcast();
 		return proxyAddress;
 	}
 
