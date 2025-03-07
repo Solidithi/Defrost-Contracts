@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import { ProjectHubUpgradeable } from "../../src/upgradeable/v1/ProjectHubUpgradeable.sol";
+import { ProjectHubUpgradeable, LaunchpoolLibrary, ProjectLibrary } from "../../src/upgradeable/v1/ProjectHubUpgradeable.sol";
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
@@ -12,7 +12,6 @@ import { ILaunchpool } from "@src/interfaces/ILaunchpool.sol";
 
 contract CreateLaunchpoolTest is Test {
 	MockERC20 public projectToken;
-	MockERC20 public vAsset;
 	MockERC20 vDOT = new MockERC20("Voucher DOT", "vDOT");
 	MockERC20 vGMLR = new MockERC20("Voucher GMLR", "vGMLR");
 	MockERC20 vASTR = new MockERC20("Voucher ASTR", "vASTR");
@@ -35,7 +34,6 @@ contract CreateLaunchpoolTest is Test {
 
 	function setUp() public {
 		projectToken = new MockERC20("PROJECT", "PRO");
-		vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
 
 		// Deploy and initialize ProjectHub
 		projectHubProxy = hubDeployScript.deployProjectHubProxy();
@@ -73,13 +71,12 @@ contract CreateLaunchpoolTest is Test {
 		uint128 startBlock = uint128(block.number + 1);
 		uint128 endBlock = uint128(block.number + 100);
 
-		// Act:
-		// 1. Create a pool for project (launchpool for now)
-		ProjectHubUpgradeable.LaunchpoolCreationParams
-			memory params = ProjectHubUpgradeable.LaunchpoolCreationParams({
+		// 3. Prepare a set of params for launchpool creation
+		LaunchpoolLibrary.LaunchpoolCreationParams
+			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
 				projectId: uint64(projectId),
 				projectToken: address(projectToken),
-				vAsset: address(vAsset),
+				vAsset: address(vDOT),
 				startBlock: startBlock,
 				endBlock: endBlock,
 				maxVTokensPerStaker: 1000 * 1e18,
@@ -88,6 +85,8 @@ contract CreateLaunchpoolTest is Test {
 				isListed: true
 			});
 
+		// Act:
+		// 1. Create a launchpool for the project
 		uint64 poolId = ProjectHubUpgradeable(projectHubProxy).createLaunchpool(
 			params
 		);
@@ -116,12 +115,12 @@ contract CreateLaunchpoolTest is Test {
 		// 3. Assert PoolCreated event emission
 		// Setup expected event
 		vm.expectEmit(true, true, true, false, projectHubProxy);
-		emit ProjectHubUpgradeable.PoolCreated(
+		emit LaunchpoolLibrary.PoolCreated(
 			projectId,
-			ProjectHubUpgradeable.PoolType.LAUNCHPOOL,
+			LaunchpoolLibrary.PoolType.LAUNCHPOOL,
 			poolId + 1,
 			address(projectToken),
-			address(vAsset),
+			address(vDOT),
 			address(0), // We dont' know this address yet, will match anything
 			startBlock,
 			endBlock
@@ -131,7 +130,7 @@ contract CreateLaunchpoolTest is Test {
 		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
 	}
 
-	function test_create_multiple_launchpool() public {
+	function test_create_multiple_launchpools() public {
 		// Arrange:
 		// 1. Get initial value of nextPoolId
 		uint64 nextPoolIdBefore = IProjectHub(projectHubProxy).nextPoolId();
@@ -156,14 +155,14 @@ contract CreateLaunchpoolTest is Test {
 		uint256 poolCount = 86;
 		bytes[] memory callPayloadBatch = new bytes[](poolCount);
 		for (uint256 i; i < poolCount; ++i) {
-			ProjectHubUpgradeable.LaunchpoolCreationParams
-				memory params = ProjectHubUpgradeable.LaunchpoolCreationParams({
+			LaunchpoolLibrary.LaunchpoolCreationParams
+				memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
 					projectId: uint64(projectId),
 					projectToken: address(projectToken),
-					vAsset: address(vAsset),
+					vAsset: address(vDOT),
 					startBlock: startBlock,
 					endBlock: endBlock,
-					maxVTokensPerStaker: 8686 * (10 ** vAsset.decimals()),
+					maxVTokensPerStaker: 8686 * (10 ** vDOT.decimals()),
 					changeBlocks: changeBlocks,
 					emissionRateChanges: emissionRateChanges,
 					isListed: i % 2 == 0 ? true : false
@@ -186,7 +185,11 @@ contract CreateLaunchpoolTest is Test {
 		// 2. Create multiple pools (execute batch transaction)
 		(bool success, bytes memory allReturnData) = address(projectHubProxy)
 			.call(selfMulticallPayload);
-		assert(success == true);
+		assertEq(
+			success,
+			true,
+			"Batch transaction to create multiple pools failed"
+		);
 		// 3. Get all recorded logs
 		Vm.Log[] memory logs = vm.getRecordedLogs();
 
@@ -226,7 +229,7 @@ contract CreateLaunchpoolTest is Test {
 					address(projectToken),
 					"projectToken mismatch"
 				);
-				assertEq(_vAsset, address(vAsset), "vAsset mismatch");
+				assertEq(_vAsset, address(vDOT), "vAsset mismatch");
 				assertEq(_startBlock, startBlock, "startBlock mismatch");
 				assertEq(_endBlock, endBlock, "endBlock mismatch");
 				assertEq(
