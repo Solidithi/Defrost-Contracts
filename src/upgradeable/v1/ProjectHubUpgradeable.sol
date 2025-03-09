@@ -4,7 +4,6 @@ pragma solidity ^0.8.26;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { SelfMultiCall } from "@src/utils/SelfMultiCall.sol";
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 
