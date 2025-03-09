@@ -247,11 +247,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			investor.amount
 		); //DOT to vDOT amount
 
-		if (
-			withdrawableVAsset <
-			_amount *
-				10 ** IERC20Metadata(address(acceptedNativeAsset)).decimals()
-		) {
+		if (withdrawableVAsset < _amount) {
 			revert VAssetAmountNotSufficient();
 		}
 
