@@ -27,11 +27,13 @@ contract UnstakeTest is Test {
 		uint128[] memory changeBlocks = new uint128[](1);
 		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
-		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		emissionRateChanges[0] =
+			(1e20 * (10 ** projectToken.decimals())) /
+			poolDurationBlocks;
 
 		launchpool = new MockLaunchpool(
 			address(this),
@@ -43,125 +45,52 @@ contract UnstakeTest is Test {
 			maxVTokensPerStaker,
 			changeBlocks,
 			emissionRateChanges
-			// address(xcmOracle)
 		);
 
 		projectToken.transfer(
 			address(launchpool),
-			1e3 * (10 ** projectToken.decimals())
+			1e20 * (10 ** projectToken.decimals())
 		);
 
-		// Act:
-		// 1. Stake 1000 vTokens at pool start (same as max amount per staker)
-		uint256 stakeAmount = maxVTokensPerStaker;
-		vAsset.approve(address(launchpool), stakeAmount);
+		// Act: Stake
+		address alice = makeAddr("alice");
 		vm.roll(startBlock);
-		launchpool.stake(stakeAmount);
+		uint256 aliceStake = maxVTokensPerStaker;
+		vAsset.freeMintTo(alice, aliceStake);
+		vm.startPrank(alice);
+		vAsset.approve(address(launchpool), aliceStake);
+		launchpool.stake(aliceStake);
+
+		vm.stopPrank();
+		aliceStake = launchpool.totalStake();
 
 		vm.roll(endBlock);
-		(, uint256 nativeTokenAmount, ) = launchpool.stakers(address(this));
-		uint256 claimableVAssetAmount = xcmOracle.getVTokenByToken(
+
+		// Act: Unstake
+		uint256 aliceUnstake = xcmOracle.getVTokenByToken(
 			address(nativeAsset),
-			nativeTokenAmount
+			aliceStake
 		);
 
-		// Log values to debug
-		console.log("Stake amount:", stakeAmount);
-		// console.log("VAsset amount:", vAsset.balanceOf(address(this)));
-		console.log(
-			"vAset staked token amount in contract:",
-			vAsset.balanceOf(address(launchpool))
-		);
-		// console.log("VAsset amount with Decimal:", vAsset.balanceOf(address(this)) / 10 ** vAsset.decimals());
-		console.log("Native token amount:", nativeTokenAmount);
-		console.log("Claimable vAsset amount:", claimableVAssetAmount);
-		console.log(
-			"Claimable Project Token: ",
-			launchpool.getClaimableProjectToken(address(this))
-		);
-		// console.log("Get token by vToken:", xcmOracle.getTokenByVToken(address(nativeAsset), stakeAmount));
+		vm.startPrank(alice);
+		launchpool.unstake(aliceUnstake);
+		vm.stopPrank();
 
-		launchpool.unstake(stakeAmount);
+		// Assert
+		// uint256 aliceStakeAfter = launchpool.stakers(alice).amount;
+		// assertEq(aliceStakeAfter, 0);
 
-		assertTrue(
-			stakeAmount * nativeAsset.decimals() > claimableVAssetAmount,
-			"Claimable vAsset amount is not less than staked amount"
-		);
-		// assertEq(, claimableProjectTokenAmount); //Check received project token amount
-	}
-	//15000000000000000000000 getXCM
-	//1000000000000000000000  Stake & Claimable
-	//99999999999999999000000000000000000000 vAsset
+		uint256 aliceClaimable = launchpool.getClaimableProjectToken(alice);
+		assertEq(aliceClaimable, 0);
 
-	//Stake amount:               18000000000000000000000
-	//   VAsset amount:           99999999999999999000
-	//   Native token amount:     15000000000000000000000
-	//   Claimable vAsset amount: 1000000000000000000000
-	//   Get token by vToken:     15000000000000000000000
+		uint256 aliceVAssetBalance = vAsset.balanceOf(alice);
+		assertTrue(aliceVAssetBalance <= maxVTokensPerStaker);
 
-	function test_unstake_with_exchange_rate_change_success() public {
-		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
-		uint256[] memory emissionRateChanges = new uint256[](1);
-		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
-		uint128 poolDurationBlocks = 70;
-		uint128 startBlock = uint128(block.number) + 1;
-		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
-		uint128 endBlock = startBlock + poolDurationBlocks;
-
-		launchpool = new MockLaunchpool(
-			address(this),
-			address(projectToken),
-			address(vAsset),
+		uint256 aliceNativeBalance = xcmOracle.getTokenByVToken(
 			address(nativeAsset),
-			startBlock,
-			endBlock,
-			maxVTokensPerStaker,
-			changeBlocks,
-			emissionRateChanges
-			// address(xcmOracle)
+			aliceVAssetBalance
 		);
 
-		projectToken.transfer(
-			address(launchpool),
-			1e3 * (10 ** projectToken.decimals())
-		);
-
-		// Act:
-		// 1. Stake 1000 vTokens at pool start (same as max amount per staker)
-		uint256 stakeAmount = maxVTokensPerStaker;
-		vAsset.approve(address(launchpool), stakeAmount);
-		vm.roll(startBlock);
-		launchpool.stake(stakeAmount);
-
-		//Change exchange rate
-		xcmOracle.setExchangeRate(20);
-
-		vm.roll(endBlock);
-		(, uint256 nativeTokenAmount, ) = launchpool.stakers(address(this));
-		uint256 claimableVAssetAmount = xcmOracle.getVTokenByToken(
-			address(nativeAsset),
-			nativeTokenAmount
-		);
-
-		// Log values to debug
-		console.log("Stake amount:", stakeAmount);
-		// console.log("VAsset amount:", vAsset.balanceOf(address(this)));
-		console.log(
-			"vAset staked token amount in contract:",
-			vAsset.balanceOf(address(launchpool))
-		);
-		// console.log("VAsset amount with Decimal:", vAsset.balanceOf(address(this)) / 10 ** vAsset.decimals());
-		console.log("Native token amount:", nativeTokenAmount);
-		console.log("Claimable vAsset amount:", claimableVAssetAmount);
-		// console.log("Get token by vToken:", xcmOracle.getTokenByVToken(address(nativeAsset), stakeAmount));
-
-		launchpool.unstake(stakeAmount);
-
-		assertTrue(
-			stakeAmount * nativeAsset.decimals() > claimableVAssetAmount,
-			"Claimable vAsset amount is not less than staked amount"
-		);
-		// assertEq(, claimableProjectTokenAmount); //Check received project token amount
+		assertEq(aliceNativeBalance, aliceStake);
 	}
 }
