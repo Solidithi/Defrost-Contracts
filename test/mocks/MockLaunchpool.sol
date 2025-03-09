@@ -2,11 +2,9 @@
 
 pragma solidity ^0.8.26;
 
-import { Launchpool } from "@src/Launchpool.sol";
+import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
-
 import { MockXCMOracle } from "../mocks/MockXCMOracle.sol";
-import { MockERC20 } from "../mocks/MockERC20.sol";
 
 contract MockLaunchpool is Launchpool {
 	constructor(
@@ -19,8 +17,8 @@ contract MockLaunchpool is Launchpool {
 		uint256 _maxVAssetPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
-		// address _xcmOracle
 	)
+		// address _xcmOracle
 		Launchpool(
 			_projectOwner,
 			_projectToken,
@@ -36,7 +34,6 @@ contract MockLaunchpool is Launchpool {
 		// Do sth cool if u want
 		MockXCMOracle _xcmOracle = new MockXCMOracle();
 		xcmOracle = IXCMOracle(address(_xcmOracle));
-
 	}
 
 	function getPendingExchangeRate() public view returns (uint256) {
