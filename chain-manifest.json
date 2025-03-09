@@ -1,0 +1,42 @@
+{
+	"1": {
+		"name": "ethereum",
+		"id": 1,
+		"type": "mainnet"
+	},
+	"592": {
+		"name": "astar",
+		"id": 592,
+		"type": "mainnet"
+	},
+	"3772": {
+		"name": "astar_zkevm",
+		"id": 3772,
+		"type": "mainnet"
+	},
+	"1284": {
+		"name": "moonbeam",
+		"id": 1284,
+		"type": "mainnet"
+	},
+	"1285": {
+		"name": "moonriver",
+		"id": 1285,
+		"type": "mainnet"
+	},
+	"1287": {
+		"name": "moonbase_alpha",
+		"id": 1287,
+		"type": "testnet"
+	},
+	"31337": {
+		"name": "localhost",
+		"id": 31337,
+		"type": "local"
+	},
+	"11155111": {
+		"name": "sepolia",
+		"id": 11155111,
+		"type": "testnet"
+	}
+}

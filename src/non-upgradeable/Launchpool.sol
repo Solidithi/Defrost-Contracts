@@ -6,7 +6,7 @@ import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/I
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { IXCMOracle } from "./interfaces/IXCMOracle.sol";
+import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
 
 contract Launchpool is Ownable, ReentrancyGuard {
 	using SafeERC20 for IERC20;

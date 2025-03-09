@@ -3,5 +3,9 @@ solc_version = "0.8.26"
 src = "src"
 out = "out"
 libs = ["lib"]
+ffi = true # Enables Foreign Function Interface, allowing calls to external processes or scripts
+ast = true # Outputs the Abstract Syntax Tree for your Solidity contracts.
+build_info = true # Generates additional build information for your contracts.
+extra_output = ["storageLayout"] # Outputs the storage layout information for your contracts.
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
