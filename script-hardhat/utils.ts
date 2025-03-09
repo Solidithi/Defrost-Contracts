@@ -212,7 +212,7 @@ export function getLatestContractVersion(
 		// }
 
 		console.log(
-			`Found highest version ${newestDeployment} for ${contractOrLibName}`,
+			`Found highest version ${newestVersion} for ${contractOrLibName}`,
 		);
 		return newestVersion;
 	} catch (error) {
