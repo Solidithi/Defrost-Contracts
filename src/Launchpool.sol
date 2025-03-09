@@ -70,7 +70,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	error NoEmissionRateChangesProvided();
 	error DecimalsTooHigh(); // 30 is the max
 	error InvalidTokenDecimals(); // if decimals can't be fetched
-	error NotEnoughProjectTokenApproved();
 
 	/////////////////////////////////////////////////////////////////////////////
 	//////////////////////// OTHER ERRORS //////////////////////////////////////
@@ -149,6 +148,15 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		if (_startBlock <= block.number) revert startBlockMustBeInFuture();
 		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
 
+		uint256 len = _changeBlocks.length;
+		if (len <= 0) {
+			revert NoEmissionRateChangesProvided();
+		}
+
+		if (_emissionRateChanges.length != len) {
+			revert ArraysLengthMismatch();
+		}
+
 		uint8 decimals;
 		try IERC20Metadata(_projectToken).decimals() returns (uint8 dec) {
 			decimals = dec;
@@ -162,17 +170,21 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 		SCALING_FACTOR = BASE_PRECISION / (10 ** decimals);
 
-		_initializePool(
-			_projectOwner,
-			_projectToken,
-			_acceptedVAsset,
-			_acceptedNativeAsset,
-			_startBlock,
-			_endBlock,
-			_maxVAssetPerStaker,
-			_changeBlocks,
-			_emissionRateChanges
-		);
+		unchecked {
+			for (uint256 i = 0; i < len; ++i) {
+				emissionRateChanges[_changeBlocks[i]] = _emissionRateChanges[i];
+			}
+		}
+		changeBlocks = _changeBlocks;
+
+		platformAdminAddress = msg.sender;
+		projectToken = IERC20(_projectToken);
+		acceptedVAsset = IERC20(_acceptedVAsset);
+		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
+		startBlock = _startBlock;
+		endBlock = _endBlock;
+		maxVAssetPerStaker = _maxVAssetPerStaker;
+		tickBlock = _startBlock;
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -235,7 +247,11 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			investor.amount
 		); //DOT to vDOT amount
 
-		if (withdrawableVAsset < _amount) {
+		if (
+			withdrawableVAsset <
+			_amount *
+				10 ** IERC20Metadata(address(acceptedNativeAsset)).decimals()
+		) {
 			revert VAssetAmountNotSufficient();
 		}
 
@@ -408,58 +424,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		address _investor
 	) public view returns (uint256) {
 		return stakers[_investor].amount;
-	}
-
-	function _initializePool(
-		address _projectOwner,
-		address _projectToken,
-		address _acceptedVAsset,
-		address _acceptedNativeAsset,
-		uint128 _startBlock,
-		uint128 _endBlock,
-		uint256 _maxVAssetPerStaker,
-		uint128[] memory _changeBlocks,
-		uint256[] memory _emissionRateChanges
-	) internal {
-		uint256 len = _changeBlocks.length;
-		if (len <= 0) {
-			revert NoEmissionRateChangesProvided();
-		}
-
-		if (_emissionRateChanges.length != len) {
-			revert ArraysLengthMismatch();
-		}
-
-		uint256 totalProjectTokenRequired = 0;
-		for (uint256 i = 0; i < len; ++i) {
-			totalProjectTokenRequired +=
-				_emissionRateChanges[i] *
-				_changeBlocks[i];
-		}
-
-		uint256 allowance = IERC20(_projectToken).allowance(
-			_projectOwner,
-			address(this)
-		);
-		if (allowance < totalProjectTokenRequired) {
-			revert NotEnoughProjectTokenApproved();
-		}
-
-		unchecked {
-			for (uint256 i = 0; i < len; ++i) {
-				emissionRateChanges[_changeBlocks[i]] = _emissionRateChanges[i];
-			}
-		}
-		changeBlocks = _changeBlocks;
-
-		platformAdminAddress = msg.sender;
-		projectToken = IERC20(_projectToken);
-		acceptedVAsset = IERC20(_acceptedVAsset);
-		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
-		startBlock = _startBlock;
-		endBlock = _endBlock;
-		maxVAssetPerStaker = _maxVAssetPerStaker;
-		tickBlock = _startBlock;
 	}
 
 	function _tick() internal {
