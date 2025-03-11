@@ -42,6 +42,10 @@ const config: HardhatUserConfig = {
 			url: "https://eth-sepolia.g.alchemy.com/v2/vmbHGNAV4NKw9V2tleUXODo4NDDUQpiy",
 			accounts: privateKeys,
 		},
+		moonbase_alpha: {
+			url: "https://moonbase-rpc.dwellir.com",
+			accounts: privateKeys,
+		},
 	},
 	solidity: {
 		version: "0.8.26",
