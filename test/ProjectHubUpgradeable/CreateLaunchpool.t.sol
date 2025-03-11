@@ -128,7 +128,7 @@ contract CreateLaunchpoolTest is Test {
 		// 3. Assert PoolCreated event emission
 		// Setup expected event
 		vm.expectEmit(true, true, true, false, projectHubProxy);
-		emit LaunchpoolLibrary.PoolCreated(
+		emit LaunchpoolLibrary.LaunchpoolCreated(
 			projectId,
 			PoolTypeLib.PoolType.LAUNCHPOOL,
 			poolId + 1,
@@ -208,8 +208,8 @@ contract CreateLaunchpoolTest is Test {
 
 		// Assert:
 		// Count PoolCreated events
-		bytes32 poolCreatedSignature = keccak256(
-			"PoolCreated(uint64,uint8,uint64,address,address,address,uint128,uint128)"
+		bytes32 sigLaunchpoolCreated = keccak256(
+			"LaunchpoolCreated(uint64,uint8,uint64,address,address,address,uint128,uint128)"
 		);
 
 		// Debug information
@@ -217,7 +217,7 @@ contract CreateLaunchpoolTest is Test {
 
 		uint256 poolCreatedEventCount = 0;
 		for (uint256 i = 0; i < logs.length; i++) {
-			if (logs[i].topics[0] == poolCreatedSignature) {
+			if (logs[i].topics[0] == sigLaunchpoolCreated) {
 				++poolCreatedEventCount;
 				// 1. Extract indexed parameters from topics
 				uint64 _projectId = uint64(uint256(logs[i].topics[1]));

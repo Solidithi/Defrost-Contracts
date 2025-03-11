@@ -116,7 +116,7 @@ library LaunchpoolLibrary {
 	}
 
 	// Events
-	event PoolCreated(
+	event LaunchpoolCreated(
 		uint64 indexed projectId,
 		PoolTypeLib.PoolType indexed poolType,
 		uint64 poolId,
@@ -189,7 +189,7 @@ library LaunchpoolLibrary {
 			params.isListed
 		);
 
-		emit PoolCreated(
+		emit LaunchpoolCreated(
 			params.projectId,
 			PoolTypeLib.PoolType.LAUNCHPOOL,
 			poolId,
