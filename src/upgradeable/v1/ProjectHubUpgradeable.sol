@@ -267,6 +267,7 @@ contract ProjectHubUpgradeable is
 	// Custom Errors
 	error AddressZero();
 	error TokensArraysLengthMismatch();
+	error NotAcceptedVAsset();
 
 	modifier notZeroAddress(address _address) {
 		if (_address == address(0)) {
@@ -369,7 +370,7 @@ contract ProjectHubUpgradeable is
 		// Get native asset and verify vAsset is accepted
 		address nativeAsset = vAssetToNativeAsset[_params.vAsset];
 		if (nativeAsset == address(0)) {
-			revert LaunchpoolLibrary.NotAcceptedVAsset();
+			revert NotAcceptedVAsset();
 		}
 
 		address projectOwner = _msgSender();
