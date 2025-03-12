@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import { ProjectHubUpgradeable, LaunchpoolLibrary, ProjectLibrary, PoolTypeLib } from "../../src/upgradeable/v1/ProjectHubUpgradeable.sol";
-import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHubProxyCustomSender.sol";

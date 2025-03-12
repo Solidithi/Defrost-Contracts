@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import { MockLaunchpool } from "../mocks/MockLaunchpool.sol";
-import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
+import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 
