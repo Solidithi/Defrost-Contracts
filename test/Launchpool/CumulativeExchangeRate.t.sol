@@ -18,6 +18,7 @@ contract CumulativeExchangeRateTest is Test {
 	function setUp() public {
 		projectToken = new MockERC20("PROJECT", "PRO");
 		vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
+		nativeAsset = new MockERC20("Native Token", "NAT");
 	}
 
 	function test_constant_emission_rate_with_one_staker() public {
