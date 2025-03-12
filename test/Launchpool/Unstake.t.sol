@@ -26,12 +26,12 @@ contract UnstakeTest is Test {
 
 	function test_unstake_success() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;
@@ -94,12 +94,12 @@ contract UnstakeTest is Test {
 
 	function test_unstake_more_than_staked() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;
@@ -149,12 +149,12 @@ contract UnstakeTest is Test {
 
 	function test_unstake_before_end() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;
@@ -210,12 +210,12 @@ contract UnstakeTest is Test {
 
 	function test_unstake_rapidly() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;

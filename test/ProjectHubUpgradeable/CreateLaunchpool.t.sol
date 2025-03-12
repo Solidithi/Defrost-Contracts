@@ -83,6 +83,10 @@ contract CreateLaunchpoolTest is Test {
 		uint256[] memory emissionRateChanges = new uint256[](2);
 		uint128 startBlock = uint128(block.number + 1);
 		uint128 endBlock = uint128(block.number + 100);
+		changeBlocks[0] = startBlock;
+		changeBlocks[1] = startBlock + 1;
+		emissionRateChanges[0] = 1000 * 10 ** projectToken.decimals();
+		emissionRateChanges[0] = 500 * 10 ** projectToken.decimals();
 
 		// 3. Prepare a set of params for launchpool creation
 		LaunchpoolLibrary.LaunchpoolCreationParams
@@ -157,15 +161,14 @@ contract CreateLaunchpoolTest is Test {
 		uint128 poolDurationBlocks = uint128(30 days / BLOCK_TIME);
 		uint128 endBlock = uint128(startBlock + poolDurationBlocks);
 		uint128[] memory changeBlocks = new uint128[](3);
-		changeBlocks[0] = startBlock + uint128((poolDurationBlocks * 1) / 3);
+		changeBlocks[0] = startBlock;
 		changeBlocks[1] = startBlock + poolDurationBlocks / 2;
 		changeBlocks[2] = startBlock + (poolDurationBlocks * 3) / 4;
 		uint256[] memory emissionRateChanges = new uint256[](3);
-		emissionRateChanges[0] = 1000;
-		emissionRateChanges[1] = 500;
-		emissionRateChanges[2] = 200;
+		emissionRateChanges[0] = 1000 * 10 ** projectToken.decimals();
+		emissionRateChanges[1] = 500 * 10 ** projectToken.decimals();
+		emissionRateChanges[2] = 200 * 10 ** projectToken.decimals();
 
-		uint256 poolCount = 86;
 		bytes[] memory callPayloadBatch = new bytes[](poolCount);
 		for (uint256 i; i < poolCount; ++i) {
 			LaunchpoolLibrary.LaunchpoolCreationParams

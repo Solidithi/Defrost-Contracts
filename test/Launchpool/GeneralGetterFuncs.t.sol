@@ -25,7 +25,7 @@ contract GeneralGetterFuncsTest is Test {
 	uint256 maxStakers = 0;
 
 	constructor() {
-		changeBlocks[0] = 0;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
 	}
 
@@ -150,6 +150,7 @@ contract GeneralGetterFuncsTest is Test {
 		// Deposit project tokens into the pool
 		uint256 depositAmount = projectToken.balanceOf(address(this));
 		projectToken.transfer(address(launchpool), depositAmount);
+		vm.roll(changeBlocks[0]);
 
 		// Assert:
 		(
