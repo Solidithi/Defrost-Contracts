@@ -154,6 +154,8 @@ async function main() {
 		await deployProjectHubProxy(
 			["0xBc6137154f4EBf64Ee355e8774A7467B1d0CfF29"], // Voucher Imagination
 			["0x198F2832AFe856CD5CdABAbA9EEAecAb6be95652"], // Native Token
+			"0x51169dA7eCaCeC8fDf4992B062F9CEd774B95C99", // Project library
+			"0x42Be0470309EE7bDD338187E100053f413d00600", // Launchpool library
 		);
 	} catch (error) {
 		console.error("Deployment failed:", error);

@@ -67,5 +67,5 @@ async function main(testParams: { proxyAddress: string }) {
 }
 
 main({
-	proxyAddress: "0x863529d5AB4E62117214e89383dFE5AF039be84A",
+	proxyAddress: "0x2e87a18343E0087f4E795a82Dd68Bd1b3B3fcd14",
 }).catch(console.error);
