@@ -61,9 +61,10 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////////////////
 	//////////////////////// VALIDATE POOL INFO ERRORS /////////////////////////
 	///////////////////////////////////////////////////////////////////////////
-	error startBlockMustBeInFuture();
-	error endBlockMustBeAfterstartBlock();
-	error InvalidAcceptedVAssetAddress();
+	error StartBlockMustBeInFuture();
+	error EndBlockMustBeAfterstartBlock();
+	error ZeroAddress();
+	error FirstChangeBlockMustBeStartBlock();
 	error TotalProjectTokensMustBeGreaterThanZero();
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 	error ArraysLengthMismatch();
@@ -87,7 +88,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////////////
 	modifier validTokenAddress(address _tokenAdrees) {
 		if (_tokenAdrees == address(0)) {
-			revert InvalidAcceptedVAssetAddress();
+			revert ZeroAddress();
 		}
 		_;
 	}
@@ -141,43 +142,59 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256[] memory _emissionRateChanges
 	)
 		Ownable(_projectOwner)
-		validTokenAddress(_projectToken)
+		validTokenAddress(_projectToken) // TODO: add tests for these token validations
 		validTokenAddress(_acceptedVAsset)
+		validTokenAddress(_acceptedNativeAsset)
 		validStakingRange(_maxVAssetPerStaker)
 	{
-		if (_startBlock <= block.number) revert startBlockMustBeInFuture();
-		if (_endBlock <= _startBlock) revert endBlockMustBeAfterstartBlock();
+		if (_startBlock <= block.number) revert StartBlockMustBeInFuture();
+		if (_endBlock <= _startBlock) revert EndBlockMustBeAfterstartBlock();
 
-		uint256 len = _changeBlocks.length;
-		if (len <= 0) {
+		// Ensure the first change block matches the start block
+		uint256 changeBlocksLen = _changeBlocks.length;
+		if (changeBlocksLen <= 0) {
 			revert NoEmissionRateChangesProvided();
 		}
 
-		if (_emissionRateChanges.length != len) {
+		// Consider adding this in Launchpool constructor
+		// for (uint256 i = 1; i < changeBlocksLen; i++) {
+		// 	if (_changeBlocks[i] <= _changeBlocks[i - 1]) {
+		// 		revert ChangeBlocksNotInAscendingOrder();
+		// 	}
+		// }
+
+		if (_changeBlocks[0] != _startBlock) {
+			revert FirstChangeBlockMustBeStartBlock();
+		}
+
+		if (_emissionRateChanges.length != changeBlocksLen) {
 			revert ArraysLengthMismatch();
 		}
 
-		uint8 decimals;
+		// TODO: add tests for this
+		uint8 decimals = 18;
 		try IERC20Metadata(_projectToken).decimals() returns (uint8 dec) {
 			decimals = dec;
 		} catch {
 			revert InvalidTokenDecimals();
 		}
 
+		// TODO: add tests for this
 		if (decimals > MAX_DECIMALS) {
 			revert DecimalsTooHigh();
 		}
 
+		// TODO: add tests for this
 		SCALING_FACTOR = BASE_PRECISION / (10 ** decimals);
 
 		unchecked {
-			for (uint256 i = 0; i < len; ++i) {
+			for (uint256 i = 0; i < changeBlocksLen; ++i) {
 				emissionRateChanges[_changeBlocks[i]] = _emissionRateChanges[i];
 			}
 		}
-		changeBlocks = _changeBlocks;
 
-		platformAdminAddress = msg.sender;
+		changeBlocks = _changeBlocks;
+		platformAdminAddress = _msgSender();
 		projectToken = IERC20(_projectToken);
 		acceptedVAsset = IERC20(_acceptedVAsset);
 		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
@@ -339,6 +356,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 balance = projectToken.balanceOf(address(this));
 		projectToken.safeTransfer(owner(), balance);
 	}
+
 	/**
 	 *TODO: should minus totalStake if there still have
 	 */

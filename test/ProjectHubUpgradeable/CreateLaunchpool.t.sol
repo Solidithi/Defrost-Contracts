@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import { ProjectHubUpgradeable, LaunchpoolLibrary, ProjectLibrary, PoolTypeLib } from "../../src/upgradeable/v1/ProjectHubUpgradeable.sol";
-import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHubProxyCustomSender.sol";
@@ -11,7 +11,8 @@ import { IProjectHub } from "@src/interfaces/IProjectHub.sol";
 import { ILaunchpool } from "@src/interfaces/ILaunchpool.sol";
 
 contract CreateLaunchpoolTest is Test {
-	MockERC20 public projectToken;
+	MockERC20 public projectToken = new MockERC20("PROJECT", "PRO");
+	uint256 projectTokenAmount = 1e7 * 10 ** projectToken.decimals();
 
 	MockERC20 vDOT = new MockERC20("Voucher DOT", "vDOT");
 	MockERC20 vGMLR = new MockERC20("Voucher GMLR", "vGMLR");
@@ -46,8 +47,6 @@ contract CreateLaunchpoolTest is Test {
 	}
 
 	function setUp() public {
-		projectToken = new MockERC20("PROJECT", "PRO");
-
 		// Deploy and initialize ProjectHub
 		projectHubProxy = hubDeployScript.deployProjectHubProxy();
 	}
@@ -83,11 +82,16 @@ contract CreateLaunchpoolTest is Test {
 		uint256[] memory emissionRateChanges = new uint256[](2);
 		uint128 startBlock = uint128(block.number + 1);
 		uint128 endBlock = uint128(block.number + 100);
+		changeBlocks[0] = startBlock;
+		changeBlocks[1] = startBlock + 1;
+		emissionRateChanges[0] = 1000 * 10 ** projectToken.decimals();
+		emissionRateChanges[0] = 500 * 10 ** projectToken.decimals();
 
 		// 3. Prepare a set of params for launchpool creation
 		LaunchpoolLibrary.LaunchpoolCreationParams
 			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
 				projectId: uint64(projectId),
+				projectTokenAmount: projectTokenAmount,
 				projectToken: address(projectToken),
 				vAsset: address(vDOT),
 				startBlock: startBlock,
@@ -100,6 +104,8 @@ contract CreateLaunchpoolTest is Test {
 
 		// Act:
 		// 1. Create a launchpool for the project
+		projectToken.freeMint(projectTokenAmount);
+		projectToken.approve(projectHubProxy, projectTokenAmount);
 		uint64 poolId = ProjectHubUpgradeable(projectHubProxy).createLaunchpool(
 			params
 		);
@@ -123,12 +129,14 @@ contract CreateLaunchpoolTest is Test {
 		) = ProjectHubUpgradeable(projectHubProxy).pools(nextPoolIdBefore);
 		assertEq(_projectId, projectId, "Wrong project Id");
 		assertEq(_poolId, poolId, "Wrong pool Id");
-		assertEq(ILaunchpool(_poolAddress).owner(), address(this)); // deep assertion to be sure
+		assertEq(ILaunchpool(_poolAddress).owner(), address(this));
 
 		// 3. Assert PoolCreated event emission
 		// Setup expected event
+		projectToken.freeMint(projectTokenAmount);
+		projectToken.approve(projectHubProxy, projectTokenAmount);
 		vm.expectEmit(true, true, true, false, projectHubProxy);
-		emit LaunchpoolLibrary.PoolCreated(
+		emit LaunchpoolLibrary.LaunchpoolCreated(
 			projectId,
 			PoolTypeLib.PoolType.LAUNCHPOOL,
 			poolId + 1,
@@ -141,36 +149,50 @@ contract CreateLaunchpoolTest is Test {
 
 		// Call createLaunchpool again to trigger event emission
 		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
+
+		// 4. Assert project token balance in launchpool matches with that in params
+		uint256 launchpoolBalance = projectToken.balanceOf(_poolAddress);
+		assertEq(
+			launchpoolBalance,
+			params.projectTokenAmount,
+			"Project token balance in launchpool doesn't match with that in params"
+		);
 	}
 
 	function test_create_multiple_launchpools() public {
+		("Address of test contract is: %s", address(this));
 		// Arrange:
 		// 1. Get initial value of nextPoolId
+		uint256 poolCount = 86;
 		uint64 nextPoolIdBefore = IProjectHub(projectHubProxy).nextPoolId();
 
 		// 2. Create a project
 		IProjectHub(projectHubProxy).createProject();
 		uint64 projectId = IProjectHub(projectHubProxy).nextProjectId() - 1;
 
-		// 3. Prepare a set of params for launchpool creation
+		// 3. Fund just enough project tokens for all the pools that will be created soon
+		projectToken.freeMint(projectTokenAmount * poolCount);
+		projectToken.approve(projectHubProxy, projectTokenAmount * poolCount);
+
+		// 4. Prepare a set of params for launchpool creation
 		uint128 startBlock = uint128(block.number + 1);
 		uint128 poolDurationBlocks = uint128(30 days / BLOCK_TIME);
 		uint128 endBlock = uint128(startBlock + poolDurationBlocks);
 		uint128[] memory changeBlocks = new uint128[](3);
-		changeBlocks[0] = startBlock + uint128((poolDurationBlocks * 1) / 3);
+		changeBlocks[0] = startBlock;
 		changeBlocks[1] = startBlock + poolDurationBlocks / 2;
 		changeBlocks[2] = startBlock + (poolDurationBlocks * 3) / 4;
 		uint256[] memory emissionRateChanges = new uint256[](3);
-		emissionRateChanges[0] = 1000;
-		emissionRateChanges[1] = 500;
-		emissionRateChanges[2] = 200;
+		emissionRateChanges[0] = 1000 * 10 ** projectToken.decimals();
+		emissionRateChanges[1] = 500 * 10 ** projectToken.decimals();
+		emissionRateChanges[2] = 200 * 10 ** projectToken.decimals();
 
-		uint256 poolCount = 86;
 		bytes[] memory callPayloadBatch = new bytes[](poolCount);
 		for (uint256 i; i < poolCount; ++i) {
 			LaunchpoolLibrary.LaunchpoolCreationParams
 				memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
 					projectId: uint64(projectId),
+					projectTokenAmount: projectTokenAmount,
 					projectToken: address(projectToken),
 					vAsset: address(vDOT),
 					startBlock: startBlock,
@@ -181,7 +203,9 @@ contract CreateLaunchpoolTest is Test {
 					isListed: i % 2 == 0 ? true : false
 				});
 			bytes memory callPayload = abi.encodeWithSelector(
-				IProjectHub(projectHubProxy).createLaunchpool.selector,
+				ProjectHubUpgradeable(projectHubProxy)
+					.createLaunchpool
+					.selector,
 				params
 			);
 			callPayloadBatch[i] = callPayload;
@@ -208,8 +232,8 @@ contract CreateLaunchpoolTest is Test {
 
 		// Assert:
 		// Count PoolCreated events
-		bytes32 poolCreatedSignature = keccak256(
-			"PoolCreated(uint64,uint8,uint64,address,address,address,uint128,uint128)"
+		bytes32 sigLaunchpoolCreated = keccak256(
+			"LaunchpoolCreated(uint64,uint8,uint64,address,address,address,uint128,uint128)"
 		);
 
 		// Debug information
@@ -217,7 +241,7 @@ contract CreateLaunchpoolTest is Test {
 
 		uint256 poolCreatedEventCount = 0;
 		for (uint256 i = 0; i < logs.length; i++) {
-			if (logs[i].topics[0] == poolCreatedSignature) {
+			if (logs[i].topics[0] == sigLaunchpoolCreated) {
 				++poolCreatedEventCount;
 				// 1. Extract indexed parameters from topics
 				uint64 _projectId = uint64(uint256(logs[i].topics[1]));
@@ -249,6 +273,14 @@ contract CreateLaunchpoolTest is Test {
 					_poolAddress,
 					IProjectHub(projectHubProxy).pools(_poolId).poolAddress,
 					"poolAddress mismatch"
+				);
+				uint256 launchpoolBalance = projectToken.balanceOf(
+					_poolAddress
+				);
+				assertEq(
+					launchpoolBalance,
+					projectTokenAmount,
+					"Project token balance in launchpool doesn't match with that in params"
 				);
 			}
 		}
@@ -303,6 +335,7 @@ contract CreateLaunchpoolTest is Test {
 		LaunchpoolLibrary.LaunchpoolCreationParams
 			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
 				projectId: uint64(projectId),
+				projectTokenAmount: projectTokenAmount,
 				projectToken: address(projectToken),
 				vAsset: address(vDOT),
 				startBlock: startBlock,
@@ -324,7 +357,7 @@ contract CreateLaunchpoolTest is Test {
 		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
 	}
 
-	function test_revert_create_launchpool_not_accepted_vAsset() public {
+	function test_revert_create_launchpool_not_registered_vAsset() public {
 		// Arrange:
 		// 1. Create a project
 		IProjectHub(projectHubProxy).createProject();
@@ -341,6 +374,7 @@ contract CreateLaunchpoolTest is Test {
 		LaunchpoolLibrary.LaunchpoolCreationParams
 			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
 				projectId: uint64(projectId),
+				projectTokenAmount: projectTokenAmount,
 				projectToken: address(projectToken),
 				vAsset: address(shitcoin), // put shitcoin here
 				startBlock: startBlock,
@@ -353,7 +387,7 @@ contract CreateLaunchpoolTest is Test {
 
 		// Act:
 		// 1.expect revert with custom error NotAcceptedVAsset()
-		vm.expectRevert(LaunchpoolLibrary.NotAcceptedVAsset.selector);
+		vm.expectRevert(ProjectHubUpgradeable.NotAcceptedVAsset.selector);
 		//2. Create a launchpool with a non-accepted vAsset (shitcoin)
 		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
 	}
@@ -372,6 +406,7 @@ contract CreateLaunchpoolTest is Test {
 		LaunchpoolLibrary.LaunchpoolCreationParams
 			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
 				projectId: uint64(projectId),
+				projectTokenAmount: projectTokenAmount,
 				projectToken: address(projectToken),
 				vAsset: address(vDOT),
 				startBlock: startBlock,
@@ -389,29 +424,80 @@ contract CreateLaunchpoolTest is Test {
 		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
 	}
 
-	// function testFailCreatePoolWithInvalidVAsset() public {
-	// 	// Arrange
-	// 	address[] memory acceptedVAssets = new address[](1);
-	// 	acceptedVAssets[0] = address(vAsset); // vAsset not added to accepted list
+	function test_revert_create_launchpool_not_enough_project_token_allowance()
+		public
+	{
+		// Arrange:
+		// 1. Create a project
+		IProjectHub(projectHubProxy).createProject();
+		uint64 projectId = IProjectHub(projectHubProxy).nextProjectId() - 1;
 
-	// 	uint128[] memory changeBlocks = new uint128[](2);
-	// 	changeBlocks[0] = 1110;
-	// 	changeBlocks[1] = 3000;
+		// 2. Prepare a set of params for launchpool creation
+		uint128 startBlock = uint128(block.number + 1);
+		uint128 endBlock = uint128(block.number + 100);
+		uint128[] memory changeBlocks = new uint128[](2);
+		uint256[] memory emissionRateChanges = new uint256[](2);
+		changeBlocks[0] = startBlock;
+		changeBlocks[1] = startBlock + 1;
+		emissionRateChanges[0] = 1000 * 10 ** projectToken.decimals();
+		emissionRateChanges[1] = 500 * 10 ** projectToken.decimals();
 
-	// 	uint256[] memory emissionRate = new uint256[](2);
-	// 	emissionRate[0] = 5;
-	// 	emissionRate[1] = 10;
+		LaunchpoolLibrary.LaunchpoolCreationParams
+			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
+				projectId: uint64(projectId),
+				projectTokenAmount: projectTokenAmount,
+				projectToken: address(projectToken),
+				vAsset: address(vDOT),
+				startBlock: startBlock,
+				endBlock: endBlock,
+				maxVTokensPerStaker: 1000 * 1e18,
+				changeBlocks: changeBlocks,
+				emissionRateChanges: emissionRateChanges,
+				isListed: true
+			});
 
-	// 	// Act & Assert - Should revert with NotAcceptedVAsset
-	// 	projectHubProxy.createLaunchpools(
-	// 		projectId,
-	// 		address(projectToken),
-	// 		acceptedVAssets,
-	// 		1000,
-	// 		5000,
-	// 		20000,
-	// 		changeBlocks,
-	// 		emissionRate
-	// 	);
-	// }
+		// 3. Set project token allowance to 0
+		projectToken.approve(projectHubProxy, 0);
+
+		// Act:
+		// 1. Call createLaunchpool and expect revert
+		vm.expectRevert(
+			abi.encodeWithSignature(
+				"ERC20InsufficientAllowance(address,uint256,uint256)",
+				projectHubProxy,
+				0,
+				projectTokenAmount
+			)
+		);
+		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
+
+		// 2. Set project token allowance to be equal to project token amount
+		projectToken.freeMint(projectTokenAmount); // mint just to make sure
+		projectToken.approve(projectHubProxy, projectTokenAmount);
+
+		// 3 Use tokens so that the balance drop below allowance
+		uint256 initialBalance = projectToken.balanceOf(address(this));
+		projectToken.transfer(
+			address(1),
+			initialBalance - projectTokenAmount + 1
+		);
+		uint256 finalBalance = projectToken.balanceOf(address(this));
+		console.log("Balance:", finalBalance);
+		console.log("Required:", projectTokenAmount);
+		require(
+			finalBalance < projectTokenAmount,
+			"Balance should be insufficient"
+		);
+
+		// 4. Call createLaunchpool and expect revert once again
+		vm.expectRevert(
+			abi.encodeWithSignature(
+				"ERC20InsufficientBalance(address,uint256,uint256)",
+				address(this),
+				finalBalance,
+				projectTokenAmount
+			)
+		);
+		ProjectHubUpgradeable(projectHubProxy).createLaunchpool(params);
+	}
 }

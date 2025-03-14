@@ -6,6 +6,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { SelfMultiCall } from "@src/utils/SelfMultiCall.sol";
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 library PoolTypeLib {
 	enum PoolType {
@@ -105,6 +106,7 @@ library LaunchpoolLibrary {
 
 	struct LaunchpoolCreationParams {
 		uint64 projectId;
+		uint256 projectTokenAmount;
 		address projectToken;
 		address vAsset;
 		uint128 startBlock;
@@ -116,7 +118,7 @@ library LaunchpoolLibrary {
 	}
 
 	// Events
-	event PoolCreated(
+	event LaunchpoolCreated(
 		uint64 indexed projectId,
 		PoolTypeLib.PoolType indexed poolType,
 		uint64 poolId,
@@ -131,16 +133,13 @@ library LaunchpoolLibrary {
 
 	// Errors
 	error PoolNotFound();
-	error NotAcceptedVAsset();
-	error StartBlockAfterEndBlock();
-	error ChangeBlocksEmissionRatesMismatch();
 
 	/**
 	 * @dev Creates a new launchpool
 	 * @param pools Mapping of pools
 	 * @param nextPoolId Current pool ID counter
 	 * @param params Parameters for launchpool creation
-	 * @param sender Address of the caller
+	 * @param projectOwner Address of the caller
 	 * @return poolId The ID of the newly created pool
 	 * @return newNextPoolId The updated pool ID counter
 	 * @return poolAddress The address of the created launchpool contract
@@ -149,25 +148,16 @@ library LaunchpoolLibrary {
 		mapping(uint64 => Pool) storage pools,
 		uint64 nextPoolId,
 		address nativeAsset,
-		LaunchpoolCreationParams memory params,
-		address sender
+		LaunchpoolCreationParams calldata params,
+		address projectOwner
 	)
 		external
 		returns (uint64 poolId, uint64 newNextPoolId, address poolAddress)
 	{
-		// Validate start block is before end block
-		if (params.startBlock >= params.endBlock) {
-			revert StartBlockAfterEndBlock();
-		}
-
-		if (params.changeBlocks.length != params.emissionRateChanges.length) {
-			revert ChangeBlocksEmissionRatesMismatch();
-		}
-
-		// Create new Launchpool contract
+		// Create a new launchpool and new launchpool record
 		poolAddress = address(
 			new Launchpool(
-				sender,
+				projectOwner,
 				params.projectToken,
 				params.vAsset,
 				nativeAsset,
@@ -177,6 +167,14 @@ library LaunchpoolLibrary {
 				params.changeBlocks,
 				params.emissionRateChanges
 			)
+		);
+
+		// Transfer project tokens from project owner to launchpool
+		// TODO: add tests for this
+		IERC20(params.projectToken).transferFrom(
+			projectOwner,
+			poolAddress,
+			params.projectTokenAmount
 		);
 
 		// Register pool in storage
@@ -189,7 +187,7 @@ library LaunchpoolLibrary {
 			params.isListed
 		);
 
-		emit PoolCreated(
+		emit LaunchpoolCreated(
 			params.projectId,
 			PoolTypeLib.PoolType.LAUNCHPOOL,
 			poolId,
@@ -269,6 +267,7 @@ contract ProjectHubUpgradeable is
 	// Custom Errors
 	error AddressZero();
 	error TokensArraysLengthMismatch();
+	error NotAcceptedVAsset();
 
 	modifier notZeroAddress(address _address) {
 		if (_address == address(0)) {
@@ -366,19 +365,21 @@ contract ProjectHubUpgradeable is
 	 * @return The ID of the newly created pool
 	 */
 	function createLaunchpool(
-		LaunchpoolLibrary.LaunchpoolCreationParams memory _params
+		LaunchpoolLibrary.LaunchpoolCreationParams calldata _params
 	) external returns (uint64) {
 		// Get native asset and verify vAsset is accepted
 		address nativeAsset = vAssetToNativeAsset[_params.vAsset];
 		if (nativeAsset == address(0)) {
-			revert LaunchpoolLibrary.NotAcceptedVAsset();
+			revert NotAcceptedVAsset();
 		}
+
+		address projectOwner = _msgSender();
 
 		// Verify caller is project owner
 		ProjectLibrary.validateProjectOwner(
 			projects,
 			_params.projectId,
-			_msgSender()
+			projectOwner
 		);
 
 		(uint64 poolId, uint64 newNextPoolId, ) = LaunchpoolLibrary
@@ -387,7 +388,7 @@ contract ProjectHubUpgradeable is
 				nextPoolId,
 				nativeAsset,
 				_params,
-				_msgSender()
+				projectOwner
 			);
 
 		nextPoolId = newNextPoolId;

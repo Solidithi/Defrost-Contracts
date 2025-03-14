@@ -11,3 +11,5 @@ package.json
 .husky
 .vscode
 remappings.txt
+deployments/
+.openzeppelin

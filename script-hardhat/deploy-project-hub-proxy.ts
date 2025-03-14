@@ -4,29 +4,80 @@ import { preDeploymentCheck, getLatestCommitHash } from "./utils";
 import { getNamedFunctionArgs } from "./utils";
 import { ProjectHubUpgradeable__factory } from "../typechain-types";
 
-async function deployProjectHubProxy() {
+async function deployProjectHubProxy(
+	vAssets: string[],
+	nativeAssets: string[],
+	projectLibAddress?: string,
+	launchpoolLibAddress?: string,
+) {
 	const chainId = await ethers.provider
 		.getNetwork()
 		.then((n) => Number(n.chainId));
-	preDeploymentCheck(chainId);
+	// preDeploymentCheck(chainId); TODO: Turn this on later
 
 	const [deployer] = await ethers.getSigners();
+	const deployerAddress = await deployer.getAddress();
+	const latestCommitHash = getLatestCommitHash();
 
 	// Deploy libraries
 	console.log("Deploying libraries...");
 
-	const projectLibFactory = await ethers.getContractFactory("ProjectLibrary");
-	const projectLib = await projectLibFactory.deploy();
-	await projectLib.waitForDeployment();
-	const projectLibAddress = await projectLib.getAddress();
-	console.log("ProjectLib library deployed to:", projectLibAddress);
+	let projectLib;
+	if (!!projectLibAddress) {
+		projectLib = await ethers.getContractAt(
+			"ProjectLibrary",
+			projectLibAddress,
+		);
+		console.log("ProjectLib retrieved from address: ", projectLibAddress);
+	} else {
+		const projectLibFactory =
+			await ethers.getContractFactory("ProjectLibrary");
+		projectLib = await projectLibFactory.deploy();
+		projectLib.waitForDeployment();
+		projectLibAddress = await projectLib.getAddress();
+		console.log("ProjectLib deployed to: ", projectLibAddress);
+		// Log deployment info for ProjectLib
+		logDeployment(chainId, {
+			name: "ProjectLibrary",
+			type: "library",
+			address: projectLibAddress,
+			commitHash: latestCommitHash,
+			deploymentTime: new Date().toISOString(),
+			deployer: deployerAddress,
+			version: "increment",
+			isUpgradeSafe: true,
+		});
+	}
 
-	const launchpoolLibFactory =
-		await ethers.getContractFactory("LaunchpoolLibrary");
-	const launchpoolLib = await launchpoolLibFactory.deploy();
-	await launchpoolLib.waitForDeployment();
-	const launchpoolLibAddress = await launchpoolLib.getAddress();
-	console.log("Launchpool library deployed to:", launchpoolLibAddress);
+	let launchpoolLib;
+	if (!!launchpoolLibAddress) {
+		launchpoolLib = await ethers.getContractAt(
+			"LaunchpoolLibrary",
+			launchpoolLibAddress,
+		);
+		console.log(
+			"LaunchpoolLib retrieved from address: ",
+			launchpoolLibAddress,
+		);
+	} else {
+		const launchpoolLibFactory =
+			await ethers.getContractFactory("LaunchpoolLibrary");
+		launchpoolLib = await launchpoolLibFactory.deploy();
+		await launchpoolLib.waitForDeployment();
+		launchpoolLibAddress = await launchpoolLib.getAddress();
+		console.log("Launchpool library deployed to:", launchpoolLibAddress);
+		// Log deployment info for LaunchpoolLibrary
+		logDeployment(chainId, {
+			name: "LaunchpoolLibrary",
+			type: "library",
+			address: launchpoolLibAddress,
+			commitHash: latestCommitHash,
+			deploymentTime: new Date().toISOString(),
+			deployer: deployerAddress,
+			version: "increment",
+			isUpgradeSafe: true,
+		});
+	}
 
 	// Create ProjectHubFactory and link libraries
 	const ProjectHubFactory = await ethers.getContractFactory(
@@ -42,12 +93,7 @@ async function deployProjectHubProxy() {
 	// Deploy ProjectHubUpgradeable proxy
 	console.log("Deploying ProjectHub proxy...");
 	// TODO: Update vAssets and nativeAssets to pass in real data
-	const vAssets = ["0x0000000000000000000000000000000000000001"];
-	const nativeAssets = ["0x0000000000000000000000000000000000000001"];
-	const deployerAddress = await deployer.getAddress();
 	const projectHubInitArgs = [deployerAddress, vAssets, nativeAssets];
-	const latestCommitHash = getLatestCommitHash();
-
 	const projectHubProxy = await upgrades.deployProxy(
 		ProjectHubFactory,
 		projectHubInitArgs,
@@ -72,35 +118,11 @@ async function deployProjectHubProxy() {
 		await projectHubProxy.getAddress(),
 	);
 
-	// Log deployment info for ProjectLib
-	logDeployment(chainId, {
-		name: "ProjectLibrary",
-		type: "library",
-		address: projectLibAddress,
-		commitHash: latestCommitHash,
-		deploymentTime: new Date().toISOString(),
-		deployer: deployerAddress,
-		version: "increment",
-		isUpgradeSafe: true,
-	});
-
-	// Log deployment info for LaunchpoolLibrary
-	logDeployment(chainId, {
-		name: "LaunchpoolLibrary",
-		type: "library",
-		address: launchpoolLibAddress,
-		commitHash: latestCommitHash,
-		deploymentTime: new Date().toISOString(),
-		deployer: deployerAddress,
-		version: "increment",
-		isUpgradeSafe: true,
-	});
-
 	// Log deployment info for ProjectHub
 	logDeployment(chainId, {
 		name: "ProjectHubUpgradable",
 		type: "contract",
-		address: projectHubProxyAddress,
+		address: implAddress,
 		commitHash: latestCommitHash,
 		deploymentTime: new Date().toISOString(),
 		deployer: deployerAddress,
@@ -129,7 +151,10 @@ async function deployProjectHubProxy() {
 
 async function main() {
 	try {
-		await deployProjectHubProxy();
+		await deployProjectHubProxy(
+			["0xBc6137154f4EBf64Ee355e8774A7467B1d0CfF29"], // Voucher Imagination
+			["0x198F2832AFe856CD5CdABAbA9EEAecAb6be95652"], // Native Token
+		);
 	} catch (error) {
 		console.error("Deployment failed:", error);
 		process.exit(1);

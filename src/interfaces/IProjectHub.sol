@@ -2,42 +2,102 @@
 
 pragma solidity ^0.8.26;
 
-import { ProjectLibrary, LaunchpoolLibrary } from "@src/upgradeable/v1/ProjectHubUpgradeable.sol";
-
+/**
+ * @title IProjectHub
+ * @notice Interface for the ProjectHubUpgradeable contract
+ * @dev This interface is self-contained without external dependencies for easier integration with tools like Remix IDE
+ */
 interface IProjectHub {
-	// Functions
+	// Type definitions
+	enum PoolType {
+		LAUNCHPOOL,
+		LAUNCHPAD,
+		VESTING,
+		FARMING
+	}
+
+	struct Project {
+		uint64 projectId;
+		address projectOwner;
+	}
+
+	struct Pool {
+		uint64 poolId;
+		PoolType poolType;
+		address poolAddress;
+		uint64 projectId;
+		bool isListed;
+	}
+
+	struct LaunchpoolCreationParams {
+		uint64 projectId;
+		uint256 projectTokenAmount;
+		address projectToken;
+		address vAsset;
+		uint128 startBlock;
+		uint128 endBlock;
+		uint256 maxVTokensPerStaker;
+		uint128[] changeBlocks;
+		uint256[] emissionRateChanges;
+		bool isListed;
+	}
+
+	// Events
+	event ProjectCreated(
+		uint64 indexed projectId,
+		address indexed projectOwner
+	);
+	event LaunchpoolCreated(
+		uint64 indexed projectId,
+		PoolType indexed poolType,
+		uint64 poolId,
+		address projectToken,
+		address indexed vAsset,
+		address poolAddress,
+		uint128 startBlock,
+		uint128 endBlock
+	);
+	event PoolListingChanged(uint64 indexed projectId, bool indexed isListed);
+	event VAssetMappingUpdated(
+		address indexed vAsset,
+		address indexed nativeAsset
+	);
+
+	// Initialization & Admin Functions
 	function initialize(
 		address _initialOwner,
-		address[] calldata _initialVAssets
+		address[] calldata _initialVAssets,
+		address[] calldata _initialNativeAssets
 	) external;
 
+	function setNativeAssetForVAsset(
+		address _vAsset,
+		address _nativeAsset
+	) external;
+
+	function removeVAssetSupport(address _vAsset) external;
+
+	// Project Management
 	function createProject() external;
 
-	function listPool(uint64 _poolId) external;
-
-	function unlistProject(uint64 _poolId) external;
-
+	// Pool Management
 	function createLaunchpool(
-		LaunchpoolLibrary.LaunchpoolCreationParams memory params
+		LaunchpoolCreationParams memory params
 	) external returns (uint64);
 
-	function setAcceptedVAsset(address _vAsset, bool _isAccepted) external;
-
-	// Self Multi Call functions
-	function multiCall(
+	// Multi-call Functionality
+	function selfMultiCall(
 		bytes[] calldata data
-	) external returns (bytes[] memory results);
+	) external returns (bytes[] memory);
 
-	// View Functions
-	function projects(
-		uint64 projectId
-	) external view returns (ProjectLibrary.Project memory);
+	// View Functions - State Variables
+	function projects(uint64 projectId) external view returns (Project memory);
 
-	function pools(
-		uint64 poolId
-	) external view returns (LaunchpoolLibrary.Pool memory);
+	function pools(uint64 poolId) external view returns (Pool memory);
 
-	function acceptedVAssets(address _vAsset) external view returns (bool);
+	function vAssetToNativeAsset(
+		address _vAsset
+	) external view returns (address);
 
 	function nextProjectId() external view returns (uint64);
 

@@ -10,6 +10,7 @@ import "dotenv/config";
 // Parse env variables
 const privateKeys = (process.env.PRIVATE_KEYS || "").split(",");
 const devPrivateKeys = [
+	// "3f5c38d6e87a9a91f4ddc80f6f57bc8bbbe59619911c01d5a47003a1a79117bd", // Inject Minh EVM for testing
 	"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
 	"0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
 	"0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
@@ -37,10 +38,17 @@ const config: HardhatUserConfig = {
 		localhost: {
 			url: "http://localhost:8545",
 			accounts: devPrivateKeys,
+			loggingEnabled: true,
 		},
 		sepolia: {
 			url: "https://eth-sepolia.g.alchemy.com/v2/vmbHGNAV4NKw9V2tleUXODo4NDDUQpiy",
 			accounts: privateKeys,
+			loggingEnabled: true,
+		},
+		moonbase_alpha: {
+			url: "https://rpc.api.moonbase.moonbeam.network",
+			accounts: privateKeys,
+			loggingEnabled: true,
 		},
 	},
 	solidity: {
