@@ -530,7 +530,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		return accumulatedIncrease;
 	}
 
-	function _getTickBlockDelta(
+	// TODO: add tests for this
+	function _getActiveBlockDelta(
 		uint256 from,
 		uint256 to
 	) internal view returns (uint256) {
