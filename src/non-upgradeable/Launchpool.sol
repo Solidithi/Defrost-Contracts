@@ -232,7 +232,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		 * TODO: implement native amount increase here
 		 */
 
-		investor.claimOffset = investor.amount * cumulativeExchangeRate;
+		investor.claimOffset =
+			(investor.amount * cumulativeExchangeRate) /
+			SCALING_FACTOR;
 
 		emit Staked(address(msg.sender), _amount);
 	}
