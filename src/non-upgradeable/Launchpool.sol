@@ -534,7 +534,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 from,
 		uint256 to
 	) internal view returns (uint256) {
-		if (to < endBlock) {
+		if (to <= endBlock) {
 			return to - from;
 		} else if (from >= endBlock) {
 			return 0;
