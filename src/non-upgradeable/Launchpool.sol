@@ -35,22 +35,30 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	uint256 public constant BASE_PRECISION = 1e30;
 	uint256 public lastProcessedChangeBlockIndex;
 
-	/**
-	 * TODO: change to our withdraw address, this currently implement as the factory which is not ideal
-	 */
 	address public platformAdminAddress;
-	// @todo: decide how much decimal should we take, this will affect some value
 
 	mapping(uint128 => uint256) public emissionRateChanges;
 	uint128[] public changeBlocks;
 
 	IERC20 public projectToken;
 	IERC20 public acceptedVAsset;
-	IERC20 public acceptedNativeAsset; //For XCMOracle call
+	IERC20 public acceptedNativeAsset; //For XCMOracle cal
 	IXCMOracle public xcmOracle =
 		IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
 
 	mapping(address => Staker) public stakers;
+
+	// Last-recorded exchange rate between acceptedNativeAsset and acceptedVAsset
+	uint256 public lastNativeExRate;
+	// The numerator to calculate the weighted average gradient of the exchange rate (e.g. 100/block)
+	uint256 public avgNativeExRateGradient;
+
+	// Sample count
+	uint256 public nativeExRateSampleCount;
+
+	uint256 public immutable NATIVE_SCALING_FACTOR;
+
+	uint256 public constant BLOCK_TIME = 6 seconds; // for Moonbeam
 
 	///////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// CONTRACT EVENTS //////////////////////////////
@@ -69,8 +77,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	error MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 	error ArraysLengthMismatch();
 	error NoEmissionRateChangesProvided();
-	error DecimalsTooHigh(); // 30 is the max
-	error InvalidTokenDecimals(); // if decimals can't be fetched
+	error DecimalsTooHigh(address tokenAddress); // 30 is the max
+	error FailedToReadTokenDecimals(); // if decimals can't be fetched
 
 	/////////////////////////////////////////////////////////////////////////////
 	//////////////////////// OTHER ERRORS //////////////////////////////////////
@@ -172,20 +180,35 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		// TODO: add tests for this
-		uint8 decimals = 18;
+		uint8 pTokenDecimals = 18;
 		try IERC20Metadata(_projectToken).decimals() returns (uint8 dec) {
-			decimals = dec;
+			pTokenDecimals = dec;
+			// TODO: add tests for this
+			if (pTokenDecimals > MAX_DECIMALS) {
+				revert DecimalsTooHigh(_projectToken);
+			}
 		} catch {
-			revert InvalidTokenDecimals();
+			revert FailedToReadTokenDecimals();
 		}
 
 		// TODO: add tests for this
-		if (decimals > MAX_DECIMALS) {
-			revert DecimalsTooHigh();
+		uint8 nativeDecimals = 18;
+		try IERC20Metadata(_acceptedNativeAsset).decimals() returns (
+			uint8 dec
+		) {
+			nativeDecimals = dec;
+			// if (nativeDecimals > MAX_DECIMALS) { // not likely to happen
+			// 	revert DecimalsTooHigh(_acceptedNativeAsset);
+			// }
+		} catch {
+			revert FailedToReadTokenDecimals();
 		}
 
 		// TODO: add tests for this
-		SCALING_FACTOR = BASE_PRECISION / (10 ** decimals);
+		SCALING_FACTOR = BASE_PRECISION / (10 ** pTokenDecimals);
+
+		// TODO: add tests for this
+		NATIVE_SCALING_FACTOR = BASE_PRECISION / (10 ** nativeDecimals);
 
 		unchecked {
 			for (uint256 i = 0; i < changeBlocksLen; ++i) {
@@ -208,13 +231,20 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
 	function stake(
-		uint256 _amount
-	) external nonZeroAmount(_amount) nonReentrant {
-		if (_amount > maxVAssetPerStaker) {
+		uint256 _vTokenAmount
+	) external nonZeroAmount(_vTokenAmount) nonReentrant {
+		if (_vTokenAmount > maxVAssetPerStaker) {
 			revert ExceedsMaximumAllowedStakePerUser();
 		}
 
 		Staker storage investor = stakers[msg.sender];
+
+		uint256 nativeAmount = xcmOracle.getTokenByVToken(
+			address(acceptedNativeAsset),
+			_vTokenAmount
+		);
+
+		_updateNativeTokenExchangeRate(nativeAmount, _vTokenAmount);
 
 		_tick();
 
@@ -232,18 +262,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			}
 		}
 
-		uint256 nativeAmount = xcmOracle.getTokenByVToken(
-			address(acceptedNativeAsset),
-			_amount
-		);
-
 		investor.amount += nativeAmount;
 		totalStake += nativeAmount;
 
 		acceptedVAsset.safeTransferFrom(
 			address(msg.sender),
 			address(this),
-			_amount
+			_vTokenAmount
 		);
 		/**
 		 * TODO: implement native amount increase here
@@ -253,12 +278,12 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			(investor.amount * cumulativeExchangeRate) /
 			SCALING_FACTOR;
 
-		emit Staked(address(msg.sender), _amount);
+		emit Staked(address(msg.sender), _vTokenAmount);
 	}
 
 	function unstake(
-		uint256 _amount
-	) external nonZeroAmount(_amount) nonReentrant {
+		uint256 _vTokenAmount
+	) external nonZeroAmount(_vTokenAmount) nonReentrant {
 		Staker storage investor = stakers[msg.sender];
 
 		if (investor.amount == 0) {
@@ -270,9 +295,20 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			investor.amount
 		);
 
-		if (withdrawableVAsset < _amount) {
+		if (withdrawableVAsset < _vTokenAmount) {
 			revert VAssetAmountNotSufficient();
 		}
+
+		uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
+			address(acceptedNativeAsset),
+			_vTokenAmount
+		);
+
+		if (investor.amount < withdrawnNativeAmount) {
+			revert NotEnoughVAssetToWithdraw();
+		}
+
+		_updateNativeTokenExchangeRate(withdrawnNativeAmount, _vTokenAmount);
 
 		_tick();
 
@@ -287,15 +323,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			);
 		}
 
-		uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
-			address(acceptedNativeAsset),
-			_amount
-		);
-
-		if (investor.amount < withdrawnNativeAmount) {
-			revert NotEnoughVAssetToWithdraw();
-		}
-
 		uint256 remainingAmount = investor.amount - withdrawnNativeAmount;
 
 		investor.claimOffset =
@@ -305,9 +332,19 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		investor.amount = remainingAmount;
 		totalStake -= withdrawnNativeAmount;
 
-		acceptedVAsset.safeTransfer(address(msg.sender), _amount);
+		// Calculate the unrealized loss of vToken since pool's endBlock due to vToken yield-bearing
+		// interest model and late withdrawal
+		uint256 unrealizedVTokens = _calculatePostPoolInterest(
+			withdrawnNativeAmount,
+			_vTokenAmount
+		);
 
-		emit Unstaked(address(msg.sender), _amount);
+		acceptedVAsset.safeTransfer(
+			address(msg.sender),
+			_vTokenAmount + unrealizedVTokens
+		);
+
+		emit Unstaked(address(msg.sender), _vTokenAmount);
 	}
 
 	function recoverWrongToken(
@@ -318,7 +355,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		token.safeTransfer(owner(), balance);
 	}
 
-	function unstakeWithoutProjectToken(uint256 _amount) external nonReentrant {
+	function unstakeWithoutProjectToken(
+		uint256 _vTokenAmount
+	) external nonReentrant {
 		Staker storage investor = stakers[msg.sender];
 		if (investor.amount == 0) {
 			revert ZeroAmountNotAllowed();
@@ -331,25 +370,27 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 		if (
 			withdrawableVAsset <
-			_amount *
+			_vTokenAmount *
 				10 ** IERC20Metadata(address(acceptedNativeAsset)).decimals()
 		) {
 			revert VAssetAmountNotSufficient();
 		}
 
+		_updateNativeTokenExchangeRate(investor.amount, _vTokenAmount);
+
 		_tick();
 
 		uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
 			address(acceptedNativeAsset),
-			_amount
+			_vTokenAmount
 		);
 
 		investor.amount -= withdrawnNativeAmount;
 		totalStake -= withdrawnNativeAmount;
 
-		acceptedVAsset.safeTransfer(address(msg.sender), _amount);
+		acceptedVAsset.safeTransfer(address(msg.sender), _vTokenAmount);
 		investor.claimOffset = investor.amount * cumulativeExchangeRate;
-		emit Unstaked(address(msg.sender), _amount);
+		emit Unstaked(address(msg.sender), _vTokenAmount);
 	}
 
 	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
@@ -360,22 +401,22 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	/**
 	 *TODO: should minus totalStake if there still have
 	 */
-	function claimOwnerInterest() external onlyOwner nonReentrant afterPoolEnd {
-		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
-			ownerShareOfInterest) / 100;
-		acceptedVAsset.safeTransfer(owner(), balance);
-	}
+	// function claimOwnerInterest() external onlyOwner nonReentrant afterPoolEnd {
+	// 	uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
+	// 		ownerShareOfInterest) / 100;
+	// 	acceptedVAsset.safeTransfer(owner(), balance);
+	// }
 
-	function claimPlatformInterest()
-		external
-		onlyPlatformAdmin
-		nonReentrant
-		afterPoolEnd
-	{
-		uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
-			(100 - ownerShareOfInterest)) / 100;
-		acceptedVAsset.safeTransfer(platformAdminAddress, balance);
-	}
+	// function claimPlatformInterest()
+	// 	external
+	// 	onlyPlatformAdmin
+	// 	nonReentrant
+	// 	afterPoolEnd
+	// {
+	// 	uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
+	// 		(100 - ownerShareOfInterest)) / 100;
+	// 	acceptedVAsset.safeTransfer(platformAdminAddress, balance);
+	// }
 
 	function setXCMOracleAddress(
 		address _xcmOracleAddress
@@ -484,6 +525,45 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 	}
 
+	// TODO: need testing and validation
+	function _updateNativeTokenExchangeRate(
+		uint256 _nativeAmount,
+		uint256 _vTokenAmount
+	) internal {
+		uint256 newNativeExRate = (_nativeAmount * NATIVE_SCALING_FACTOR) /
+			_vTokenAmount;
+
+		// Handle first call of pool then exit early
+		if (lastNativeExRate == 0) {
+			// Near impossible for this to happen
+			lastNativeExRate = newNativeExRate;
+			// avgNativeExRateGradient = newNativeExRate;
+			// ++nativeExRateSampleCount;
+			return;
+		}
+
+		uint256 currentBlock = block.number;
+
+		uint256 exRateDelta = (newNativeExRate > lastNativeExRate)
+			? newNativeExRate - lastNativeExRate
+			: 0;
+		uint256 blockDelta = currentBlock - tickBlock;
+		if (blockDelta == 0) {
+			return;
+		}
+		uint256 newGradientSample = exRateDelta / blockDelta;
+
+		// Calculate rolling average of the gradient
+		avgNativeExRateGradient =
+			(avgNativeExRateGradient *
+				nativeExRateSampleCount +
+				newGradientSample) /
+			(++nativeExRateSampleCount);
+
+		lastNativeExRate = newNativeExRate;
+		// ++nativeExRateSampleCount;
+	}
+
 	function _getPendingExchangeRate() internal view returns (uint256) {
 		uint256 totalNativeStake = getTotalNativeStaked();
 		if (totalNativeStake == 0) {
@@ -508,7 +588,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 				continue;
 			}
 
-			uint256 tickBlockDelta = _getTickBlockDelta(
+			uint256 tickBlockDelta = _getActiveBlockDelta(
 				periodStartBlock,
 				periodEndBlock
 			);
@@ -524,8 +604,11 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			periodStartBlock = periodEndBlock;
 		}
 
-		uint256 finalDelta = _getTickBlockDelta(periodStartBlock, currentBlock);
-		uint256 finalEmissionRate = periodEndBlock <= currentBlock
+		uint256 finalDelta = _getActiveBlockDelta(
+			periodStartBlock,
+			currentBlock
+		);
+		uint256 finalEmissionRate = (periodEndBlock <= currentBlock)
 			? emissionRateChanges[periodEndBlock] // Get rate for the period that started at periodEndBlock
 			: emissionRateChanges[changeBlocks[i - 1]]; // Get rate after the last processed change block
 
@@ -536,11 +619,41 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		return accumulatedIncrease;
 	}
 
-	function _getTickBlockDelta(
+	function _calculatePostPoolInterest(
+		uint256 _withdrawnNativeAmount,
+		uint256 _withdrawnVTokenAmount
+	) internal view returns (uint256) {
+		// Cap extrapolation period to 2 weeks
+		uint256 maxExtrapolationBlocks = 2 weeks / BLOCK_TIME;
+		uint256 blocksSinceEnd = block.number - endBlock;
+		if (blocksSinceEnd <= 0) {
+			return 0;
+		}
+		uint256 extrapolationBlocks = blocksSinceEnd < maxExtrapolationBlocks
+			? blocksSinceEnd
+			: maxExtrapolationBlocks;
+
+		uint256 nativeExRateAtEnd = lastNativeExRate +
+			(avgNativeExRateGradient * extrapolationBlocks);
+		if (nativeExRateAtEnd < lastNativeExRate) {
+			return 0;
+		}
+
+		uint256 vTokensAtEnd = (_withdrawnNativeAmount * nativeExRateAtEnd) /
+			NATIVE_SCALING_FACTOR;
+
+		return
+			vTokensAtEnd > _withdrawnVTokenAmount
+				? vTokensAtEnd - _withdrawnVTokenAmount
+				: 0;
+	}
+
+	// TODO: add tests for this
+	function _getActiveBlockDelta(
 		uint256 from,
 		uint256 to
 	) internal view returns (uint256) {
-		if (to < endBlock) {
+		if (to <= endBlock) {
 			return to - from;
 		} else if (from >= endBlock) {
 			return 0;

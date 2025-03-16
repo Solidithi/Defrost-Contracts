@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
+/* solhint-disable */
 pragma solidity ^0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -45,3 +46,4 @@ contract MockXCMOracle {
 		return exchangeRate;
 	}
 }
+/* solhint-enable */

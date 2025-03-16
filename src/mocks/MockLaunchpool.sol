@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+/* solhint-disable */
 
 pragma solidity ^0.8.26;
 
@@ -36,6 +37,35 @@ contract MockLaunchpool is Launchpool {
 		xcmOracle = IXCMOracle(address(_xcmOracle));
 	}
 
+	// Wildcard setters for testing (beware when testing)
+	function wild_setTickBlock(uint128 _tickBlock) external {
+		tickBlock = _tickBlock;
+	}
+
+	function wild_setLastNativeExRate(uint256 _lastNativeExRate) external {
+		lastNativeExRate = _lastNativeExRate;
+	}
+
+	function wild_setAvgNativeExRateGradient(
+		uint256 _avgNativeExRateGradient
+	) external {
+		avgNativeExRateGradient = _avgNativeExRateGradient;
+	}
+
+	function wild_setNativeExRateSampleCount(
+		uint256 _nativeExRateSampleCount
+	) external {
+		nativeExRateSampleCount = _nativeExRateSampleCount;
+	}
+
+	// Expose internal methods for testing
+	function exposed_updateNativeTokenExchangeRate(
+		uint256 _nativeAmount,
+		uint256 _vTokenAmount
+	) external {
+		_updateNativeTokenExchangeRate(_nativeAmount, _vTokenAmount);
+	}
+
 	function getPendingExchangeRate() public view returns (uint256) {
 		return _getPendingExchangeRate();
 	}
@@ -44,3 +74,4 @@ contract MockLaunchpool is Launchpool {
 		return getClaimableProjectToken();
 	}
 }
+/* solhint-enable */
