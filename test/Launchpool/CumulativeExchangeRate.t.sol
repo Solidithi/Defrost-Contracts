@@ -56,7 +56,7 @@ contract CumulativeExchangeRateTest is Test {
 		vAsset.approve(address(launchpool), stakeAmount);
 		vm.roll(startBlock);
 		launchpool.stake(stakeAmount);
-		uint256 nativeStakeAmount = launchpool.totalStake();
+		uint256 nativeStakeAmount = launchpool.totalNativeStake();
 
 		// Assert:
 		// 1. Check cumulative exchange rate at pool start (should be 0)
@@ -118,7 +118,7 @@ contract CumulativeExchangeRateTest is Test {
 		vAsset.approve(address(launchpool), stakeAmount);
 		vm.roll(startBlock);
 		launchpool.stake(stakeAmount);
-		stakeAmount = launchpool.totalStake();
+		stakeAmount = launchpool.totalNativeStake();
 
 		// 2. Someone stakes 500 vTokens at pool start
 		address someoneElse = makeAddr("someone");
@@ -128,7 +128,7 @@ contract CumulativeExchangeRateTest is Test {
 		vAsset.approve(address(launchpool), stakeAmount2);
 		launchpool.stake(stakeAmount2);
 		vm.stopPrank(); // return to original investor/signer
-		stakeAmount2 = launchpool.totalStake() - stakeAmount;
+		stakeAmount2 = launchpool.totalNativeStake() - stakeAmount;
 
 		// Assert:
 		// 1. Check cumulative exchange rate at pool start (should be 0 bcuz tickBlockDelta is 0)
@@ -189,7 +189,7 @@ contract CumulativeExchangeRateTest is Test {
 		uint256 stakeAmount = maxVTokensPerStaker;
 		vAsset.approve(address(launchpool), stakeAmount);
 		launchpool.stake(stakeAmount);
-		stakeAmount = launchpool.totalStake();
+		stakeAmount = launchpool.totalNativeStake();
 
 		// 2. Someone stakes 500 vTokens at halfway throught the pool
 		vm.roll(startBlock + poolDurationBlocks / 2);
@@ -254,7 +254,7 @@ contract CumulativeExchangeRateTest is Test {
 		uint256 stakeAmount = maxVTokensPerStaker;
 		vAsset.approve(address(launchpool), stakeAmount);
 		launchpool.stake(stakeAmount);
-		stakeAmount = launchpool.totalStake();
+		stakeAmount = launchpool.totalNativeStake();
 
 		// Assert:
 		// 1. I Call get accumulated exchange rate right after staking
@@ -345,7 +345,7 @@ contract CumulativeExchangeRateTest is Test {
 		uint256 stakeAmount = maxVTokensPerStaker;
 		vAsset.approve(address(launchpool), stakeAmount);
 		launchpool.stake(stakeAmount);
-		stakeAmount = launchpool.totalStake();
+		stakeAmount = launchpool.totalNativeStake();
 
 		// 2. At 3/7 of pool duration, someone stakes 999 vTokens
 		vm.roll(startBlock + (poolDurationBlocks * 3) / 7);
@@ -357,7 +357,7 @@ contract CumulativeExchangeRateTest is Test {
 		launchpool.stake(stakeAmount2);
 		vm.stopPrank();
 
-		stakeAmount2 = launchpool.totalStake() - stakeAmount;
+		stakeAmount2 = launchpool.totalNativeStake() - stakeAmount;
 
 		// Assert:
 		// 1. Check cumulative exchange rate at the last block of the pool
@@ -445,7 +445,7 @@ contract CumulativeExchangeRateTest is Test {
 			launchpool.cumulativeExchangeRate()
 		);
 		vm.stopPrank();
-		aliceStake = launchpool.totalStake();
+		aliceStake = launchpool.totalNativeStake();
 
 		// 2. Bob joins right before first emission rate change with 300 tokens
 		vm.roll(changeBlocks[1] - 1);
@@ -459,7 +459,7 @@ contract CumulativeExchangeRateTest is Test {
 			launchpool.cumulativeExchangeRate()
 		);
 		vm.stopPrank();
-		bobStake = launchpool.totalStake() - aliceStake;
+		bobStake = launchpool.totalNativeStake() - aliceStake;
 
 		// 3. Charlie joins at halfway through the pool with 523 tokens
 		vm.roll(startBlock + (poolDurationBlocks * 1) / 2);
@@ -469,7 +469,7 @@ contract CumulativeExchangeRateTest is Test {
 		vAsset.approve(address(launchpool), charlieStake);
 		vm.prank(charlie);
 		launchpool.stake(charlieStake);
-		charlieStake = launchpool.totalStake() - aliceStake - bobStake;
+		charlieStake = launchpool.totalNativeStake() - aliceStake - bobStake;
 
 		// 4. Dave joins after second rate change with remaining allowance
 		vm.roll(changeBlocks[2] + 100);
@@ -482,7 +482,7 @@ contract CumulativeExchangeRateTest is Test {
 		vm.prank(dave);
 		launchpool.stake(daveStake);
 		daveStake =
-			launchpool.totalStake() -
+			launchpool.totalNativeStake() -
 			aliceStake -
 			bobStake -
 			charlieStake;
