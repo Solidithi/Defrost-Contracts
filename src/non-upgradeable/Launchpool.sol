@@ -12,8 +12,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	using SafeERC20 for IERC20;
 
 	struct Staker {
-		// uint256 vAssetAmount;
-		// uint256 nativeTokenAmount;
 		uint256 amount;
 		uint256 claimOffset;
 	}
@@ -427,21 +425,17 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 	}
 
-	// Not needed
-	function getTotalNativeStaked() public view returns (uint256) {
-		return totalStake;
-	}
-
-	// Not needed
 	function getTotalVAssetStaked() public view returns (uint256) {
 		return acceptedVAsset.balanceOf(address(this));
 	}
 
-	// Not so much needed either
 	function getTotalProjectToken() public view returns (uint256) {
 		return projectToken.balanceOf(address(this));
 	}
 
+	/**
+	 * TODO: Need review
+	 */
 	function getStakingRange() public view returns (uint256, uint256) {
 		return (maxVAssetPerStaker, maxStakers);
 	}
@@ -557,7 +551,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	}
 
 	function _getPendingExchangeRate() internal view returns (uint256) {
-		uint256 totalNativeStake = getTotalNativeStaked();
+		uint256 totalNativeStake = totalStake;
 		if (totalNativeStake == 0) {
 			return 0;
 		}
