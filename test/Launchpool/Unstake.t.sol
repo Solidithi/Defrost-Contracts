@@ -63,7 +63,7 @@ contract UnstakeTest is Test {
 		launchpool.stake(aliceStake);
 
 		vm.stopPrank();
-		aliceStake = launchpool.totalStake();
+		aliceStake = launchpool.totalNativeStake();
 
 		vm.roll(endBlock);
 
@@ -131,7 +131,7 @@ contract UnstakeTest is Test {
 		launchpool.stake(aliceStake);
 
 		vm.stopPrank();
-		aliceStake = launchpool.totalStake();
+		aliceStake = launchpool.totalNativeStake();
 
 		vm.roll(endBlock);
 
@@ -186,7 +186,7 @@ contract UnstakeTest is Test {
 		launchpool.stake(aliceStake);
 
 		vm.stopPrank();
-		aliceStake = launchpool.totalStake();
+		aliceStake = launchpool.totalNativeStake();
 
 		vm.roll(endBlock - 1);
 
@@ -250,7 +250,7 @@ contract UnstakeTest is Test {
 		vm.roll(startBlock + 10);
 
 		// Act: Unstake multiple times in small amounts
-		uint256 totalStaked = launchpool.totalStake();
+		uint256 totalStaked = launchpool.totalNativeStake();
 		uint256 totalVAssetToUnstake = xcmOracle.getVTokenByToken(
 			address(nativeAsset),
 			totalStaked
