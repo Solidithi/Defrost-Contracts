@@ -89,7 +89,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	error ZeroAmountNotAllowed();
 	error ExceedsMaximumAllowedStakePerUser();
 	error VAssetAmountNotSufficient();
-	error NotEnoughVAssetToWithdraw();
+	error NativeAmountExceedStake();
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
@@ -299,7 +299,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		);
 
 		if (investor.amount < withdrawnNativeAmount) {
-			revert NotEnoughVAssetToWithdraw();
+			revert NativeAmountExceedStake();
 		}
 
 		_updateNativeTokenExchangeRate(withdrawnNativeAmount, _vTokenAmount);
