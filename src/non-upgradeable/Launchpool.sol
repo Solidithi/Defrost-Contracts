@@ -12,7 +12,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	using SafeERC20 for IERC20;
 
 	struct Staker {
-		uint256 amount;
+		uint256 nativeAmount;
 		uint256 claimOffset;
 	}
 
@@ -26,7 +26,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	uint128 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
 	uint256 public maxVAssetPerStaker;
 	uint256 public maxStakers;
-	uint256 public totalStake;
+	uint256 public totalNativeStake;
 
 	uint256 public immutable SCALING_FACTOR;
 	uint256 public constant MAX_DECIMALS = 30;
@@ -246,8 +246,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 		_tick();
 
-		if (investor.amount > 0) {
-			uint256 claimableProjectTokenAmount = (investor.amount *
+		if (investor.nativeAmount > 0) {
+			uint256 claimableProjectTokenAmount = (investor.nativeAmount *
 				cumulativeExchangeRate) /
 				SCALING_FACTOR -
 				investor.claimOffset;
@@ -260,15 +260,15 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			}
 		}
 
-		investor.amount += nativeAmount;
-		totalStake += nativeAmount;
+		investor.nativeAmount += nativeAmount;
+		totalNativeStake += nativeAmount;
 
 		acceptedVAsset.safeTransferFrom(
 			address(msg.sender),
 			address(this),
 			_vTokenAmount
 		);
-		investor.claimOffset = investor.amount * cumulativeExchangeRate;
+		investor.claimOffset = investor.nativeAmount * cumulativeExchangeRate;
 
 		emit Staked(address(msg.sender), _vTokenAmount);
 	}
@@ -279,11 +279,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		address investorAddress = _msgSender();
 		Staker storage investor = stakers[investorAddress];
 
-		if (investor.amount == 0) {
+		if (investor.nativeAmount == 0) {
 			revert ZeroAmountNotAllowed();
 		}
 
-		uint256 withdrawableVAsset = getWithdrawableVAssets(investor.amount);
+		uint256 withdrawableVAsset = getWithdrawableVAssets(
+			investor.nativeAmount
+		);
 
 		if (withdrawableVAsset < _vTokenAmount) {
 			revert VAssetAmountNotSufficient();
@@ -294,7 +296,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			_vTokenAmount
 		);
 
-		if (investor.amount < withdrawnNativeAmount) {
+		if (investor.nativeAmount < withdrawnNativeAmount) {
 			revert NativeAmountExceedStake();
 		}
 
@@ -303,7 +305,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		_tick();
 
 		uint256 exchangeRate = cumulativeExchangeRate;
-		uint256 claimableProjectTokenAmount = ((investor.amount *
+		uint256 claimableProjectTokenAmount = ((investor.nativeAmount *
 			exchangeRate) / SCALING_FACTOR) - investor.claimOffset;
 
 		if (claimableProjectTokenAmount > 0) {
@@ -313,14 +315,14 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			);
 		}
 
-		uint256 remainingAmount = investor.amount - withdrawnNativeAmount;
+		uint256 remainingAmount = investor.nativeAmount - withdrawnNativeAmount;
 
 		investor.claimOffset =
 			(remainingAmount * exchangeRate) /
 			SCALING_FACTOR;
 
-		investor.amount = remainingAmount;
-		totalStake -= withdrawnNativeAmount;
+		investor.nativeAmount = remainingAmount;
+		totalNativeStake -= withdrawnNativeAmount;
 
 		acceptedVAsset.safeTransfer(investorAddress, _vTokenAmount);
 
@@ -339,13 +341,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 _vTokenAmount
 	) external nonReentrant {
 		Staker storage investor = stakers[msg.sender];
-		if (investor.amount == 0) {
+		if (investor.nativeAmount == 0) {
 			revert ZeroAmountNotAllowed();
 		}
 
 		uint256 withdrawableVAsset = xcmOracle.getVTokenByToken(
 			address(acceptedNativeAsset),
-			investor.amount
+			investor.nativeAmount
 		);
 
 		if (
@@ -356,7 +358,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert VAssetAmountNotSufficient();
 		}
 
-		_updateNativeTokenExchangeRate(investor.amount, _vTokenAmount);
+		_updateNativeTokenExchangeRate(investor.nativeAmount, _vTokenAmount);
 
 		_tick();
 
@@ -365,11 +367,11 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			_vTokenAmount
 		);
 
-		investor.amount -= withdrawnNativeAmount;
-		totalStake -= withdrawnNativeAmount;
+		investor.nativeAmount -= withdrawnNativeAmount;
+		totalNativeStake -= withdrawnNativeAmount;
 
 		acceptedVAsset.safeTransfer(address(msg.sender), _vTokenAmount);
-		investor.claimOffset = investor.amount * cumulativeExchangeRate;
+		investor.claimOffset = investor.nativeAmount * cumulativeExchangeRate;
 		emit Unstaked(address(msg.sender), _vTokenAmount);
 	}
 
@@ -465,12 +467,12 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	) public view returns (uint256) {
 		Staker memory investor = stakers[_investor];
 
-		if (investor.amount == 0) {
+		if (investor.nativeAmount == 0) {
 			return 0;
 		}
 
 		return
-			(investor.amount *
+			(investor.nativeAmount *
 				(cumulativeExchangeRate + _getPendingExchangeRate())) /
 			SCALING_FACTOR -
 			investor.claimOffset;
@@ -479,7 +481,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	function getStakerNativeAmount(
 		address _investor
 	) public view returns (uint256) {
-		return stakers[_investor].amount;
+		return stakers[_investor].nativeAmount;
 	}
 
 	function _tick() internal {
@@ -487,7 +489,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			return;
 		}
 
-		if (totalStake == 0) {
+		if (totalNativeStake == 0) {
 			unchecked {
 				tickBlock = uint128(block.number);
 			}
@@ -551,7 +553,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	}
 
 	function _getPendingExchangeRate() internal view returns (uint256) {
-		uint256 totalNativeStake = totalStake;
+		uint256 totalNativeStake = totalNativeStake;
 		if (totalNativeStake == 0) {
 			return 0;
 		}
@@ -629,7 +631,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		returns (uint256 ownerClaims, uint256 platformClaims)
 	{
 		uint256 allVAssets = acceptedVAsset.balanceOf(address(this));
-		uint256 investorVAssets = getWithdrawableVAssets(totalStake);
+		uint256 investorVAssets = getWithdrawableVAssets(totalNativeStake);
 
 		uint256 combinedClaims = allVAssets - investorVAssets;
 		ownerClaims = (combinedClaims * ownerShareOfInterest) / 100;
