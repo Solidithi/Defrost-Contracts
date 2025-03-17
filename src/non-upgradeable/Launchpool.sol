@@ -278,16 +278,14 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	function unstake(
 		uint256 _vTokenAmount
 	) external nonZeroAmount(_vTokenAmount) nonReentrant {
-		Staker storage investor = stakers[msg.sender];
+		address investorAddress = _msgSender();
+		Staker storage investor = stakers[investorAddress];
 
 		if (investor.amount == 0) {
 			revert ZeroAmountNotAllowed();
 		}
 
-		uint256 withdrawableVAsset = xcmOracle.getVTokenByToken(
-			address(acceptedNativeAsset),
-			investor.amount
-		);
+		uint256 withdrawableVAsset = getWithdrawableVAssets(investor.amount);
 
 		if (withdrawableVAsset < _vTokenAmount) {
 			revert VAssetAmountNotSufficient();
@@ -326,19 +324,9 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		investor.amount = remainingAmount;
 		totalStake -= withdrawnNativeAmount;
 
-		// Calculate the unrealized loss of vToken since pool's endBlock due to vToken yield-bearing
-		// interest model and late withdrawal
-		uint256 unrealizedVTokens = _calculatePostPoolInterest(
-			withdrawnNativeAmount,
-			_vTokenAmount
-		);
+		acceptedVAsset.safeTransfer(investorAddress, _vTokenAmount);
 
-		acceptedVAsset.safeTransfer(
-			address(msg.sender),
-			_vTokenAmount + unrealizedVTokens
-		);
-
-		emit Unstaked(address(msg.sender), _vTokenAmount);
+		emit Unstaked(investorAddress, _vTokenAmount);
 	}
 
 	function recoverWrongToken(
@@ -392,25 +380,15 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		projectToken.safeTransfer(owner(), balance);
 	}
 
-	/**
-	 *TODO: should minus totalStake if there still have
-	 */
-	// function claimOwnerInterest() external onlyOwner nonReentrant afterPoolEnd {
-	// 	uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
-	// 		ownerShareOfInterest) / 100;
-	// 	acceptedVAsset.safeTransfer(owner(), balance);
-	// }
+	function claimOwnerInterest() external onlyOwner nonReentrant {
+		(uint256 ownerClaims, ) = _getPlatformAndOwnerClaimableVAssets();
+		acceptedVAsset.safeTransfer(owner(), ownerClaims);
+	}
 
-	// function claimPlatformInterest()
-	// 	external
-	// 	onlyPlatformAdmin
-	// 	nonReentrant
-	// 	afterPoolEnd
-	// {
-	// 	uint256 balance = (acceptedVAsset.balanceOf(address(this)) *
-	// 		(100 - ownerShareOfInterest)) / 100;
-	// 	acceptedVAsset.safeTransfer(platformAdminAddress, balance);
-	// }
+	function claimPlatformInterest() external onlyPlatformAdmin {
+		(, uint256 platformClaims) = _getPlatformAndOwnerClaimableVAssets();
+		acceptedVAsset.safeTransfer(platformAdminAddress, platformClaims);
+	}
 
 	function setXCMOracleAddress(
 		address _xcmOracleAddress
@@ -431,14 +409,35 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		);
 	}
 
+	function getWithdrawableVAssets(
+		uint256 nativeAmount
+	) public view returns (uint256 withdrawableVAssets) {
+		uint256 currentBlock = block.number;
+
+		if (block.number <= endBlock) {
+			withdrawableVAssets = xcmOracle.getVTokenByToken(
+				address(acceptedNativeAsset),
+				nativeAmount
+			);
+		} else {
+			uint256 exRateAtEnd = _getEstimatedNativeExRateAtEnd(currentBlock);
+			withdrawableVAssets =
+				(nativeAmount * exRateAtEnd) /
+				NATIVE_SCALING_FACTOR;
+		}
+	}
+
+	// Not needed
 	function getTotalNativeStaked() public view returns (uint256) {
 		return totalStake;
 	}
 
+	// Not needed
 	function getTotalVAssetStaked() public view returns (uint256) {
 		return acceptedVAsset.balanceOf(address(this));
 	}
 
+	// Not so much needed either
 	function getTotalProjectToken() public view returns (uint256) {
 		return projectToken.balanceOf(address(this));
 	}
@@ -555,7 +554,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			(++nativeExRateSampleCount);
 
 		lastNativeExRate = newNativeExRate;
-		// ++nativeExRateSampleCount;
 	}
 
 	function _getPendingExchangeRate() internal view returns (uint256) {
@@ -613,33 +611,35 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		return accumulatedIncrease;
 	}
 
-	function _calculatePostPoolInterest(
-		uint256 _withdrawnNativeAmount,
-		uint256 _withdrawnVTokenAmount
-	) internal view returns (uint256) {
-		// Cap extrapolation period to 2 weeks
-		uint256 maxExtrapolationBlocks = 2 weeks / BLOCK_TIME;
-		uint256 blocksSinceEnd = block.number - endBlock;
-		if (blocksSinceEnd <= 0) {
-			return 0;
+	function _getEstimatedNativeExRateAtEnd(
+		uint256 _currentBlock
+	) internal view returns (uint256 estimatedNativeExRateAtEnd) {
+		uint256 blockDelta;
+
+		if (_currentBlock <= endBlock) {
+			blockDelta = endBlock - _currentBlock;
+			estimatedNativeExRateAtEnd =
+				lastNativeExRate -
+				(avgNativeExRateGradient * blockDelta);
+		} else {
+			blockDelta = _currentBlock - endBlock;
+			estimatedNativeExRateAtEnd =
+				lastNativeExRate +
+				(avgNativeExRateGradient * blockDelta);
 		}
-		uint256 extrapolationBlocks = blocksSinceEnd < maxExtrapolationBlocks
-			? blocksSinceEnd
-			: maxExtrapolationBlocks;
+	}
 
-		uint256 nativeExRateAtEnd = lastNativeExRate +
-			(avgNativeExRateGradient * extrapolationBlocks);
-		if (nativeExRateAtEnd < lastNativeExRate) {
-			return 0;
-		}
+	function _getPlatformAndOwnerClaimableVAssets()
+		internal
+		view
+		returns (uint256 ownerClaims, uint256 platformClaims)
+	{
+		uint256 allVAssets = acceptedVAsset.balanceOf(address(this));
+		uint256 investorVAssets = getWithdrawableVAssets(totalStake);
 
-		uint256 vTokensAtEnd = (_withdrawnNativeAmount * nativeExRateAtEnd) /
-			NATIVE_SCALING_FACTOR;
-
-		return
-			vTokensAtEnd > _withdrawnVTokenAmount
-				? vTokensAtEnd - _withdrawnVTokenAmount
-				: 0;
+		uint256 combinedClaims = allVAssets - investorVAssets;
+		ownerClaims = (combinedClaims * ownerShareOfInterest) / 100;
+		platformClaims = combinedClaims - ownerClaims;
 	}
 
 	// TODO: add tests for this
