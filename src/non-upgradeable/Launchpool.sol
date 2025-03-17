@@ -553,7 +553,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	}
 
 	function _getPendingExchangeRate() internal view returns (uint256) {
-		uint256 totalNativeStake = totalNativeStake;
 		if (totalNativeStake == 0) {
 			return 0;
 		}
