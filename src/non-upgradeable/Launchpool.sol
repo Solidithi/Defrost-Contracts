@@ -88,6 +88,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	error ExceedsMaximumAllowedStakePerUser();
 	error VAssetAmountNotSufficient();
 	error NativeAmountExceedStake();
+	error MustBeDuringPoolTime();
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
@@ -115,6 +116,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	modifier afterPoolEnd() {
 		if (block.number < endBlock) {
 			revert MustBeAfterPoolEnd();
+		}
+		_;
+	}
+
+	modifier poolIsActive() {
+		if (block.number < startBlock || block.number > endBlock) {
+			revert MustBeDuringPoolTime();
 		}
 		_;
 	}
@@ -230,7 +238,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	/////////////////////////////////////////////////////////////////////////
 	function stake(
 		uint256 _vTokenAmount
-	) external nonZeroAmount(_vTokenAmount) nonReentrant {
+	) external nonZeroAmount(_vTokenAmount) poolIsActive nonReentrant {
 		if (_vTokenAmount > maxVAssetPerStaker) {
 			revert ExceedsMaximumAllowedStakePerUser();
 		}
@@ -300,7 +308,12 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert NativeAmountExceedStake();
 		}
 
-		_updateNativeTokenExchangeRate(withdrawnNativeAmount, _vTokenAmount);
+		if (block.number <= endBlock) {
+			_updateNativeTokenExchangeRate(
+				withdrawnNativeAmount,
+				_vTokenAmount
+			);
+		}
 
 		_tick();
 
@@ -337,6 +350,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		token.safeTransfer(owner(), balance);
 	}
 
+	// Need modification
 	function unstakeWithoutProjectToken(
 		uint256 _vTokenAmount
 	) external nonReentrant {
@@ -412,15 +426,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	function getWithdrawableVAssets(
 		uint256 nativeAmount
 	) public view returns (uint256 withdrawableVAssets) {
-		uint256 currentBlock = block.number;
-
 		if (block.number <= endBlock) {
 			withdrawableVAssets = xcmOracle.getVTokenByToken(
 				address(acceptedNativeAsset),
 				nativeAmount
 			);
 		} else {
-			uint256 exRateAtEnd = _getEstimatedNativeExRateAtEnd(currentBlock);
+			uint256 exRateAtEnd = _getEstimatedNativeExRateAtEnd();
 			withdrawableVAssets =
 				(nativeAmount * exRateAtEnd) /
 				NATIVE_SCALING_FACTOR;
@@ -532,14 +544,14 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		uint256 currentBlock = block.number;
-
-		uint256 exRateDelta = (newNativeExRate > lastNativeExRate)
-			? newNativeExRate - lastNativeExRate
-			: 0;
 		uint256 blockDelta = currentBlock - tickBlock;
 		if (blockDelta == 0) {
 			return;
 		}
+		uint256 exRateDelta = (newNativeExRate > lastNativeExRate)
+			? newNativeExRate - lastNativeExRate
+			: 0;
+
 		uint256 newGradientSample = exRateDelta / blockDelta;
 
 		// Calculate rolling average of the gradient
@@ -606,22 +618,18 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		return accumulatedIncrease;
 	}
 
-	function _getEstimatedNativeExRateAtEnd(
-		uint256 _currentBlock
-	) internal view returns (uint256 estimatedNativeExRateAtEnd) {
-		uint256 blockDelta;
-
-		if (_currentBlock <= endBlock) {
-			blockDelta = endBlock - _currentBlock;
-			estimatedNativeExRateAtEnd =
-				lastNativeExRate -
-				(avgNativeExRateGradient * blockDelta);
-		} else {
-			blockDelta = _currentBlock - endBlock;
-			estimatedNativeExRateAtEnd =
-				lastNativeExRate +
-				(avgNativeExRateGradient * blockDelta);
-		}
+	function _getEstimatedNativeExRateAtEnd()
+		internal
+		view
+		returns (
+			// uint256 _currentBlock
+			uint256 estimatedNativeExRateAtEnd
+		)
+	{
+		uint blocksTilEnd = endBlock - tickBlock;
+		estimatedNativeExRateAtEnd =
+			lastNativeExRate +
+			(avgNativeExRateGradient * blocksTilEnd);
 	}
 
 	function _getPlatformAndOwnerClaimableVAssets()
