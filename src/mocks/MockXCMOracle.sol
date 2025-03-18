@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
+
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IERC20Decimal {
@@ -35,6 +36,14 @@ contract MockXCMOracle {
 	}
 
 	/**
+	 * @dev Syncs the current exchange rate based on time elapsed.
+	 */
+	function syncExchangeRate() public {
+		baseExchangeRate = getCurrentExchangeRate();
+		lastUpdatedBlock = block.number;
+	}
+
+	/**
 	 * @dev Updates the exchange rate manually.
 	 */
 	function setExchangeRate(uint256 _exchangeRate) public {
@@ -61,14 +70,6 @@ contract MockXCMOracle {
 	}
 
 	/**
-	 * @dev Syncs the current exchange rate based on time elapsed.
-	 */
-	function syncExchangeRate() public {
-		baseExchangeRate = getCurrentExchangeRate();
-		lastUpdatedBlock = block.number;
-	}
-
-	/**
 	 * @dev Returns the current exchange rate, accounting for time-based increments.
 	 */
 	function getCurrentExchangeRate() public view returns (uint256) {
@@ -85,8 +86,11 @@ contract MockXCMOracle {
 		address assetAddress,
 		uint256 amount
 	) public view returns (uint256) {
+		// First, subtract the mint fee from the input amount
 		uint256 mintFee = (rateInfo.mintRate * amount) / 10000;
 		uint256 assetAmountExcludingFee = amount - mintFee; // Deduct fee
+
+		// Then, calculate the vToken amount using the ratio
 		return
 			(assetAmountExcludingFee * 10 ** DECIMALS) /
 			getCurrentExchangeRate();
@@ -94,16 +98,20 @@ contract MockXCMOracle {
 
 	/**
 	 * @dev Converts vTokens to tokens, applying redeem fee.
-	 * Formula: tokens = (vTokens * exchangeRate) / 10^DECIMALS - redeemFee
+	 * Formula: tokens = (vTokens - redeemFee) * exchangeRate / 10^DECIMALS
 	 */
 	function getTokenByVToken(
 		address assetAddress,
 		uint256 amount
 	) public view returns (uint256) {
-		uint256 assetAmount = (amount * getCurrentExchangeRate()) /
-			10 ** DECIMALS; // Convert vTokens to asset
-		uint256 redeemFee = (rateInfo.redeemRate * assetAmount) / 10000;
-		return assetAmount - redeemFee;
+		// First, subtract the redeem fee from the vToken amount
+		uint256 redeemFee = (rateInfo.redeemRate * amount) / 10000;
+		uint256 vAssetAmountExcludingFee = amount - redeemFee; // Deduct fee
+
+		// Then, calculate the token amount using the ratio
+		return
+			(vAssetAmountExcludingFee * getCurrentExchangeRate()) /
+			(10 ** DECIMALS);
 	}
 
 	/**
