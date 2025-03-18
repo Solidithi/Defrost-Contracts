@@ -14,4 +14,9 @@ interface IXCMOracle {
 		address _assetAddress,
 		uint256 _vAssetAmount
 	) external view returns (uint256);
+
+	function rateInfo()
+		external
+		view
+		returns (uint8 mintRate, uint8 redeemRate);
 }
