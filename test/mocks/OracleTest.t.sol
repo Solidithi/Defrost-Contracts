@@ -116,7 +116,7 @@ contract MockXCMOracleTest is Test {
 		vm.roll(block.number + 25);
 
 		// Check the current rate without synchronizing
-		uint256 expectedRate = initialRate + (2 * increasementAmount); // 1.4
+		uint256 expectedRate = initialRate + (2 * increasementAmount); // 1.22
 		assertEq(oracle.getExchangeRate(), expectedRate);
 
 		// Synchronize the exchange rate
