@@ -365,10 +365,11 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert ZeroAmountNotAllowed();
 		}
 
+		(uint8 mintRate, ) = xcmOracle.rateInfo();
 		uint256 withdrawableVAsset = xcmOracle.getVTokenByToken(
 			address(acceptedNativeAsset),
 			investor.amount
-		);
+		) + (mintRate * investor.amount) * 10000;
 
 		if (
 			withdrawableVAsset <
