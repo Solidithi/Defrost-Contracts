@@ -1,7 +1,5 @@
-// SPDX-License-Identifier: SEE LICENSE IN LICENSE
-/* solhint-disable */
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
-
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IERC20Decimal {
@@ -9,41 +7,73 @@ interface IERC20Decimal {
 }
 
 contract MockXCMOracle {
-	// uint256 DECIMALS;
-	uint256 public exchangeRate;
+	struct RateInfo {
+		uint8 mintRate;
+		uint8 redeemRate;
+	}
 
-	constructor() {
-		// DECIMALS = 1;
-		exchangeRate = 15;
+	uint256 public baseExchangeRate;
+	uint256 public blockInterval;
+	uint256 public lastUpdatedBlock;
+	uint256 public increasementAmount;
+
+	RateInfo public rateInfo;
+
+	constructor(
+		uint256 _initialRate,
+		uint256 _blockInterval,
+		uint256 _increasementAmount
+	) {
+		baseExchangeRate = _initialRate;
+		blockInterval = _blockInterval;
+		increasementAmount = _increasementAmount;
+		lastUpdatedBlock = block.number;
 	}
 
 	function setExchangeRate(uint256 _exchangeRate) public {
-		exchangeRate = _exchangeRate;
+		baseExchangeRate = _exchangeRate;
+		lastUpdatedBlock = block.number;
+	}
+
+	function setBlockInterval(uint256 _blockInterval) public {
+		baseExchangeRate = getCurrentExchangeRate();
+		lastUpdatedBlock = block.number;
+		blockInterval = _blockInterval;
+	}
+
+	function setIncreasementAmount(uint256 _increasementAmount) public {
+		baseExchangeRate = getCurrentExchangeRate();
+		lastUpdatedBlock = block.number;
+		increasementAmount = _increasementAmount;
+	}
+
+	function syncExchangeRate() public {
+		baseExchangeRate = getCurrentExchangeRate();
+		lastUpdatedBlock = block.number;
+	}
+	function getCurrentExchangeRate() public view returns (uint256) {
+		uint256 blocksPassed = block.number - lastUpdatedBlock;
+		uint256 increments = blocksPassed / blockInterval;
+		return baseExchangeRate + (increments * increasementAmount);
 	}
 
 	function getVTokenByToken(
-		address _assetAddress,
+		address assetAddress,
 		uint256 amount
 	) public view returns (uint256) {
-		//Takes in Native Asset address and Native amount then output the equivalent amount of vAsset
-		//vAsset / nativeAsset > 0 =>vDOT is more valuable than DOT
-		// uint256 decimal = IERC20Decimal(_assetAddress).decimals();
-		// return (amount * 10 ** (decimal - 1)) / 15;
-		return amount / exchangeRate;
+		uint256 mintFee = (rateInfo.mintRate * amount) / 10000;
+		return amount - mintFee / getCurrentExchangeRate();
 	}
 
 	function getTokenByVToken(
-		address _assetAddress,
+		address assetAddress,
 		uint256 amount
 	) public view returns (uint256) {
-		//Takes in Native Asset address and vAsset amount then output the equivalent amount of Native Asset
-		// uint256 decimal = IERC20Decimal(_assetAddress).decimals();
-		// return amount * 10 ** (decimal - 1) * 15;
-		return amount * exchangeRate;
+		uint256 redeemFee = (rateInfo.redeemRate * amount) / 10000;
+		return amount - redeemFee * getCurrentExchangeRate();
 	}
 
 	function getExchangeRate() public view returns (uint256) {
-		return exchangeRate;
+		return getCurrentExchangeRate();
 	}
 }
-/* solhint-enable */
