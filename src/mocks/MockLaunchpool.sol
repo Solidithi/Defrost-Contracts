@@ -32,8 +32,22 @@ contract MockLaunchpool is Launchpool {
 			_emissionRateChanges
 		)
 	{
-		// Do sth cool if u want
-		MockXCMOracle _xcmOracle = new MockXCMOracle();
+		/**
+		 * @dev
+		 * This mocks a scenario where:
+		 * Initial rate is `12000` (scaled by `10^4`), is 1.2 in reality, 20% difference for vAsset.
+		 * Rate increases by `100` every `10` blocks (`1 * 10^4` in storage).
+		 * --> For every 10 blocks, the rate increases by 0.1 in actual caculation.
+
+		 * --> block 1000: 1 vDOT = 1.2 DOT
+		 * --> block 1010: 1 vDOT = 1.3 DOT
+		 * --> block 1020: 1 vDOT = 1.4 DOT
+		 * --> block 1030: 1 vDOT = 1.5 DOT
+		 
+		 * Mint rate is `50` (0.5% fee).
+		 * Redeem rate is `100` (1% fee).
+		 */
+		MockXCMOracle _xcmOracle = new MockXCMOracle(12000, 10, 100, 50, 100);
 		xcmOracle = IXCMOracle(address(_xcmOracle));
 	}
 
