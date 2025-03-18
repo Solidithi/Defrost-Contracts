@@ -244,8 +244,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			address(acceptedNativeAsset),
 			_vTokenAmount
 		);
-		uint256 feeAmount = (redeemRate * directAmount) / 10000;
-		uint256 nativeAmount = directAmount - feeAmount;
+
+		uint256 nativeAmount = directAmount / (10000 - redeemRate);
 
 		_updateNativeTokenExchangeRate(nativeAmount, _vTokenAmount);
 
@@ -293,15 +293,14 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert ZeroAmountNotAllowed();
 		}
 
-		(uint8 mintRate, ) = xcmOracle.rateInfo();
+		(, uint8 redeemRate) = xcmOracle.rateInfo();
 
 		uint256 directAmount = xcmOracle.getVTokenByToken(
 			address(acceptedNativeAsset),
 			investor.amount
 		);
 
-		uint256 feeAmount = (mintRate * investor.amount) / 10000;
-		uint256 withdrawableVAsset = directAmount + feeAmount;
+		uint256 withdrawableVAsset = directAmount / (10000 - redeemRate);
 
 		if (withdrawableVAsset < _vTokenAmount) {
 			revert VAssetAmountNotSufficient();
