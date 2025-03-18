@@ -31,8 +31,7 @@ contract MockLaunchpool is Launchpool {
 			_changeBlocks,
 			_emissionRateChanges
 		)
-	{
-			}
+	{}
 
 	// Wildcard setters for testing (beware when testing)
 	function wild_setTickBlock(uint128 _tickBlock) external {
@@ -63,12 +62,52 @@ contract MockLaunchpool is Launchpool {
 		_updateNativeTokenExchangeRate(_nativeAmount, _vTokenAmount);
 	}
 
+	function exposed_getVTokenByToken(
+		uint256 _nativeAmount
+	) public view returns (uint256) {
+		return _getVTokenByTokenWithoutFee(_nativeAmount);
+	}
+
+	function exposed_getTokenByVToken(
+		uint256 _vTokenAmount
+	) public view returns (uint256) {
+		return _getTokenByVTokenWithoutFee(_vTokenAmount);
+	}
+
+	function exposed_getEstimatedNativeExRateAtEnd()
+		public
+		view
+		returns (uint256)
+	{
+		return _getEstimatedNativeExRateAtEnd();
+	}
+
 	function getPendingExchangeRate() public view returns (uint256) {
 		return _getPendingExchangeRate();
 	}
 
 	function getClaimableProjectToken() public view returns (uint256) {
 		return getClaimableProjectToken();
+	}
+
+	function _getVTokenByTokenWithoutFee(
+		uint256 _nativeAmount
+	) internal view override returns (uint256 vAssetAmount) {
+		return
+			xcmOracle.getVTokenByToken(
+				address(acceptedNativeAsset),
+				_nativeAmount
+			);
+	}
+
+	function _getTokenByVTokenWithoutFee(
+		uint256 _vAssetAmount
+	) internal view override returns (uint256 nativeAmount) {
+		return
+			xcmOracle.getTokenByVToken(
+				address(acceptedNativeAsset),
+				_vAssetAmount
+			);
 	}
 
 	function _preInit() internal override {

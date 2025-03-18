@@ -162,7 +162,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		validTokenAddress(_acceptedNativeAsset)
 		validStakingRange(_maxVAssetPerStaker)
 	{
-_preInit();
+		_preInit();
 
 		if (_startBlock <= block.number) revert StartBlockMustBeInFuture();
 		if (_endBlock <= _startBlock) revert EndBlockMustBeAfterstartBlock();
@@ -224,6 +224,15 @@ _preInit();
 				emissionRateChanges[_changeBlocks[i]] = _emissionRateChanges[i];
 			}
 		}
+
+		// Record native exchange rate at start block
+		// TODO: add test for this
+		lastNativeExRate =
+			NATIVE_SCALING_FACTOR *
+			_getTokenByVTokenWithoutFee(
+				IERC20Metadata(_acceptedNativeAsset).decimals()
+			);
+		++nativeExRateSampleCount;
 
 		changeBlocks = _changeBlocks;
 		platformAdminAddress = _msgSender();
@@ -542,14 +551,16 @@ _preInit();
 		uint256 newNativeExRate = (_nativeAmount * NATIVE_SCALING_FACTOR) /
 			_vTokenAmount;
 
-		// Handle first call of pool then exit early
-		if (lastNativeExRate == 0) {
-			// Near impossible for this to happen
-			lastNativeExRate = newNativeExRate;
-			// avgNativeExRateGradient = newNativeExRate;
-			// ++nativeExRateSampleCount;
-			return;
-		}
+		// TODO: add test to see if lastNativeExRate is still zero after init
+		// // Handle first call of pool then exit early
+		// if (lastNativeExRate == 0) {
+		// 	// // Near impossible for this to happen
+		// 	// lastNativeExRate = newNativeExRate;
+		// 	// // avgNativeExRateGradient = newNativeExRate;
+		// 	// // ++nativeExRateSampleCount;
+		// 	// return;
+		// 	revert("This isn't supposed to be happening anymore");
+		// }
 
 		uint256 currentBlock = block.number;
 		uint256 blockDelta = currentBlock - tickBlock;
@@ -565,10 +576,11 @@ _preInit();
 		// Calculate rolling average of the gradient
 		avgNativeExRateGradient =
 			(avgNativeExRateGradient *
-				nativeExRateSampleCount +
+				(nativeExRateSampleCount - 1) +
 				newGradientSample) /
-			(++nativeExRateSampleCount);
+			(nativeExRateSampleCount);
 
+		++nativeExRateSampleCount;
 		lastNativeExRate = newNativeExRate;
 	}
 
@@ -630,11 +642,11 @@ _preInit();
 		internal
 		view
 		returns (
-			// uint256 _currentBlock
 			uint256 estimatedNativeExRateAtEnd
 		)
 	{
 		uint blocksTilEnd = endBlock - tickBlock;
+		// Edge case: when there are only 1 staker, we don't earn interest
 		estimatedNativeExRateAtEnd =
 			lastNativeExRate +
 			(avgNativeExRateGradient * blocksTilEnd);
@@ -652,6 +664,32 @@ _preInit();
 		ownerClaims = (combinedClaims * ownerShareOfInterest) / 100;
 		platformClaims = combinedClaims - ownerClaims;
 	}
+
+	function _getVTokenByTokenWithoutFee(
+		uint256 _nativeAmount
+	) internal view virtual returns (uint256 vAssetAmount) {
+		bytes2 currencyId = xcmOracle.getCurrencyIdByAssetAddress(
+			address(acceptedNativeAsset)
+		);
+		IXCMOracle.PoolInfo memory poolInfo = xcmOracle.tokenPool(currencyId);
+		vAssetAmount =
+			(_nativeAmount * poolInfo.vAssetAmount) /
+			poolInfo.assetAmount;
+	}
+
+	function _getTokenByVTokenWithoutFee(
+		uint256 _vAssetAmount
+	) internal view virtual returns (uint256 nativeAmount) {
+		bytes2 currencyId = xcmOracle.getCurrencyIdByAssetAddress(
+			address(acceptedNativeAsset)
+		);
+		IXCMOracle.PoolInfo memory poolInfo = xcmOracle.tokenPool(currencyId);
+		nativeAmount =
+			(_vAssetAmount * poolInfo.assetAmount) /
+			poolInfo.vAssetAmount;
+	}
+
+	function _getTokenByVToken() internal view returns (uint256) {}
 
 	// TODO: add tests for this
 	function _getActiveBlockDelta(
