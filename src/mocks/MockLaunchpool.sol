@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
-import { MockXCMOracle } from "../mocks/MockXCMOracle.sol";
+import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 
 contract MockLaunchpool is Launchpool {
 	constructor(
@@ -44,10 +44,8 @@ contract MockLaunchpool is Launchpool {
 		 * --> block 1020: 1 vDOT = 1.4 DOT
 		 * --> block 1030: 1 vDOT = 1.5 DOT
 		 
-		 * Mint rate is `50` (0.5% fee).
-		 * Redeem rate is `100` (1% fee).
 		 */
-		MockXCMOracle _xcmOracle = new MockXCMOracle(12000, 10, 100, 50, 100);
+		MockXCMOracle _xcmOracle = new MockXCMOracle(12000, 10, 100);
 		xcmOracle = IXCMOracle(address(_xcmOracle));
 	}
 

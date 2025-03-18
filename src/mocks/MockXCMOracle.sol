@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
-
+import "forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IERC20Decimal {
@@ -8,115 +8,64 @@ interface IERC20Decimal {
 }
 
 contract MockXCMOracle {
-	struct RateInfo {
-		uint8 mintRate; // Minting fee rate in basis points (bps)
-		uint8 redeemRate; // Redemption fee rate in basis points (bps)
-	}
-
 	uint256 public baseExchangeRate;
 	uint256 public blockInterval;
 	uint256 public lastUpdatedBlock;
-	uint256 public increasementAmount;
-	uint256 public immutable DECIMALS = 4; // 4 decimal precision
-
-	RateInfo public rateInfo;
+	uint256 public incrementAmount;
 
 	constructor(
-		uint256 _initialRate, // Initial exchange rate (without decimals), make sure this value is pre-multiply by 10^DECIMALS
-		uint256 _blockInterval, // Block interval for rate increments
-		uint256 _increasementAmount, // Amount to increase exchange rate per interval
-		uint8 _mintRate, // Minting fee rate in bps
-		uint8 _redeemRate // Redemption fee rate in bps
+		uint256 _initialRate,
+		uint256 _blockInterval,
+		uint256 _incrementAmount
 	) {
-		baseExchangeRate = _initialRate; // Adjust for precision
+		baseExchangeRate = _initialRate;
 		blockInterval = _blockInterval;
-		increasementAmount = _increasementAmount;
-		lastUpdatedBlock = block.number;
-		rateInfo = RateInfo(_mintRate, _redeemRate);
-	}
-
-	/**
-	 * @dev Syncs the current exchange rate based on time elapsed.
-	 */
-	function syncExchangeRate() public {
-		baseExchangeRate = getCurrentExchangeRate();
+		incrementAmount = _incrementAmount;
 		lastUpdatedBlock = block.number;
 	}
 
-	/**
-	 * @dev Updates the exchange rate manually.
-	 */
 	function setExchangeRate(uint256 _exchangeRate) public {
 		baseExchangeRate = _exchangeRate;
 		lastUpdatedBlock = block.number;
 	}
 
-	/**
-	 * @dev Updates the block interval and syncs the exchange rate.
-	 */
 	function setBlockInterval(uint256 _blockInterval) public {
 		baseExchangeRate = getCurrentExchangeRate();
 		lastUpdatedBlock = block.number;
 		blockInterval = _blockInterval;
 	}
 
-	/**
-	 * @dev Updates the increment amount and syncs the exchange rate.
-	 */
-	function setIncreasementAmount(uint256 _increasementAmount) public {
+	function setIncrementAmount(uint256 _incrementAmount) public {
 		baseExchangeRate = getCurrentExchangeRate();
 		lastUpdatedBlock = block.number;
-		increasementAmount = _increasementAmount;
+		incrementAmount = _incrementAmount;
 	}
 
-	/**
-	 * @dev Returns the current exchange rate, accounting for time-based increments.
-	 */
+	function syncExchangeRate() public {
+		baseExchangeRate = getCurrentExchangeRate();
+		lastUpdatedBlock = block.number;
+	}
+
 	function getCurrentExchangeRate() public view returns (uint256) {
 		uint256 blocksPassed = block.number - lastUpdatedBlock;
 		uint256 increments = blocksPassed / blockInterval;
-		return baseExchangeRate + (increments * increasementAmount);
+		return baseExchangeRate + (increments * incrementAmount);
 	}
 
-	/**
-	 * @dev Converts tokens to vTokens, applying mint fee.
-	 * Formula: vTokens = (tokens - mintFee) * (10^DECIMALS / exchangeRate)
-	 */
 	function getVTokenByToken(
-		address assetAddress,
+		address _assetAddress,
 		uint256 amount
 	) public view returns (uint256) {
-		// First, subtract the mint fee from the input amount
-		uint256 mintFee = (rateInfo.mintRate * amount) / 10000;
-		uint256 assetAmountExcludingFee = amount - mintFee; // Deduct fee
-
-		// Then, calculate the vToken amount using the ratio
-		return
-			(assetAmountExcludingFee * 10 ** DECIMALS) /
-			getCurrentExchangeRate();
+		return amount / getCurrentExchangeRate();
 	}
 
-	/**
-	 * @dev Converts vTokens to tokens, applying redeem fee.
-	 * Formula: tokens = (vTokens - redeemFee) * exchangeRate / 10^DECIMALS
-	 */
 	function getTokenByVToken(
-		address assetAddress,
+		address _assetAddress,
 		uint256 amount
 	) public view returns (uint256) {
-		// First, subtract the redeem fee from the vToken amount
-		uint256 redeemFee = (rateInfo.redeemRate * amount) / 10000;
-		uint256 vAssetAmountExcludingFee = amount - redeemFee; // Deduct fee
-
-		// Then, calculate the token amount using the ratio
-		return
-			(vAssetAmountExcludingFee * getCurrentExchangeRate()) /
-			(10 ** DECIMALS);
+		return amount * getCurrentExchangeRate();
 	}
 
-	/**
-	 * @dev Returns the latest exchange rate.
-	 */
 	function getExchangeRate() public view returns (uint256) {
 		return getCurrentExchangeRate();
 	}
