@@ -29,7 +29,7 @@ contract MockXCMOracle {
 		//vAsset / nativeAsset > 0 =>vDOT is more valuable than DOT
 		// uint256 decimal = IERC20Decimal(_assetAddress).decimals();
 		// return (amount * 10 ** (decimal - 1)) / 15;
-		return amount / exchangeRate;
+		return (amount * 10) / exchangeRate;
 	}
 
 	function getTokenByVToken(
@@ -39,7 +39,7 @@ contract MockXCMOracle {
 		//Takes in Native Asset address and vAsset amount then output the equivalent amount of Native Asset
 		// uint256 decimal = IERC20Decimal(_assetAddress).decimals();
 		// return amount * 10 ** (decimal - 1) * 15;
-		return amount * exchangeRate;
+		return (amount * exchangeRate) / 10;
 	}
 
 	function getExchangeRate() public view returns (uint256) {
