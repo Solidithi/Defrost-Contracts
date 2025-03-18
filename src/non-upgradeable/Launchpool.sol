@@ -162,6 +162,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		validTokenAddress(_acceptedNativeAsset)
 		validStakingRange(_maxVAssetPerStaker)
 	{
+_preInit();
+
 		if (_startBlock <= block.number) revert StartBlockMustBeInFuture();
 		if (_endBlock <= _startBlock) revert EndBlockMustBeAfterstartBlock();
 
@@ -495,6 +497,11 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		address _investor
 	) public view returns (uint256) {
 		return stakers[_investor].nativeAmount;
+	}
+
+	function _preInit() internal virtual {
+		// to be overridden in the inherited contract
+		// used for testing, to inject/update mock dependencies
 	}
 
 	function _tick() internal {

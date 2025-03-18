@@ -32,10 +32,7 @@ contract MockLaunchpool is Launchpool {
 			_emissionRateChanges
 		)
 	{
-		// Do sth cool if u want
-		MockXCMOracle _xcmOracle = new MockXCMOracle();
-		xcmOracle = IXCMOracle(address(_xcmOracle));
-	}
+			}
 
 	// Wildcard setters for testing (beware when testing)
 	function wild_setTickBlock(uint128 _tickBlock) external {
@@ -72,6 +69,11 @@ contract MockLaunchpool is Launchpool {
 
 	function getClaimableProjectToken() public view returns (uint256) {
 		return getClaimableProjectToken();
+	}
+
+	function _preInit() internal override {
+		MockXCMOracle _xcmOracle = new MockXCMOracle();
+		xcmOracle = IXCMOracle(address(_xcmOracle));
 	}
 }
 /* solhint-enable */
