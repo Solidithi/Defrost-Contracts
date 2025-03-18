@@ -120,6 +120,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		_;
 	}
 
+	// TODO: add test for this
 	modifier poolIsActive() {
 		if (block.number < startBlock || block.number > endBlock) {
 			revert MustBeDuringPoolTime();
@@ -434,8 +435,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		} else {
 			uint256 exRateAtEnd = _getEstimatedNativeExRateAtEnd();
 			withdrawableVAssets =
-				(nativeAmount * exRateAtEnd) /
-				NATIVE_SCALING_FACTOR;
+				(nativeAmount * NATIVE_SCALING_FACTOR) /
+				exRateAtEnd;
 		}
 	}
 
