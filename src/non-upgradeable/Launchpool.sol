@@ -230,129 +230,139 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
-	// function stake(
-	// 	uint256 _vTokenAmount
-	// ) external nonZeroAmount(_vTokenAmount) nonReentrant {
-	// 	if (_vTokenAmount > maxVAssetPerStaker) {
-	// 		revert ExceedsMaximumAllowedStakePerUser();
-	// 	}
+	function stake(
+		uint256 _vTokenAmount
+	) external nonZeroAmount(_vTokenAmount) nonReentrant {
+		if (_vTokenAmount > maxVAssetPerStaker) {
+			revert ExceedsMaximumAllowedStakePerUser();
+		}
 
-	// 	Staker storage investor = stakers[msg.sender];
+		Staker storage investor = stakers[msg.sender];
 
-	// 	(, uint8 redeemRate) = xcmOracle.rateInfo();
-	// 	uint256 directAmount = xcmOracle.getTokenByVToken(
-	// 		address(acceptedNativeAsset),
-	// 		_vTokenAmount
-	// 	);
+		// (, uint8 redeemRate) = xcmOracle.rateInfo();
+		// uint256 directAmount = xcmOracle.getTokenByVToken(
+		// 	address(acceptedNativeAsset),
+		// 	_vTokenAmount
+		// );
 
-	// 	uint256 nativeAmount = directAmount / (10000 - redeemRate);
+		// uint256 nativeAmount = directAmount / (10000 - redeemRate);
 
-	// 	_updateNativeTokenExchangeRate(nativeAmount, _vTokenAmount);
+		uint256 nativeAmount = _getTokenByVTokenWithoutFee(_vTokenAmount);
 
-	// 	_tick();
+		_updateNativeTokenExchangeRate(nativeAmount, _vTokenAmount);
 
-	// 	if (investor.amount > 0) {
-	// 		uint256 claimableProjectTokenAmount = (investor.amount *
-	// 			cumulativeExchangeRate) /
-	// 			SCALING_FACTOR -
-	// 			investor.claimOffset;
+		_tick();
 
-	// 		if (claimableProjectTokenAmount > 0) {
-	// 			projectToken.safeTransfer(
-	// 				address(msg.sender),
-	// 				claimableProjectTokenAmount
-	// 			);
-	// 		}
-	// 	}
+		if (investor.amount > 0) {
+			uint256 claimableProjectTokenAmount = (investor.amount *
+				cumulativeExchangeRate) /
+				SCALING_FACTOR -
+				investor.claimOffset;
 
-	// 	investor.amount += nativeAmount;
-	// 	totalStake += nativeAmount;
+			if (claimableProjectTokenAmount > 0) {
+				projectToken.safeTransfer(
+					address(msg.sender),
+					claimableProjectTokenAmount
+				);
+			}
+		}
 
-	// 	acceptedVAsset.safeTransferFrom(
-	// 		address(msg.sender),
-	// 		address(this),
-	// 		_vTokenAmount
-	// 	);
-	// 	/**
-	// 	 * TODO: implement native amount increase here
-	// 	 */
+		investor.amount += nativeAmount;
+		totalStake += nativeAmount;
 
-	// 	investor.claimOffset =
-	// 		(investor.amount * cumulativeExchangeRate) /
-	// 		SCALING_FACTOR;
+		acceptedVAsset.safeTransferFrom(
+			address(msg.sender),
+			address(this),
+			_vTokenAmount
+		);
+		/**
+		 * TODO: implement native amount increase here
+		 */
 
-	// 	emit Staked(address(msg.sender), _vTokenAmount);
-	// }
+		investor.claimOffset =
+			(investor.amount * cumulativeExchangeRate) /
+			SCALING_FACTOR;
 
-	// function unstake(
-	// 	uint256 _vTokenAmount
-	// ) external nonZeroAmount(_vTokenAmount) nonReentrant {
-	// 	Staker storage investor = stakers[msg.sender];
+		emit Staked(address(msg.sender), _vTokenAmount);
+	}
 
-	// 	if (investor.amount == 0) {
-	// 		revert ZeroAmountNotAllowed();
-	// 	}
+	function unstake(
+		uint256 _vTokenAmount
+	) external nonZeroAmount(_vTokenAmount) nonReentrant {
+		Staker storage investor = stakers[msg.sender];
 
-	// 	(, uint8 redeemRate) = xcmOracle.rateInfo();
+		if (investor.amount == 0) {
+			revert ZeroAmountNotAllowed();
+		}
 
-	// 	uint256 directAmount = xcmOracle.getVTokenByToken(
-	// 		address(acceptedNativeAsset),
-	// 		investor.amount
-	// 	);
+		// (, uint8 redeemRate) = xcmOracle.rateInfo();
 
-	// 	uint256 withdrawableVAsset = directAmount / (10000 - redeemRate);
+		// uint256 directAmount = xcmOracle.getVTokenByToken(
+		// 	address(acceptedNativeAsset),
+		// 	investor.amount
+		// );
 
-	// 	if (withdrawableVAsset < _vTokenAmount) {
-	// 		revert VAssetAmountNotSufficient();
-	// 	}
+		// uint256 withdrawableVAsset = directAmount / (10000 - redeemRate);
 
-	// 	uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
-	// 		address(acceptedNativeAsset),
-	// 		_vTokenAmount
-	// 	);
+		uint256 withdrawableVAsset = _getVTokenByTokenWithoutFee(
+			investor.amount
+		);
 
-	// 	if (investor.amount < withdrawnNativeAmount) {
-	// 		revert NotEnoughVAssetToWithdraw();
-	// 	}
+		if (withdrawableVAsset < _vTokenAmount) {
+			revert VAssetAmountNotSufficient();
+		}
 
-	// 	_updateNativeTokenExchangeRate(withdrawnNativeAmount, _vTokenAmount);
+		// uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
+		// 	address(acceptedNativeAsset),
+		// 	_vTokenAmount
+		// );
 
-	// 	_tick();
+		uint256 withdrawnNativeAmount = _getTokenByVTokenWithoutFee(
+			_vTokenAmount
+		);
 
-	// 	uint256 exchangeRate = cumulativeExchangeRate;
-	// 	uint256 claimableProjectTokenAmount = ((investor.amount *
-	// 		exchangeRate) / SCALING_FACTOR) - investor.claimOffset;
+		if (investor.amount < withdrawnNativeAmount) {
+			revert NotEnoughVAssetToWithdraw();
+		}
 
-	// 	if (claimableProjectTokenAmount > 0) {
-	// 		projectToken.safeTransfer(
-	// 			address(msg.sender),
-	// 			claimableProjectTokenAmount
-	// 		);
-	// 	}
+		_updateNativeTokenExchangeRate(withdrawnNativeAmount, _vTokenAmount);
 
-	// 	uint256 remainingAmount = investor.amount - withdrawnNativeAmount;
+		_tick();
 
-	// 	investor.claimOffset =
-	// 		(remainingAmount * exchangeRate) /
-	// 		SCALING_FACTOR;
+		uint256 exchangeRate = cumulativeExchangeRate;
+		uint256 claimableProjectTokenAmount = ((investor.amount *
+			exchangeRate) / SCALING_FACTOR) - investor.claimOffset;
 
-	// 	investor.amount = remainingAmount;
-	// 	totalStake -= withdrawnNativeAmount;
+		if (claimableProjectTokenAmount > 0) {
+			projectToken.safeTransfer(
+				address(msg.sender),
+				claimableProjectTokenAmount
+			);
+		}
 
-	// 	// Calculate the unrealized loss of vToken since pool's endBlock due to vToken yield-bearing
-	// 	// interest model and late withdrawal
-	// 	uint256 unrealizedVTokens = _calculatePostPoolInterest(
-	// 		withdrawnNativeAmount,
-	// 		_vTokenAmount
-	// 	);
+		uint256 remainingAmount = investor.amount - withdrawnNativeAmount;
 
-	// 	acceptedVAsset.safeTransfer(
-	// 		address(msg.sender),
-	// 		_vTokenAmount + unrealizedVTokens
-	// 	);
+		investor.claimOffset =
+			(remainingAmount * exchangeRate) /
+			SCALING_FACTOR;
 
-	// 	emit Unstaked(address(msg.sender), _vTokenAmount);
-	// }
+		investor.amount = remainingAmount;
+		totalStake -= withdrawnNativeAmount;
+
+		// Calculate the unrealized loss of vToken since pool's endBlock due to vToken yield-bearing
+		// interest model and late withdrawal
+		uint256 unrealizedVTokens = _calculatePostPoolInterest(
+			withdrawnNativeAmount,
+			_vTokenAmount
+		);
+
+		acceptedVAsset.safeTransfer(
+			address(msg.sender),
+			_vTokenAmount + unrealizedVTokens
+		);
+
+		emit Unstaked(address(msg.sender), _vTokenAmount);
+	}
 
 	function recoverWrongToken(
 		address _tokenAddress
@@ -362,44 +372,52 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		token.safeTransfer(owner(), balance);
 	}
 
-	// function unstakeWithoutProjectToken(
-	// 	uint256 _vTokenAmount
-	// ) external nonReentrant {
-	// 	Staker storage investor = stakers[msg.sender];
-	// 	if (investor.amount == 0) {
-	// 		revert ZeroAmountNotAllowed();
-	// 	}
+	function unstakeWithoutProjectToken(
+		uint256 _vTokenAmount
+	) external nonReentrant {
+		Staker storage investor = stakers[msg.sender];
+		if (investor.amount == 0) {
+			revert ZeroAmountNotAllowed();
+		}
 
-	// 	(uint8 mintRate, ) = xcmOracle.rateInfo();
-	// 	uint256 withdrawableVAsset = xcmOracle.getVTokenByToken(
-	// 		address(acceptedNativeAsset),
-	// 		investor.amount
-	// 	) + (mintRate * investor.amount) * 10000;
+		// (uint8 mintRate, ) = xcmOracle.rateInfo();
+		// uint256 withdrawableVAsset = xcmOracle.getVTokenByToken(
+		// 	address(acceptedNativeAsset),
+		// 	investor.amount
+		// ) + (mintRate * investor.amount) * 10000;
 
-	// 	if (
-	// 		withdrawableVAsset <
-	// 		_vTokenAmount *
-	// 			10 ** IERC20Metadata(address(acceptedNativeAsset)).decimals()
-	// 	) {
-	// 		revert VAssetAmountNotSufficient();
-	// 	}
+		uint256 withdrawableVAsset = _getVTokenByTokenWithoutFee(
+			investor.amount
+		);
 
-	// 	_updateNativeTokenExchangeRate(investor.amount, _vTokenAmount);
+		if (
+			withdrawableVAsset <
+			_vTokenAmount *
+				10 ** IERC20Metadata(address(acceptedNativeAsset)).decimals()
+		) {
+			revert VAssetAmountNotSufficient();
+		}
 
-	// 	_tick();
+		_updateNativeTokenExchangeRate(investor.amount, _vTokenAmount);
 
-	// 	uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
-	// 		address(acceptedNativeAsset),
-	// 		_vTokenAmount
-	// 	);
+		_tick();
 
-	// 	investor.amount -= withdrawnNativeAmount;
-	// 	totalStake -= withdrawnNativeAmount;
+		// uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
+		// 	address(acceptedNativeAsset),
+		// 	_vTokenAmount
+		// );
 
-	// 	acceptedVAsset.safeTransfer(address(msg.sender), _vTokenAmount);
-	// 	investor.claimOffset = investor.amount * cumulativeExchangeRate;
-	// 	emit Unstaked(address(msg.sender), _vTokenAmount);
-	// }
+		uint256 withdrawnNativeAmount = _getTokenByVTokenWithoutFee(
+			_vTokenAmount
+		);
+
+		investor.amount -= withdrawnNativeAmount;
+		totalStake -= withdrawnNativeAmount;
+
+		acceptedVAsset.safeTransfer(address(msg.sender), _vTokenAmount);
+		investor.claimOffset = investor.amount * cumulativeExchangeRate;
+		emit Unstaked(address(msg.sender), _vTokenAmount);
+	}
 
 	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
