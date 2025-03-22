@@ -52,7 +52,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	uint256 public avgNativeExRateGradient;
 
 	// Sample count
-	uint256 public nativeExRateSampleCount;
+	uint128 public nativeExRateSampleCount;
+	uint128 public lastNativeExRateUpdateBlock;
 
 	uint256 public immutable NATIVE_SCALING_FACTOR;
 
@@ -120,7 +121,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		_;
 	}
 
-	// TODO: add test for this
 	modifier poolIsActive() {
 		if (block.number < startBlock || block.number > endBlock) {
 			revert MustBeDuringPoolTime();
@@ -157,14 +157,15 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256[] memory _emissionRateChanges
 	)
 		Ownable(_projectOwner)
-		validTokenAddress(_projectToken) // TODO: add tests for these token validations
+		validTokenAddress(_projectToken)
 		validTokenAddress(_acceptedVAsset)
 		validTokenAddress(_acceptedNativeAsset)
 		validStakingRange(_maxVAssetPerStaker)
 	{
 		_preInit();
 
-		if (_startBlock <= block.number) revert StartBlockMustBeInFuture();
+		uint256 currentBlock = block.number;
+		if (_startBlock <= currentBlock) revert StartBlockMustBeInFuture();
 		if (_endBlock <= _startBlock) revert EndBlockMustBeAfterstartBlock();
 
 		// Ensure the first change block matches the start block
@@ -188,35 +189,10 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert ArraysLengthMismatch();
 		}
 
-		// TODO: add tests for this
-		uint8 pTokenDecimals = 18;
-		try IERC20Metadata(_projectToken).decimals() returns (uint8 dec) {
-			pTokenDecimals = dec;
-			// TODO: add tests for this
-			if (pTokenDecimals > MAX_DECIMALS) {
-				revert DecimalsTooHigh(_projectToken);
-			}
-		} catch {
-			revert FailedToReadTokenDecimals();
-		}
+		uint8 pTokenDecimals = _getTokenDecimals(address(_projectToken));
+		uint8 nativeDecimals = _getTokenDecimals(address(_acceptedNativeAsset));
 
-		// TODO: add tests for this
-		uint8 nativeDecimals = 18;
-		try IERC20Metadata(_acceptedNativeAsset).decimals() returns (
-			uint8 dec
-		) {
-			nativeDecimals = dec;
-			// if (nativeDecimals > MAX_DECIMALS) { // not likely to happen
-			// 	revert DecimalsTooHigh(_acceptedNativeAsset);
-			// }
-		} catch {
-			revert FailedToReadTokenDecimals();
-		}
-
-		// TODO: add tests for this
 		SCALING_FACTOR = BASE_PRECISION / (10 ** pTokenDecimals);
-
-		// TODO: add tests for this
 		NATIVE_SCALING_FACTOR = BASE_PRECISION / (10 ** nativeDecimals);
 
 		unchecked {
@@ -226,13 +202,13 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		// Record native exchange rate at start block
-		// TODO: add test for this
 		lastNativeExRate =
 			NATIVE_SCALING_FACTOR *
 			_getTokenByVTokenWithoutFee(
-				IERC20Metadata(_acceptedNativeAsset).decimals()
+				10 ** IERC20Metadata(_acceptedNativeAsset).decimals()
 			);
 		++nativeExRateSampleCount;
+		lastNativeExRateUpdateBlock = uint128(currentBlock);
 
 		changeBlocks = _changeBlocks;
 		platformAdminAddress = _msgSender();
@@ -320,12 +296,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert NativeAmountExceedStake();
 		}
 
-		if (block.number <= endBlock) {
-			_updateNativeTokenExchangeRate(
-				withdrawnNativeAmount,
-				_vTokenAmount
-			);
-		}
+		_updateNativeTokenExchangeRate(withdrawnNativeAmount, _vTokenAmount);
 
 		_tick();
 
@@ -435,10 +406,12 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		);
 	}
 
+	// TODO: add test for this
 	function getWithdrawableVAssets(
 		uint256 nativeAmount
 	) public view returns (uint256 withdrawableVAssets) {
 		if (block.number <= endBlock) {
+			// Need update
 			withdrawableVAssets = xcmOracle.getVTokenByToken(
 				address(acceptedNativeAsset),
 				nativeAmount
@@ -514,7 +487,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	}
 
 	function _tick() internal {
-		if (block.number <= tickBlock) {
+		uint256 currentBlock = block.number;
+		if (currentBlock == tickBlock) {
 			return;
 		}
 
@@ -527,9 +501,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		cumulativeExchangeRate += _getPendingExchangeRate();
-		unchecked {
-			tickBlock = uint128(block.number);
-		}
+		tickBlock = uint128(currentBlock);
+
 		_updateLastProcessedIndex();
 	}
 
@@ -548,30 +521,36 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 _nativeAmount,
 		uint256 _vTokenAmount
 	) internal {
-		uint256 newNativeExRate = (_nativeAmount * NATIVE_SCALING_FACTOR) /
-			_vTokenAmount;
-
-		// TODO: add test to see if lastNativeExRate is still zero after init
-		// // Handle first call of pool then exit early
-		// if (lastNativeExRate == 0) {
-		// 	// // Near impossible for this to happen
-		// 	// lastNativeExRate = newNativeExRate;
-		// 	// // avgNativeExRateGradient = newNativeExRate;
-		// 	// // ++nativeExRateSampleCount;
-		// 	// return;
-		// 	revert("This isn't supposed to be happening anymore");
-		// }
-
 		uint256 currentBlock = block.number;
-		uint256 blockDelta = currentBlock - tickBlock;
+		uint256 blockDelta = currentBlock - lastNativeExRateUpdateBlock;
+
+		// Edge case: when multiple stakers stake at same block
 		if (blockDelta == 0) {
 			return;
 		}
-		uint256 exRateDelta = (newNativeExRate > lastNativeExRate)
-			? newNativeExRate - lastNativeExRate
-			: 0;
 
+		// Edge case: after the pool ends, if the avg gradient is larger than zero, we stop here, else let it be updated
+		bool isAfterEndBlock = currentBlock > endBlock;
+		bool isAvgGradientPositive = avgNativeExRateGradient > 0;
+		if (isAfterEndBlock && isAvgGradientPositive) {
+			return;
+		}
+
+		// Edge case: prevent case when the time gap between 2 stakers is too small, the rate delta is 0
+		uint256 newNativeExRate = (_nativeAmount * NATIVE_SCALING_FACTOR) /
+			_vTokenAmount;
+		if (newNativeExRate <= lastNativeExRate) {
+			return;
+		}
+
+		uint256 exRateDelta = newNativeExRate - lastNativeExRate;
 		uint256 newGradientSample = exRateDelta / blockDelta;
+
+		// Only update the last native exchange rate states if before end block
+		if (!isAfterEndBlock) {
+			lastNativeExRate = newNativeExRate;
+			lastNativeExRateUpdateBlock = uint128(currentBlock);
+		}
 
 		// Calculate rolling average of the gradient
 		avgNativeExRateGradient =
@@ -581,7 +560,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			(nativeExRateSampleCount);
 
 		++nativeExRateSampleCount;
-		lastNativeExRate = newNativeExRate;
 	}
 
 	function _getPendingExchangeRate() internal view returns (uint256) {
@@ -641,30 +619,34 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	function _getEstimatedNativeExRateAtEnd()
 		internal
 		view
-		returns (
-			uint256 estimatedNativeExRateAtEnd
-		)
+		returns (uint256 estimatedNativeExRateAtEnd)
 	{
-		uint blocksTilEnd = endBlock - tickBlock;
-		// Edge case: when there are only 1 staker, we don't earn interest
+		uint256 blocksTilEnd = endBlock - lastNativeExRateUpdateBlock;
 		estimatedNativeExRateAtEnd =
 			lastNativeExRate +
 			(avgNativeExRateGradient * blocksTilEnd);
 	}
 
+	// TODO: add test for this
 	function _getPlatformAndOwnerClaimableVAssets()
 		internal
 		view
 		returns (uint256 ownerClaims, uint256 platformClaims)
 	{
 		uint256 allVAssets = acceptedVAsset.balanceOf(address(this));
-		uint256 investorVAssets = getWithdrawableVAssets(totalNativeStake);
 
+		if (allVAssets == 0) {
+			return (0, 0);
+		}
+
+		uint256 investorVAssets = getWithdrawableVAssets(totalNativeStake);
 		uint256 combinedClaims = allVAssets - investorVAssets;
+
 		ownerClaims = (combinedClaims * ownerShareOfInterest) / 100;
 		platformClaims = combinedClaims - ownerClaims;
 	}
 
+	// TODO: add test for this
 	function _getVTokenByTokenWithoutFee(
 		uint256 _nativeAmount
 	) internal view virtual returns (uint256 vAssetAmount) {
@@ -677,6 +659,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			poolInfo.assetAmount;
 	}
 
+	// TODO: add test for this
 	function _getTokenByVTokenWithoutFee(
 		uint256 _vAssetAmount
 	) internal view virtual returns (uint256 nativeAmount) {
@@ -689,8 +672,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			poolInfo.vAssetAmount;
 	}
 
-	function _getTokenByVToken() internal view returns (uint256) {}
-
 	// TODO: add tests for this
 	function _getActiveBlockDelta(
 		uint256 from,
@@ -702,5 +683,15 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			return 0;
 		}
 		return endBlock - from;
+	}
+
+	function _getTokenDecimals(
+		address _tokenAddress
+	) internal view returns (uint8) {
+		try IERC20Metadata(_tokenAddress).decimals() returns (uint8 dec) {
+			return dec;
+		} catch {
+			revert FailedToReadTokenDecimals();
+		}
 	}
 }
