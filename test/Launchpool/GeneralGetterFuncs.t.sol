@@ -41,6 +41,7 @@ contract GeneralGetterFuncsTest is Test {
 			changeBlocks,
 			emissionRateChanges
 		);
+		vm.roll(startBlock);
 	}
 
 	function test_get_total_staked() public {
@@ -84,6 +85,8 @@ contract GeneralGetterFuncsTest is Test {
 		_emissionRates[1] = 500 * (10 ** vAsset.decimals());
 		_emissionRates[2] = 250 * (10 ** vAsset.decimals());
 
+		// Roll to the past because launchpool enforce startBlock > block.number
+		vm.roll(startBlock - 1);
 		launchpool = new MockLaunchpool(
 			address(this),
 			address(projectToken),
@@ -330,6 +333,27 @@ contract GeneralGetterFuncsTest is Test {
 			actualAliceClaimables,
 			expectedAliceClaimables,
 			"Claimable amount mismatch"
+		);
+	}
+
+	function test_get_active_block_delta() public {
+		vm.roll(startBlock + poolDurationBlocks / 2);
+		assertEq(
+			launchpool.exposed_getActiveBlockDelta(startBlock, block.number),
+			(poolDurationBlocks / 2)
+		);
+
+		// Assert active block delta exceed pool duration
+		vm.roll(endBlock + 1000);
+		assertEq(
+			launchpool.exposed_getActiveBlockDelta(startBlock, block.number),
+			poolDurationBlocks
+		);
+
+		// Assert active block delta 'from' after endBlock
+		assertEq(
+			launchpool.exposed_getActiveBlockDelta(endBlock + 1, endBlock + 2),
+			0
 		);
 	}
 }
