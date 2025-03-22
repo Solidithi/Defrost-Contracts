@@ -9,7 +9,15 @@ interface IERC20Decimal {
 }
 
 contract MockXCMOracle {
+	struct PoolInfo {
+		uint256 assetAmount;
+		uint256 vAssetAmount;
+	}
+
 	// uint256 DECIMALS;
+	// Real, hard-coded on-chain address of XCMOracle
+	address public constant ORACLE_ONCHAIN_ADDRESS =
+		0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a;
 	uint256 public exchangeRate;
 
 	constructor() {
@@ -19,6 +27,18 @@ contract MockXCMOracle {
 
 	function setExchangeRate(uint256 _exchangeRate) public {
 		exchangeRate = _exchangeRate;
+	}
+
+	function tokenPool(
+		bytes2 _currencyId
+	) public view returns (PoolInfo memory) {
+		return PoolInfo(15 ether, 10 ether);
+	}
+
+	function getCurrencyIdByAssetAddress(
+		address _assetAddress
+	) public view returns (bytes2) {
+		return 0x0806;
 	}
 
 	function getVTokenByToken(
