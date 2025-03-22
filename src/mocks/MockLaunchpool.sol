@@ -49,26 +49,32 @@ contract MockLaunchpool is Launchpool {
 	}
 
 	function wild_setNativeExRateSampleCount(
-		uint256 _nativeExRateSampleCount
+		uint128 _nativeExRateSampleCount
 	) external {
 		nativeExRateSampleCount = _nativeExRateSampleCount;
 	}
 
-	// Expose internal methods for testing
-	function exposed_updateNativeTokenExchangeRate(
+	function wild_updateNativeTokenExchangeRate(
 		uint256 _nativeAmount,
 		uint256 _vTokenAmount
 	) external {
 		_updateNativeTokenExchangeRate(_nativeAmount, _vTokenAmount);
 	}
 
-	function exposed_getVTokenByToken(
+	function wild_setLastNativeExRateUpdateBlock(
+		uint128 _lastNativeExRateUpdateBlock
+	) external {
+		lastNativeExRateUpdateBlock = _lastNativeExRateUpdateBlock;
+	}
+
+	// Expose internal methods for testing
+	function exposed_getVTokenByTokenWithoutFee(
 		uint256 _nativeAmount
 	) public view returns (uint256) {
 		return _getVTokenByTokenWithoutFee(_nativeAmount);
 	}
 
-	function exposed_getTokenByVToken(
+	function exposed_getTokenByVTokenWithoutFee(
 		uint256 _vTokenAmount
 	) public view returns (uint256) {
 		return _getTokenByVTokenWithoutFee(_vTokenAmount);
@@ -80,6 +86,19 @@ contract MockLaunchpool is Launchpool {
 		returns (uint256)
 	{
 		return _getEstimatedNativeExRateAtEnd();
+	}
+
+	function exposed_getTokenDecimals(
+		address _tokenAddress
+	) public view returns (uint8) {
+		return _getTokenDecimals(_tokenAddress);
+	}
+
+	function exposed_getActiveBlockDelta(
+		uint256 from,
+		uint256 to
+	) public view returns (uint256) {
+		return _getActiveBlockDelta(from, to);
 	}
 
 	function getPendingExchangeRate() public view returns (uint256) {
@@ -94,6 +113,7 @@ contract MockLaunchpool is Launchpool {
 		uint256 _nativeAmount
 	) internal view override returns (uint256 vAssetAmount) {
 		return
+			// Temporary solution
 			xcmOracle.getVTokenByToken(
 				address(acceptedNativeAsset),
 				_nativeAmount
@@ -103,6 +123,7 @@ contract MockLaunchpool is Launchpool {
 	function _getTokenByVTokenWithoutFee(
 		uint256 _vAssetAmount
 	) internal view override returns (uint256 nativeAmount) {
+		// Temporary solution
 		return
 			xcmOracle.getTokenByVToken(
 				address(acceptedNativeAsset),
