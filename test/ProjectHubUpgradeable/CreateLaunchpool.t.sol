@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 import { ProjectHubUpgradeable, LaunchpoolLibrary, ProjectLibrary, PoolTypeLib } from "../../src/upgradeable/v1/ProjectHubUpgradeable.sol";
 import { MockERC20 } from "@src/mocks/MockERC20.sol";
+import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHubProxyCustomSender.sol";
@@ -23,6 +24,8 @@ contract CreateLaunchpoolTest is Test {
 	MockERC20 GMLR = new MockERC20("Voucher GMLR", "vGMLR");
 	MockERC20 ASTR = new MockERC20("Voucher ASTR", "vASTR");
 	MockERC20 FIL = new MockERC20("Voucher FIL", "vFIL");
+
+	MockXCMOracle public mockXCMOracle = new MockXCMOracle();
 
 	DeployProjectHubProxyCustomSender public hubDeployScript;
 	address[] vAssets;
@@ -49,6 +52,9 @@ contract CreateLaunchpoolTest is Test {
 	function setUp() public {
 		// Deploy and initialize ProjectHub
 		projectHubProxy = hubDeployScript.deployProjectHubProxy();
+
+		// Put MockXCMOracle at the hard-coded address of real on-chain XCMOracle
+		deployCodeTo("MockXCMOracle", mockXCMOracle.ORACLE_ONCHAIN_ADDRESS());
 	}
 
 	function test_next_project_id() public {
