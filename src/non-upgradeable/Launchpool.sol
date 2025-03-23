@@ -295,15 +295,8 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			revert VAssetAmountNotSufficient();
 		}
 
-		// uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
-		// 	address(acceptedNativeAsset),
-		// 	_vTokenAmount
-		// );
-
-		// TODO: update this
-		uint256 withdrawnNativeAmount = _getTokenByVTokenWithoutFee(
-			_vTokenAmount
-		);
+		// TODO: update this (done)
+		uint256 withdrawnNativeAmount = getWithdrawableVAssets(_vTokenAmount);
 
 		if (investor.nativeAmount < withdrawnNativeAmount) {
 			revert NativeAmountExceedStake();
@@ -356,8 +349,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		}
 
 		// TODO: update this
-		uint256 withdrawableVAsset = xcmOracle.getVTokenByToken(
-			address(acceptedNativeAsset),
+		uint256 withdrawableVAsset = getWithdrawableVAssets(
 			investor.nativeAmount
 		);
 
@@ -372,11 +364,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		_updateNativeTokenExchangeRate(investor.nativeAmount, _vTokenAmount);
 
 		_tick();
-
-		// uint256 withdrawnNativeAmount = xcmOracle.getTokenByVToken(
-		// 	address(acceptedNativeAsset),
-		// 	_vTokenAmount
-		// );
 
 		uint256 withdrawnNativeAmount = _getTokenByVTokenWithoutFee(
 			_vTokenAmount
@@ -429,11 +416,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		uint256 nativeAmount
 	) public view returns (uint256 withdrawableVAssets) {
 		if (block.number <= endBlock) {
-			// Need update
-			withdrawableVAssets = xcmOracle.getVTokenByToken(
-				address(acceptedNativeAsset),
-				nativeAmount
-			);
+			withdrawableVAssets = _getVTokenByTokenWithoutFee(nativeAmount);
 		} else {
 			uint256 exRateAtEnd = _getEstimatedNativeExRateAtEnd();
 			withdrawableVAssets =
