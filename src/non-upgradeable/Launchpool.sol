@@ -382,7 +382,7 @@ contract Launchpool is Ownable, ReentrancyGuard {
 		projectToken.safeTransfer(owner(), balance);
 	}
 
-	function claimOwnerInterest() external onlyOwner nonReentrant {
+	function claimOwnerInterest() external onlyOwner {
 		(uint256 ownerClaims, ) = _getPlatformAndOwnerClaimableVAssets();
 		acceptedVAsset.safeTransfer(owner(), ownerClaims);
 	}
