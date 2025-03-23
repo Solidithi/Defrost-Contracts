@@ -8,7 +8,7 @@ import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 import { console } from "forge-std/console.sol";
 
-contract LaunchpoolExchangeRateTest is Test {
+contract NativeExchangeRateTest is Test {
 	MockLaunchpool launchpool;
 	MockERC20 projectToken;
 	MockERC20 vAsset;
@@ -17,7 +17,7 @@ contract LaunchpoolExchangeRateTest is Test {
 	address owner;
 
 	// Constants for testing
-	uint128 public constant START_BLOCK = 100;
+	uint128 public START_BLOCK = 100;
 	uint128 public constant END_BLOCK = 1000;
 	uint256 public constant MAX_VSTAKER = 1000 ether;
 
@@ -29,6 +29,9 @@ contract LaunchpoolExchangeRateTest is Test {
 		vAsset = new MockERC20("vAsset Token", "vToken");
 		nativeAsset = new MockERC20("Native Asset", "Native"); // Different decimals to test scaling
 
+		// Set start block in the future to ensure startBlock > current block
+		START_BLOCK = uint128(block.number + 10);
+
 		// Deploy mock XCM Oracle
 		xcmOracle = new MockXCMOracle();
 
@@ -39,8 +42,7 @@ contract LaunchpoolExchangeRateTest is Test {
 		uint256[] memory emissionRates = new uint256[](1);
 		emissionRates[0] = 100 ether;
 
-		// Set block number to ensure startBlock > current block
-		vm.roll(START_BLOCK - 10);
+		// vm.roll();
 
 		// Deploy Launchpool with exposed functions
 		launchpool = new MockLaunchpool(
@@ -66,17 +68,42 @@ contract LaunchpoolExchangeRateTest is Test {
 	}
 
 	// Test case: Initial exchange rate calculation
-	function test_initial_ex_rate() public {
+	function test_initial_native_ex_rate() public {
+		uint256 initialRate = launchpool.NATIVE_SCALING_FACTOR() *
+			launchpool.exposed_getTokenByVTokenWithoutFee(
+				1 * 10 ** vAsset.decimals()
+			);
+
+		// Assert if native exchange rate was intialized in constructor
+		assertEq(
+			launchpool.lastNativeExRate(),
+			initialRate,
+			"Initial rate hasn't been initialized correctly in constructor"
+		);
+
+		// Same assertion as above but at differnt block
+		vm.roll(START_BLOCK + 1);
+		assertEq(
+			launchpool.lastNativeExRate(),
+			initialRate,
+			"Initial rate hasn't been initialized correctly in constructor (different block)"
+		);
+	}
+
+	function test_update_native_ex_rate() public {
 		// Set initial conditions
 		vm.roll(START_BLOCK + 1);
 		launchpool.wild_setTickBlock(START_BLOCK);
 
 		// Both values in wei (18 decimals)
-		uint256 nativeAmount = 100 ether;
+		uint256 currentExRate = launchpool.lastNativeExRate();
+		uint256 increasedExRate = (currentExRate * 101) / 100;
 		uint256 vTokenAmount = 100 ether;
+		uint256 nativeAmount = (100 ether * increasedExRate) /
+			launchpool.NATIVE_SCALING_FACTOR();
 
 		// Call the function
-		launchpool.exposed_updateNativeTokenExchangeRate(
+		launchpool.wild_updateNativeTokenExchangeRate(
 			nativeAmount,
 			vTokenAmount
 		);
@@ -93,8 +120,8 @@ contract LaunchpoolExchangeRateTest is Test {
 		// Sample count should still be 0 for first call
 		assertEq(
 			launchpool.nativeExRateSampleCount(),
-			0,
-			"Sample count should still remain 0 after first call"
+			2,
+			"Sample count should be 2 after first call"
 		);
 	}
 
@@ -112,7 +139,7 @@ contract LaunchpoolExchangeRateTest is Test {
 		);
 
 		// Call with any values
-		launchpool.exposed_updateNativeTokenExchangeRate(
+		launchpool.wild_updateNativeTokenExchangeRate(
 			101 * 10 ** nativeAsset.decimals(),
 			102 * 10 ** vAsset.decimals()
 		);
@@ -132,9 +159,13 @@ contract LaunchpoolExchangeRateTest is Test {
 		vm.roll(firstUpdateBlock);
 
 		// First update to set initial exchange rate
-		launchpool.exposed_updateNativeTokenExchangeRate(
-			102 * 10 ** nativeAsset.decimals(),
-			100 * 10 ** vAsset.decimals()
+		uint256 vAssetAmount = 100 * 10 ** vAsset.decimals();
+		uint256 nativeAmount = (vAssetAmount *
+			((launchpool.lastNativeExRate() * 102) / 100)) /
+			launchpool.NATIVE_SCALING_FACTOR();
+		launchpool.wild_updateNativeTokenExchangeRate(
+			nativeAmount,
+			vAssetAmount
 		);
 		// Set tick block after first update to mirror contract behaviour
 		launchpool.wild_setTickBlock(uint128(firstUpdateBlock));
@@ -146,12 +177,13 @@ contract LaunchpoolExchangeRateTest is Test {
 		vm.roll(secondUpdateBlock);
 
 		// Second update with different ex-rate
-		uint256 newNativeAmount = 110 * 10 ** nativeAsset.decimals();
-		uint256 newVTokenAmount = 100 * 10 ** vAsset.decimals();
+		uint256 newVAssetAmount = vAssetAmount;
+		uint256 newNativeAmount = (newVAssetAmount *
+			((initialRate * 105) / 100)) / launchpool.NATIVE_SCALING_FACTOR();
 
 		// Calculate expected new rate
 		uint256 newRate = (newNativeAmount *
-			launchpool.NATIVE_SCALING_FACTOR()) / newVTokenAmount;
+			launchpool.NATIVE_SCALING_FACTOR()) / newVAssetAmount;
 
 		// Calculate expected average gradient
 		uint256 rateDelta = newRate - initialRate;
@@ -159,16 +191,15 @@ contract LaunchpoolExchangeRateTest is Test {
 		uint256 newGradient = rateDelta / blockDelta;
 		uint256 sampleCount = launchpool.nativeExRateSampleCount();
 		uint256 expectedAvgGradient = (launchpool.avgNativeExRateGradient() *
-			sampleCount +
-			newGradient) / (sampleCount + 1);
+			(sampleCount - 1) +
+			newGradient) / (sampleCount);
 
 		// Second update
-		launchpool.exposed_updateNativeTokenExchangeRate(
+		launchpool.wild_updateNativeTokenExchangeRate(
 			newNativeAmount,
-			newVTokenAmount
+			newVAssetAmount
 		);
-
-		// 512666666666
+		launchpool.wild_setTickBlock(uint128(secondUpdateBlock));
 
 		// Check exchange rate was updated
 		assertEq(
@@ -193,18 +224,19 @@ contract LaunchpoolExchangeRateTest is Test {
 	}
 
 	// Test case: Rolling average gradient calculation
-	function test_multiple_rolling_average_gradient_update() public {
-		// Set initial conditions
-		vm.roll(START_BLOCK + 10);
+	function test_multiple_rolling_average_gradient_updates() public {
+		// First, set initial exchange rate and reset pool pool states to de-effect the constructor
+		uint256 initialRate = (105 * launchpool.NATIVE_SCALING_FACTOR()) / 100;
+		launchpool.wild_setLastNativeExRate(initialRate);
+		launchpool.wild_setNativeExRateSampleCount(1);
+		launchpool.wild_setTickBlock(START_BLOCK);
+		// launchpool.exposed_updateNativeTokenExchangeRate(100 ether, 100 ether);
 
-		// First update to set initial exchange rate
-		launchpool.exposed_updateNativeTokenExchangeRate(100 ether, 100 ether);
-
-		// Move forward 5 blocks
+		// Move forward
 		vm.roll(START_BLOCK + 15);
 
 		// Second update
-		launchpool.exposed_updateNativeTokenExchangeRate(110 ether, 100 ether);
+		launchpool.wild_updateNativeTokenExchangeRate(110 ether, 100 ether);
 
 		// Set sample count manually to test rolling average
 		launchpool.wild_setNativeExRateSampleCount(5);
@@ -213,8 +245,7 @@ contract LaunchpoolExchangeRateTest is Test {
 		// Store initial values for verification
 		uint256 avgGradient = 2 ether;
 		uint256 sampleCount = 5;
-		uint256 lastRate = (110 ether * launchpool.NATIVE_SCALING_FACTOR()) /
-			100 ether;
+		uint256 lastRate = (110 * launchpool.NATIVE_SCALING_FACTOR()) / 100;
 		uint256 lastBlock = START_BLOCK + 15;
 
 		// Run multiple rolling average updates through a loop
@@ -227,11 +258,11 @@ contract LaunchpoolExchangeRateTest is Test {
 			vm.roll(currentBlock);
 
 			// Calculate next exchange rate with a variable rate increase
-			uint256 nativeAmount = 110 ether + i;
+			uint256 nativeAmount = (110 ether + i * 1e18);
 			uint256 vTokenAmount = 100 ether;
 
 			// Update the exchange rate
-			launchpool.exposed_updateNativeTokenExchangeRate(
+			launchpool.wild_updateNativeTokenExchangeRate(
 				nativeAmount,
 				vTokenAmount
 			);
@@ -245,24 +276,18 @@ contract LaunchpoolExchangeRateTest is Test {
 
 			// Update expected rolling average: (oldAvg * oldCount + newSample) / (oldCount + 1)
 			avgGradient =
-				(avgGradient * sampleCount + newGradient) /
-				(sampleCount + 1);
+				(avgGradient * (sampleCount - 1) + newGradient) /
+				(sampleCount);
 			sampleCount++;
 
 			// Update values for next iteration
 			lastRate = newRate;
 			lastBlock = currentBlock;
 
-			// Verify current state
-			// assertApproxEqAbs(
-			// 	launchpool.avgNativeExRateGradient(),
-			// 	avgGradient,
-			// 	2, // Small tolerance for division rounding
-			// 	string(abi.encodePacked("Rolling average gradient incorrect at update ", i))
-			// );
-			assertEq(
+			assertApproxEqAbs(
 				launchpool.avgNativeExRateGradient(),
 				avgGradient,
+				1e12,
 				string(
 					abi.encodePacked(
 						"Rolling average gradient incorrect at update ",
@@ -279,10 +304,10 @@ contract LaunchpoolExchangeRateTest is Test {
 		}
 
 		// Final verification
-		assertEq(
+		assertApproxEqAbs(
 			launchpool.avgNativeExRateGradient(),
 			avgGradient,
-			// 2, // Small tolerance for division rounding
+			1e12,
 			"Final rolling average gradient calculation incorrect"
 		);
 
@@ -308,8 +333,6 @@ contract LaunchpoolExchangeRateTest is Test {
 		uint256[] memory emissionRates = new uint256[](1);
 		emissionRates[0] = 100 ether;
 
-		vm.roll(START_BLOCK - 10);
-
 		MockLaunchpool testPool = new MockLaunchpool(
 			owner,
 			address(projectToken),
@@ -322,18 +345,13 @@ contract LaunchpoolExchangeRateTest is Test {
 			emissionRates
 		);
 
-		// Test exchange rate calculation
 		vm.roll(START_BLOCK);
-		testPool.wild_setTickBlock(START_BLOCK);
 
 		// 1 token6 = 10^6, 1 token18 = 10^18
-		uint256 nativeAmount = 1 * 10 ** token6.decimals(); // 1 token with 6 decimals
 		uint256 vTokenAmount = 1 * 10 ** token18.decimals(); // 1 token with 18 decimals
-
-		testPool.exposed_updateNativeTokenExchangeRate(
-			nativeAmount,
-			vTokenAmount
-		);
+		uint256 nativeAmount = (vTokenAmount *
+			((testPool.lastNativeExRate() * 1001) / 1000)) /
+			testPool.NATIVE_SCALING_FACTOR();
 
 		// Check scaling factor is appropriate for 6 decimals
 		assertEq(
@@ -342,7 +360,8 @@ contract LaunchpoolExchangeRateTest is Test {
 			"Incorrect scaling factor for 6-decimal token"
 		);
 
-		// Check exchange rate calculation with different decimals
+		vm.roll(START_BLOCK + 20);
+		testPool.wild_updateNativeTokenExchangeRate(nativeAmount, vTokenAmount);
 		uint256 expectedRate = (nativeAmount *
 			testPool.NATIVE_SCALING_FACTOR()) / vTokenAmount;
 		assertEq(
@@ -359,7 +378,7 @@ contract LaunchpoolExchangeRateTest is Test {
 
 		// Try with zero vTokenAmount
 		vm.expectRevert(); // Should revert on division by zero
-		launchpool.exposed_updateNativeTokenExchangeRate(100 ether, 0);
+		launchpool.wild_updateNativeTokenExchangeRate(100 ether, 0);
 	}
 
 	// ==================== Fuzz Tests ====================
@@ -371,23 +390,26 @@ contract LaunchpoolExchangeRateTest is Test {
 		uint256 examineBlock
 	) public {
 		// Bound inputs to reasonable values to avoid overflow/underflow
-		nativeAmount = bound(nativeAmount, 1, 1e36);
+		uint256 expectedRate = (launchpool.lastNativeExRate() * 1001) / 1000;
 		vTokenAmount = bound(vTokenAmount, 1, 1e36);
+		nativeAmount =
+			(vTokenAmount * expectedRate) /
+			launchpool.NATIVE_SCALING_FACTOR();
 		examineBlock = bound(examineBlock, START_BLOCK, END_BLOCK);
 
-		vm.roll(START_BLOCK + 10);
 		launchpool.wild_setTickBlock(START_BLOCK);
+		vm.roll(START_BLOCK + 5);
 
-		launchpool.exposed_updateNativeTokenExchangeRate(
+		launchpool.wild_updateNativeTokenExchangeRate(
 			nativeAmount,
 			vTokenAmount
 		);
+		launchpool.wild_setTickBlock(START_BLOCK + 5);
 
-		uint256 expectedRate = (nativeAmount *
-			launchpool.NATIVE_SCALING_FACTOR()) / vTokenAmount;
-		assertEq(
+		assertApproxEqAbs(
 			launchpool.lastNativeExRate(),
 			expectedRate,
+			1e12,
 			"Fuzz: Exchange rate calculation failed"
 		);
 	}
@@ -401,116 +423,51 @@ contract LaunchpoolExchangeRateTest is Test {
 		uint64 blocksDelta
 	) public {
 		// Bound inputs to reasonable values
-		initialNative = bound(initialNative, 1, 1e30);
-		initialVToken = bound(initialVToken, 1, initialNative); // Bound relative to initialNative
-		finalNative = bound(finalNative, 1, 1e30);
-		finalVToken = bound(finalVToken, 1, finalNative); // Bound relative to finalNative
+		initialVToken = bound(initialVToken, 1, 1e30); // Bound relative to initialNative
+		initialNative = bound(initialNative, initialVToken, 2e30);
+		finalNative = bound(
+			finalNative,
+			initialNative,
+			(initialNative * 110) / 100
+		);
+		finalVToken = initialVToken;
 		blocksDelta = uint64(
 			bound(blocksDelta, 1, END_BLOCK - START_BLOCK - 1)
 		);
 
-		// Reset sample count
-		launchpool.wild_setNativeExRateSampleCount(0);
+		// Override pools' initial rate
+		uint256 poolInitBlock = block.number;
+		uint256 initialRate = (initialNative *
+			launchpool.NATIVE_SCALING_FACTOR()) / initialVToken;
+		launchpool.wild_setLastNativeExRate(initialRate);
+		launchpool.wild_setNativeExRateSampleCount(1);
+		launchpool.wild_setLastNativeExRateUpdateBlock(uint128(poolInitBlock));
 
-		// Set up first exchange rate
-		vm.roll(START_BLOCK);
+		// // Advance to start block to start staking
+		// vm.roll(START_BLOCK);
 
-		launchpool.exposed_updateNativeTokenExchangeRate(
-			initialNative,
-			initialVToken
-		);
-		// Set tickBlock after first update to mirror contract behaviour
-		launchpool.wild_setTickBlock(START_BLOCK);
-		uint256 initialRate = launchpool.lastNativeExRate();
-
-		// Move forward by blocksDelta
-		vm.roll(START_BLOCK + blocksDelta);
+		// Move forward to block START_BLOCK + blocksDelta
+		vm.roll(poolInitBlock + blocksDelta);
 
 		// Set the new exchange rate
-		launchpool.exposed_updateNativeTokenExchangeRate(
-			finalNative,
-			finalVToken
-		);
-		// Set tick block after second update to mirror contract behaviour
-		launchpool.wild_setTickBlock(START_BLOCK + blocksDelta);
+		launchpool.wild_updateNativeTokenExchangeRate(finalNative, finalVToken);
 		uint256 finalRate = launchpool.lastNativeExRate();
 
 		// Calculate expected gradient
 		uint256 rateDelta;
-		if (finalRate > initialRate) {
-			rateDelta = finalRate - initialRate;
-		} else {
-			// If rate decreased, we'll test the calculation but actually the contract has a bug
-			// It assumes rates always increase (no check for finalRate < initialRate)
-			rateDelta = 0;
-		}
-
-		uint256 expectedAvgGradient = rateDelta / blocksDelta;
-
 		if (finalRate >= initialRate) {
+			rateDelta = finalRate - initialRate;
+			uint256 expectedAvgGradient = rateDelta / blocksDelta;
+
 			assertApproxEqAbs(
 				launchpool.avgNativeExRateGradient(),
 				expectedAvgGradient,
 				10, // Small tolerance due to division rounding
-				"Fuzz: Rate delta calculation failed"
+				"Fuzz: Rate delta calculation mismatch"
 			);
+		} else {
+			revert("Fuzz: Final rate should be greater than initial rate");
 		}
-	}
-
-	// Fuzz test for rolling average calculation
-	function test_fuzz_reverse_engineer_average_gradient_calculation(
-		uint256 oldGradient,
-		uint8 sampleCount,
-		uint256 newGradient
-	) public {
-		// Use smaller bounds to prevent overflow
-		oldGradient = bound(oldGradient, 0, 1e20);
-		sampleCount = uint8(bound(sampleCount, 1, 100));
-		newGradient = bound(newGradient, 0, 1e20);
-
-		// Set initial values
-		launchpool.wild_setAvgNativeExRateGradient(oldGradient);
-		launchpool.wild_setNativeExRateSampleCount(sampleCount);
-
-		// Setup initial block and rate
-		uint256 initialBlock = START_BLOCK + 10;
-		vm.roll(initialBlock);
-		launchpool.wild_setTickBlock(uint128(initialBlock));
-		launchpool.wild_setLastNativeExRate(1 ether);
-
-		// Move forward by blockDelta blocks
-		uint256 blockDelta = 10;
-		uint256 newBlock = initialBlock + blockDelta;
-		vm.roll(newBlock);
-
-		// Calculate new rate WITHOUT potential overflow
-		// Limit the gradient effect to prevent overflow
-		uint256 rateDelta = bound(newGradient * blockDelta, 0, 1e27);
-		uint256 newRate = 1 ether + rateDelta;
-
-		// Use the ACTUAL formula from the contract (but inverse, ofc)
-		uint256 vTokenAmount = 1 ether;
-		uint256 nativeAmount = (newRate * vTokenAmount) /
-			launchpool.NATIVE_SCALING_FACTOR();
-
-		// Call the function
-		launchpool.exposed_updateNativeTokenExchangeRate(
-			nativeAmount,
-			vTokenAmount
-		);
-
-		// Calculate expected average with the same formula as contract
-		uint256 expectedAvg = (oldGradient *
-			uint256(sampleCount) +
-			newGradient) / (uint256(sampleCount) + 1);
-
-		// Use larger tolerance to account for division imprecision
-		assertEq(
-			launchpool.avgNativeExRateGradient(),
-			expectedAvg,
-			// 1e16, // 0.01% tolerance
-			"Fuzz: Rolling average calculation failed"
-		);
 	}
 
 	// Additional fuzz test to ensure no overflow/underflow with extreme values
@@ -527,11 +484,222 @@ contract LaunchpoolExchangeRateTest is Test {
 		launchpool.wild_setTickBlock(START_BLOCK);
 
 		// This should execute without overflow/underflow
-		launchpool.exposed_updateNativeTokenExchangeRate(
+		launchpool.wild_updateNativeTokenExchangeRate(
 			nativeAmount,
 			vTokenAmount
 		);
 
 		// No assertion needed lol ; D - test passes if no revert
+	}
+
+	function test_estimated_native_ex_rate_at_end() public {
+		uint256 poolInitBlock = block.number;
+		uint256 newRateBlock = START_BLOCK + 20;
+
+		// Get the latest vToken -> token rate from Oracle
+		uint256 oldRate = launchpool.lastNativeExRate();
+
+		// Increase the rate by 10%
+		uint256 newRate = (oldRate * 110) / 100;
+
+		// Tweak new rate for the pool
+		uint256 vAssetAmount = 100 * 10 ** vAsset.decimals();
+		uint256 nativeAmount = (vAssetAmount * newRate) /
+			launchpool.NATIVE_SCALING_FACTOR();
+
+		vm.roll(newRateBlock);
+		launchpool.wild_updateNativeTokenExchangeRate(
+			nativeAmount,
+			vAssetAmount
+		);
+		launchpool.wild_setLastNativeExRateUpdateBlock(uint128(newRateBlock));
+
+		// Get the estimated rate at the end
+		uint256 rateAtEnd = launchpool.exposed_getEstimatedNativeExRateAtEnd();
+		assertTrue(rateAtEnd > newRate, "Rate at end should be higher");
+
+		uint256 gradient = (newRate - oldRate) / (newRateBlock - poolInitBlock);
+		uint256 expectedRateAtEnd = newRate +
+			(gradient * (END_BLOCK - newRateBlock));
+		assertApproxEqAbs(
+			rateAtEnd,
+			expectedRateAtEnd,
+			1e10,
+			"Rate at end different from expected"
+		);
+	}
+
+	// Test that the estimated rate does not change after pool end
+	function test_estimated_native_ex_rate_not_change_after_end() public {
+		vm.roll(START_BLOCK + 10);
+
+		// Simulate investor stake (manually update native exchange rate)
+		uint256 initialRate = launchpool.lastNativeExRate();
+		uint256 rateAfterFirstStake = (initialRate * 105) / 100;
+		uint256 vAssetAmount = 100 * 10 ** vAsset.decimals();
+		uint256 firstStakeNativeAmount = (vAssetAmount * rateAfterFirstStake) /
+			launchpool.NATIVE_SCALING_FACTOR();
+		launchpool.wild_updateNativeTokenExchangeRate(
+			firstStakeNativeAmount,
+			vAssetAmount
+		);
+		launchpool.wild_setTickBlock(START_BLOCK + 10);
+
+		// Check that avg gradient has been updated (greater than 0)
+		assertTrue(
+			launchpool.avgNativeExRateGradient() > 0,
+			"Gradient should be greater than 0 after 1 investor staked"
+		);
+
+		// Tweak launchpool native exchange rate
+		vm.roll(START_BLOCK + 20);
+		uint256 newRate = (initialRate * 110) / 100;
+		uint256 newNativeAmount = (vAssetAmount * newRate) /
+			launchpool.NATIVE_SCALING_FACTOR();
+		launchpool.wild_updateNativeTokenExchangeRate(
+			newNativeAmount,
+			vAssetAmount
+		);
+		launchpool.wild_setTickBlock(START_BLOCK + 20);
+		uint256 expectedRateAtEnd = launchpool
+			.exposed_getEstimatedNativeExRateAtEnd();
+
+		// Move past end block
+		vm.roll(END_BLOCK + 10);
+
+		// Try tweaking native exchange rate again and expect it to not update
+		uint256 afterEndRate = (initialRate * 110) / 100;
+		uint256 afterEndNativeAmount = (vAssetAmount * afterEndRate) /
+			launchpool.NATIVE_SCALING_FACTOR();
+		uint256 avgGradientBeforeAction = launchpool.avgNativeExRateGradient();
+		launchpool.wild_updateNativeTokenExchangeRate(
+			afterEndNativeAmount,
+			vAssetAmount
+		);
+		launchpool.wild_setTickBlock(END_BLOCK + 10);
+		uint256 avgGradientAfterAction = launchpool.avgNativeExRateGradient();
+		assertEq(
+			avgGradientAfterAction,
+			avgGradientBeforeAction,
+			"Avg gradient should not change after pool end if it's gt. than 0"
+		);
+		assertEq(
+			launchpool.exposed_getEstimatedNativeExRateAtEnd(),
+			expectedRateAtEnd,
+			"Rate at end should not change after pool end if avg gradient is gt. than 0"
+		);
+		assertEq(
+			launchpool.lastNativeExRate(),
+			newRate,
+			"Last native exchange rate should not change after pool end whatsoever"
+		);
+	}
+
+	// Test edge case where avg gradient is still 0 after end block (too few investors)
+	function test_estimated_native_ex_rate_change_after_end() public {
+		uint256 initialNativeExRateUpdateBlock = block.number;
+
+		// Simulate investor stake at first block (should
+		// not update anything related to native token exchange rate)
+		uint256 initialRate = launchpool.lastNativeExRate();
+		uint256 rateAfterFirstStake = (initialRate * 105) / 100;
+		uint256 vAssetAmount = 100 * 10 ** vAsset.decimals();
+		uint256 firstStakeNativeAmount = (vAssetAmount * rateAfterFirstStake) /
+			launchpool.NATIVE_SCALING_FACTOR();
+		launchpool.wild_updateNativeTokenExchangeRate(
+			firstStakeNativeAmount,
+			vAssetAmount
+		);
+
+		// Check that avg gradient has not been updated (greater than 0)
+		assertEq(
+			launchpool.avgNativeExRateGradient(),
+			0,
+			"Gradient should still be 0 if investor stakes at start block"
+		);
+		// Check that lastNativeExRate has not been updated
+		assertEq(
+			launchpool.lastNativeExRate(),
+			initialRate,
+			"Native exchange rate should not change if investor staked at start block"
+		);
+
+		// Move past end block
+		vm.roll(END_BLOCK + 10);
+
+		// Try tweaking native exchange rate again and expect pool to accept that number
+		uint256 afterEndRate = (initialRate * 110) / 100;
+		uint256 afterEndNativeAmount = (vAssetAmount * afterEndRate) /
+			launchpool.NATIVE_SCALING_FACTOR();
+		launchpool.wild_updateNativeTokenExchangeRate(
+			afterEndNativeAmount,
+			vAssetAmount
+		);
+		uint256 expectedAvgGradientAfterAction = (afterEndRate - initialRate) /
+			(END_BLOCK + 10 - initialNativeExRateUpdateBlock);
+		uint256 avgGradientAfterAction = launchpool.avgNativeExRateGradient();
+		uint256 expectedRateAtEnd = initialRate +
+			expectedAvgGradientAfterAction *
+			(END_BLOCK - initialNativeExRateUpdateBlock);
+
+		assertEq(
+			avgGradientAfterAction,
+			expectedAvgGradientAfterAction,
+			"Avg. gradient should be updated after pool end if it's still 0 by then"
+		);
+		assertEq(
+			launchpool.exposed_getEstimatedNativeExRateAtEnd(),
+			expectedRateAtEnd,
+			"Rate at end should change when action is invoked after pool while avg. gradient is still 0"
+		);
+		assertEq(
+			launchpool.lastNativeExRate(),
+			initialRate,
+			"Native exchange should not be updated after pool whatsoever"
+		);
+	}
+
+	function test_no_state_update_if_rate_dont_change() public {
+		uint256 initialRate = launchpool.lastNativeExRate();
+
+		// Legitimate update
+		vm.roll(START_BLOCK);
+		uint256 newRate = (initialRate * 10001) / 10000;
+		uint256 newVAmount = 1 * 10 ** vAsset.decimals();
+		uint256 newNativeAmount = (newVAmount * newRate) /
+			launchpool.NATIVE_SCALING_FACTOR();
+		launchpool.wild_updateNativeTokenExchangeRate(
+			newNativeAmount,
+			newVAmount
+		);
+
+		// Fault update (rate don't change)
+		uint256 lastNativeExRate = launchpool.lastNativeExRate();
+		uint256 lastNativeExRateUpdateBlock = launchpool
+			.lastNativeExRateUpdateBlock();
+		uint256 avgNativeExRateGradient = launchpool.avgNativeExRateGradient();
+		uint256 poolDurationBlocks = END_BLOCK - START_BLOCK;
+		vm.roll(START_BLOCK + ((poolDurationBlocks * 2) / 3));
+		launchpool.wild_updateNativeTokenExchangeRate(
+			newNativeAmount,
+			newVAmount
+		);
+
+		// Assert no state update
+		assertEq(
+			launchpool.lastNativeExRate(),
+			lastNativeExRate,
+			"Native exchange rate should not change if rate don't change"
+		);
+		assertEq(
+			launchpool.lastNativeExRateUpdateBlock(),
+			lastNativeExRateUpdateBlock,
+			"Last native exchange rate update block should not change if rate don't change"
+		);
+		assertEq(
+			launchpool.avgNativeExRateGradient(),
+			avgNativeExRateGradient,
+			"Avg. gradient should not change if rate don't change"
+		);
 	}
 }

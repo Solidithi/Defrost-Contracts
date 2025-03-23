@@ -32,21 +32,7 @@ contract MockLaunchpool is Launchpool {
 			_emissionRateChanges
 		)
 	{
-		/**
-		 * @dev
-		 * This mocks a scenario where:
-		 * Initial rate is `12000` (scaled by `10^4`), is 1.2 in reality, 20% difference for vAsset.
-		 * Rate increases by `100` every `10` blocks (`1 * 10^4` in storage).
-		 * --> For every 10 blocks, the rate increases by 0.1 in actual caculation.
-
-		 * --> block 1000: 1 vDOT = 1.2 DOT
-		 * --> block 1010: 1 vDOT = 1.3 DOT
-		 * --> block 1020: 1 vDOT = 1.4 DOT
-		 * --> block 1030: 1 vDOT = 1.5 DOT
-		 
-		 */
-		MockXCMOracle _xcmOracle = new MockXCMOracle(12000, 10, 100);
-		xcmOracle = IXCMOracle(address(_xcmOracle));
+		// Do sth that the cool bros do
 	}
 
 	// Wildcard setters for testing (beware when testing)
@@ -65,17 +51,56 @@ contract MockLaunchpool is Launchpool {
 	}
 
 	function wild_setNativeExRateSampleCount(
-		uint256 _nativeExRateSampleCount
+		uint128 _nativeExRateSampleCount
 	) external {
 		nativeExRateSampleCount = _nativeExRateSampleCount;
 	}
 
-	// Expose internal methods for testing
-	function exposed_updateNativeTokenExchangeRate(
+	function wild_updateNativeTokenExchangeRate(
 		uint256 _nativeAmount,
 		uint256 _vTokenAmount
 	) external {
 		_updateNativeTokenExchangeRate(_nativeAmount, _vTokenAmount);
+	}
+
+	function wild_setLastNativeExRateUpdateBlock(
+		uint128 _lastNativeExRateUpdateBlock
+	) external {
+		lastNativeExRateUpdateBlock = _lastNativeExRateUpdateBlock;
+	}
+
+	// Expose internal methods for testing
+	function exposed_getVTokenByTokenWithoutFee(
+		uint256 _nativeAmount
+	) public view returns (uint256) {
+		return _getVTokenByTokenWithoutFee(_nativeAmount);
+	}
+
+	function exposed_getTokenByVTokenWithoutFee(
+		uint256 _vTokenAmount
+	) public view returns (uint256) {
+		return _getTokenByVTokenWithoutFee(_vTokenAmount);
+	}
+
+	function exposed_getEstimatedNativeExRateAtEnd()
+		public
+		view
+		returns (uint256)
+	{
+		return _getEstimatedNativeExRateAtEnd();
+	}
+
+	function exposed_getTokenDecimals(
+		address _tokenAddress
+	) public view returns (uint8) {
+		return _getTokenDecimals(_tokenAddress);
+	}
+
+	function exposed_getActiveBlockDelta(
+		uint256 from,
+		uint256 to
+	) public view returns (uint256) {
+		return _getActiveBlockDelta(from, to);
 	}
 
 	function getPendingExchangeRate() public view returns (uint256) {
@@ -84,6 +109,33 @@ contract MockLaunchpool is Launchpool {
 
 	function getClaimableProjectToken() public view returns (uint256) {
 		return getClaimableProjectToken();
+	}
+
+	function _getVTokenByTokenWithoutFee(
+		uint256 _nativeAmount
+	) internal view override returns (uint256 vAssetAmount) {
+		return
+			// Temporary solution
+			xcmOracle.getVTokenByToken(
+				address(acceptedNativeAsset),
+				_nativeAmount
+			);
+	}
+
+	function _getTokenByVTokenWithoutFee(
+		uint256 _vAssetAmount
+	) internal view override returns (uint256 nativeAmount) {
+		// Temporary solution
+		return
+			xcmOracle.getTokenByVToken(
+				address(acceptedNativeAsset),
+				_vAssetAmount
+			);
+	}
+
+	function _preInit() internal override {
+		MockXCMOracle _xcmOracle = new MockXCMOracle(12000, 10, 100);
+		xcmOracle = IXCMOracle(address(_xcmOracle));
 	}
 }
 /* solhint-enable */

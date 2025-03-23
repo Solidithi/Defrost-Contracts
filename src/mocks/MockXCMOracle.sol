@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+/* solhint-disable */
 pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,10 +9,21 @@ interface IERC20Decimal {
 }
 
 contract MockXCMOracle {
+	struct PoolInfo {
+		uint256 assetAmount;
+		uint256 vAssetAmount;
+	}
+
 	uint256 public baseExchangeRate;
 	uint256 public blockInterval;
 	uint256 public lastUpdatedBlock;
 	uint256 public incrementAmount;
+
+	// uint256 DECIMALS;
+	// Real, hard-coded on-chain address of XCMOracle
+	address public constant ORACLE_ONCHAIN_ADDRESS =
+		0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a;
+	uint256 public exchangeRate;
 
 	constructor(
 		uint256 _initialRate,
@@ -52,6 +64,18 @@ contract MockXCMOracle {
 		return baseExchangeRate + (increments * incrementAmount);
 	}
 
+	function tokenPool(
+		bytes2 _currencyId
+	) public view returns (PoolInfo memory) {
+		return PoolInfo(15 ether, 10 ether);
+	}
+
+	function getCurrencyIdByAssetAddress(
+		address _assetAddress
+	) public view returns (bytes2) {
+		return 0x0806;
+	}
+
 	function getVTokenByToken(
 		address _assetAddress,
 		uint256 amount
@@ -70,3 +94,4 @@ contract MockXCMOracle {
 		return getCurrentExchangeRate();
 	}
 }
+/* solhint-enable*/
