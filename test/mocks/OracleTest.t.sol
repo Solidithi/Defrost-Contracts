@@ -1,110 +1,107 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { MockXCMOracle } from "../../src/mocks/BetterMockXCMOracle.sol";
 import "forge-std/Test.sol";
+import "@src/mocks/MockXCMOracle.sol";
+import "@src/mocks/MockERC20.sol";
 
 contract MockXCMOracleTest is Test {
 	MockXCMOracle public oracle;
-	address _mockTokenAddress = address(0x1);
+	address mockTokenAddress = address(0x1);
 
 	// Default constructor parameters
-	uint256 _initialRate = 15;
-	uint256 _blockInterval = 50;
-	uint256 _increasementAmount = 1;
+	uint256 initialRate = 15;
+	uint256 blockInterval = 50;
+	uint256 incrementAmount = 1;
 
 	function setUp() public {
-		oracle = new MockXCMOracle(
-			_initialRate,
-			_blockInterval,
-			_increasementAmount
-		);
+		oracle = new MockXCMOracle(initialRate, blockInterval, incrementAmount);
 	}
 
-	function test_initial_configuration() public {
-		assertEq(oracle.baseExchangeRate(), _initialRate);
-		assertEq(oracle.blockInterval(), _blockInterval);
-		assertEq(oracle.increasementAmount(), _increasementAmount);
+	function testInitialConfiguration() public {
+		assertEq(oracle.baseExchangeRate(), initialRate);
+		assertEq(oracle.blockInterval(), blockInterval);
+		assertEq(oracle.incrementAmount(), incrementAmount);
 		assertEq(oracle.lastUpdatedBlock(), block.number);
 	}
 
-	function test_get_current_exchange_rate() public {
-		assertEq(oracle.getCurrentExchangeRate(), _initialRate);
-		assertEq(oracle.getExchangeRate(), _initialRate);
+	function testGetCurrentExchangeRate() public {
+		assertEq(oracle.getCurrentExchangeRate(), initialRate);
+		assertEq(oracle.getExchangeRate(), initialRate);
 	}
 
-	function test_token_conversion() public {
+	function testTokenConversion() public {
 		uint256 amount = 1000;
 		assertEq(
-			oracle.getVTokenByToken(_mockTokenAddress, amount),
-			amount / _initialRate
+			oracle.getVTokenByToken(mockTokenAddress, amount),
+			amount / initialRate
 		);
 		assertEq(
-			oracle.getTokenByVToken(_mockTokenAddress, amount),
-			amount * _initialRate
+			oracle.getTokenByVToken(mockTokenAddress, amount),
+			amount * initialRate
 		);
 	}
 
-	function test_set_exchange_rate() public {
+	function testSetExchangeRate() public {
 		uint256 newRate = 20;
 		oracle.setExchangeRate(newRate);
 		assertEq(oracle.baseExchangeRate(), newRate);
 		assertEq(oracle.getExchangeRate(), newRate);
 	}
 
-	function test_set_block_interval() public {
+	function testSetBlockInterval() public {
 		uint256 newInterval = 100;
 		oracle.setBlockInterval(newInterval);
 		assertEq(oracle.blockInterval(), newInterval);
 		assertEq(oracle.lastUpdatedBlock(), block.number);
 	}
 
-	function test_set_increasement_amount() public {
+	function testSetIncrementAmount() public {
 		uint256 newIncrement = 2;
-		oracle.setIncreasementAmount(newIncrement);
-		assertEq(oracle.increasementAmount(), newIncrement);
+		oracle.setIncrementAmount(newIncrement);
+		assertEq(oracle.incrementAmount(), newIncrement);
 		assertEq(oracle.lastUpdatedBlock(), block.number);
 	}
 
-	function test_sync_exchange_rate() public {
+	function testSyncExchangeRate() public {
 		oracle.syncExchangeRate();
 		assertEq(oracle.lastUpdatedBlock(), block.number);
 	}
 
-	function test_rate_change_after_blocks() public {
+	function testRateChangeAfterBlocks() public {
 		// Warp forward by 50 blocks to trigger one increment
 		vm.roll(block.number + 50);
 
-		uint256 expectedRate = _initialRate + _increasementAmount;
+		uint256 expectedRate = initialRate + incrementAmount;
 		assertEq(oracle.getCurrentExchangeRate(), expectedRate);
 
 		// Check token conversions with new rate
 		uint256 amount = 1000;
 		assertEq(
-			oracle.getVTokenByToken(_mockTokenAddress, amount),
+			oracle.getVTokenByToken(mockTokenAddress, amount),
 			amount / expectedRate
 		);
 		assertEq(
-			oracle.getTokenByVToken(_mockTokenAddress, amount),
+			oracle.getTokenByVToken(mockTokenAddress, amount),
 			amount * expectedRate
 		);
 	}
 
-	function test_multiple_block_intervals() public {
+	function testMultipleBlockIntervals() public {
 		// Warp forward by 105 blocks to trigger two increments
 		vm.roll(block.number + 105);
 
-		uint256 expectedRate = _initialRate + (_increasementAmount * 2);
+		uint256 expectedRate = initialRate + (incrementAmount * 2);
 		assertEq(oracle.getCurrentExchangeRate(), expectedRate);
 	}
 
-	function test_rate_update_after_set_exchange_rate() public {
+	function testRateUpdateAfterSetExchangeRate() public {
 		// Advance some blocks to have a non-zero increment
 		vm.roll(block.number + 60);
 		// Check that rate has increased
 		assertEq(
 			oracle.getCurrentExchangeRate(),
-			_initialRate + _increasementAmount
+			initialRate + incrementAmount
 		);
 
 		// Update the rate
@@ -119,33 +116,30 @@ contract MockXCMOracleTest is Test {
 		vm.roll(block.number + 50);
 
 		// Check that the rate increases from the new base rate
-		assertEq(
-			oracle.getCurrentExchangeRate(),
-			newRate + _increasementAmount
-		);
+		assertEq(oracle.getCurrentExchangeRate(), newRate + incrementAmount);
 	}
 
-	function test_fuzzing_rate_changes(uint8 blocks) public {
+	function testFuzzingRateChanges(uint8 blocks) public {
 		vm.assume(blocks > 0);
 		vm.roll(block.number + blocks);
 
 		uint256 expectedIncrements = blocks / oracle.blockInterval();
 		uint256 expectedRate = oracle.baseExchangeRate() +
-			(expectedIncrements * oracle.increasementAmount());
+			(expectedIncrements * oracle.incrementAmount());
 
 		assertEq(oracle.getCurrentExchangeRate(), expectedRate);
 	}
 
-	function test_fuzzing_conversions(uint256 amount) public {
-		vm.assume(amount > 0 && amount < type(uint256).max / _initialRate);
+	function testFuzzingConversions(uint256 amount) public {
+		vm.assume(amount > 0 && amount < type(uint256).max / initialRate);
 
 		assertEq(
-			oracle.getVTokenByToken(_mockTokenAddress, amount),
-			amount / _initialRate
+			oracle.getVTokenByToken(mockTokenAddress, amount),
+			amount / initialRate
 		);
 		assertEq(
-			oracle.getTokenByVToken(_mockTokenAddress, amount),
-			amount * _initialRate
+			oracle.getTokenByVToken(mockTokenAddress, amount),
+			amount * initialRate
 		);
 	}
 }

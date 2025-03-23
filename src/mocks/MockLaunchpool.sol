@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
-import { MockXCMOracle } from "../mocks/MockXCMOracle.sol";
+import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 
 contract MockLaunchpool is Launchpool {
 	constructor(
@@ -32,8 +32,20 @@ contract MockLaunchpool is Launchpool {
 			_emissionRateChanges
 		)
 	{
-		// Do sth cool if u want
-		MockXCMOracle _xcmOracle = new MockXCMOracle();
+		/**
+		 * @dev
+		 * This mocks a scenario where:
+		 * Initial rate is `12000` (scaled by `10^4`), is 1.2 in reality, 20% difference for vAsset.
+		 * Rate increases by `100` every `10` blocks (`1 * 10^4` in storage).
+		 * --> For every 10 blocks, the rate increases by 0.1 in actual caculation.
+
+		 * --> block 1000: 1 vDOT = 1.2 DOT
+		 * --> block 1010: 1 vDOT = 1.3 DOT
+		 * --> block 1020: 1 vDOT = 1.4 DOT
+		 * --> block 1030: 1 vDOT = 1.5 DOT
+		 
+		 */
+		MockXCMOracle _xcmOracle = new MockXCMOracle(12000, 10, 100);
 		xcmOracle = IXCMOracle(address(_xcmOracle));
 	}
 
