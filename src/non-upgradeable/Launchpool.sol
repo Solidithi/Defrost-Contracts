@@ -4,11 +4,12 @@ pragma solidity ^0.8.24;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
 
-contract Launchpool is Ownable, ReentrancyGuard {
+contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	using SafeERC20 for IERC20;
 
 	struct Staker {
@@ -224,9 +225,23 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// FUNCTION ////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
+	function pause() external onlyPlatformAdmin {
+		_pause();
+	}
+
+	function unpause() external onlyPlatformAdmin {
+		_unpause();
+	}
+
 	function stake(
 		uint256 _vTokenAmount
-	) external nonZeroAmount(_vTokenAmount) poolIsActive nonReentrant {
+	)
+		external
+		nonZeroAmount(_vTokenAmount)
+		poolIsActive
+		whenNotPaused
+		nonReentrant
+	{
 		if (_vTokenAmount > maxVAssetPerStaker) {
 			revert ExceedsMaximumAllowedStakePerUser();
 		}
@@ -279,10 +294,11 @@ contract Launchpool is Ownable, ReentrancyGuard {
 
 	function unstake(
 		uint256 _vTokenAmount
-	) external nonZeroAmount(_vTokenAmount) nonReentrant {
+	) external nonZeroAmount(_vTokenAmount) whenNotPaused nonReentrant {
 		address investorAddress = _msgSender();
 		Staker storage investor = stakers[investorAddress];
 
+		// Consider removing this redundant check
 		if (investor.nativeAmount == 0) {
 			revert ZeroAmountNotAllowed();
 		}
@@ -340,15 +356,20 @@ contract Launchpool is Ownable, ReentrancyGuard {
 	}
 
 	// Need modification
+	/**
+	 * @notice Emergency withdrawal function that works even when contract is paused
+	 * @dev Users forfeit any earned project tokens when using this function
+	 * @param _vTokenAmount Amount of vTokens to withdraw
+	 */
 	function unstakeWithoutProjectToken(
 		uint256 _vTokenAmount
 	) external nonReentrant {
 		Staker storage investor = stakers[msg.sender];
+		// Consider removing this redundant check
 		if (investor.nativeAmount == 0) {
 			revert ZeroAmountNotAllowed();
 		}
 
-		// TODO: update this
 		uint256 withdrawableVAsset = getWithdrawableVAssets(
 			investor.nativeAmount
 		);
@@ -673,7 +694,6 @@ contract Launchpool is Ownable, ReentrancyGuard {
 			poolInfo.vAssetAmount;
 	}
 
-	// TODO: add tests for this
 	function _getActiveBlockDelta(
 		uint256 from,
 		uint256 to
