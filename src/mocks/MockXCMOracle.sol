@@ -20,9 +20,6 @@ contract MockXCMOracle {
 	uint256 public incrementAmount;
 
 	// uint256 DECIMALS;
-	// Real, hard-coded on-chain address of XCMOracle
-	address public constant ORACLE_ONCHAIN_ADDRESS =
-		0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a;
 	uint256 public exchangeRate;
 
 	constructor(
