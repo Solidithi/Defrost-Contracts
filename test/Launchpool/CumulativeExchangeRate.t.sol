@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import { MockLaunchpool } from "../mocks/MockLaunchpool.sol";
-import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
+import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 
@@ -18,16 +18,17 @@ contract CumulativeExchangeRateTest is Test {
 	function setUp() public {
 		projectToken = new MockERC20("PROJECT", "PRO");
 		vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
+		nativeAsset = new MockERC20("Native Token", "NAT");
 	}
 
 	function test_constant_emission_rate_with_one_staker() public {
 		// Arrange: deploy pool
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
+		uint128 startBlock = uint128(block.number) + 1;
+		changeBlocks[0] = startBlock;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
 		uint128 poolDurationBlocks = 70;
-		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
 
@@ -85,13 +86,13 @@ contract CumulativeExchangeRateTest is Test {
 	{
 		// Arrange: deploy pool
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 
 		launchpool = new MockLaunchpool(
 			address(this),
@@ -156,11 +157,11 @@ contract CumulativeExchangeRateTest is Test {
 	{
 		// Arrange: deploy pool
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
+		uint128 startBlock = uint128(block.number) + 1;
+		changeBlocks[0] = startBlock;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
 		uint128 poolDurationBlocks = 70;
-		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
 
