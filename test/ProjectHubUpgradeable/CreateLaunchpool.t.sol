@@ -10,6 +10,7 @@ import { console } from "forge-std/console.sol";
 import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHubProxyCustomSender.sol";
 import { IProjectHub } from "@src/interfaces/IProjectHub.sol";
 import { ILaunchpool } from "@src/interfaces/ILaunchpool.sol";
+import { DeployMockXCMOracle } from "../testutils/DeployMockXCMOracle.sol";
 
 contract CreateLaunchpoolTest is Test {
 	MockERC20 public projectToken = new MockERC20("PROJECT", "PRO");
@@ -25,9 +26,10 @@ contract CreateLaunchpoolTest is Test {
 	MockERC20 ASTR = new MockERC20("Voucher ASTR", "vASTR");
 	MockERC20 FIL = new MockERC20("Voucher FIL", "vFIL");
 
-	MockXCMOracle public mockXCMOracle = new MockXCMOracle();
+	MockXCMOracle public mockXCMOracle = new MockXCMOracle(12000, 10, 100);
 
 	DeployProjectHubProxyCustomSender public hubDeployScript;
+	DeployMockXCMOracle mockXCMOracleDeployer = new DeployMockXCMOracle();
 	address[] vAssets;
 	address[] nativeAssets;
 	address public projectHubProxy;
@@ -54,7 +56,7 @@ contract CreateLaunchpoolTest is Test {
 		projectHubProxy = hubDeployScript.deployProjectHubProxy();
 
 		// Put MockXCMOracle at the hard-coded address of real on-chain XCMOracle
-		deployCodeTo("MockXCMOracle", mockXCMOracle.ORACLE_ONCHAIN_ADDRESS());
+		mockXCMOracleDeployer.deploy(12000, 10, 100);
 	}
 
 	function test_next_project_id() public {

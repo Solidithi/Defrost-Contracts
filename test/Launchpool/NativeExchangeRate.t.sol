@@ -33,7 +33,7 @@ contract NativeExchangeRateTest is Test {
 		START_BLOCK = uint128(block.number + 10);
 
 		// Deploy mock XCM Oracle
-		xcmOracle = new MockXCMOracle();
+		xcmOracle = new MockXCMOracle(12000, 10, 100);
 
 		// Set up change blocks and emission rates for the Launchpool
 		uint128[] memory changeBlocks = new uint128[](1);

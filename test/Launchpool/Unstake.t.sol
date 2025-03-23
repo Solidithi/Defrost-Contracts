@@ -2,11 +2,11 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import { MockLaunchpool } from "../mocks/MockLaunchpool.sol";
+import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
-import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockERC20 } from "@src/mocks/MockERC20.sol";
 
-import { MockXCMOracle } from "../mocks/MockXCMOracle.sol";
+import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 
@@ -14,24 +14,24 @@ contract UnstakeTest is Test {
 	MockERC20 projectToken;
 	MockERC20 vAsset;
 	MockERC20 nativeAsset;
-	MockXCMOracle xcmOracle;
+	// MockXCMOracle xcmOracle;
 	MockLaunchpool launchpool;
 
 	function setUp() public {
 		projectToken = new MockERC20("PROJECT", "PRO");
 		vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
 		nativeAsset = new MockERC20("Native Imaginary", "nImaginary");
-		xcmOracle = new MockXCMOracle();
+		// xcmOracle = new MockXCMOracle();
 	}
 
 	function test_unstake_success() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;
@@ -68,8 +68,7 @@ contract UnstakeTest is Test {
 		vm.roll(endBlock);
 
 		// Act: Unstake
-		uint256 aliceUnstake = xcmOracle.getVTokenByToken(
-			address(nativeAsset),
+		uint256 aliceUnstake = launchpool.exposed_getVTokenByTokenWithoutFee(
 			aliceStake
 		);
 
@@ -84,22 +83,20 @@ contract UnstakeTest is Test {
 		uint256 aliceVAssetBalance = vAsset.balanceOf(alice);
 		assertTrue(aliceVAssetBalance <= maxVTokensPerStaker);
 
-		uint256 aliceNativeBalance = xcmOracle.getTokenByVToken(
-			address(nativeAsset),
-			aliceVAssetBalance
-		);
+		uint256 aliceNativeBalance = launchpool
+			.exposed_getTokenByVTokenWithoutFee(aliceVAssetBalance);
 
 		assertEq(aliceNativeBalance, aliceStake);
 	}
 
 	function test_unstake_more_than_staked() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;
@@ -136,10 +133,8 @@ contract UnstakeTest is Test {
 		vm.roll(endBlock);
 
 		// Assert
-		uint256 alicePossibleUnstake = xcmOracle.getVTokenByToken(
-			address(nativeAsset),
-			aliceStake
-		);
+		uint256 alicePossibleUnstake = launchpool
+			.exposed_getVTokenByTokenWithoutFee(aliceStake);
 
 		vm.startPrank(alice);
 		vm.expectRevert(Launchpool.VAssetAmountNotSufficient.selector);
@@ -149,12 +144,12 @@ contract UnstakeTest is Test {
 
 	function test_unstake_before_end() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;
@@ -191,10 +186,8 @@ contract UnstakeTest is Test {
 		vm.roll(endBlock - 1);
 
 		// Act: Unstake
-		uint256 alicePossibleUnstake = xcmOracle.getVTokenByToken(
-			address(nativeAsset),
-			aliceStake
-		);
+		uint256 alicePossibleUnstake = launchpool
+			.exposed_getVTokenByTokenWithoutFee(aliceStake);
 
 		vm.startPrank(alice);
 		launchpool.unstake(alicePossibleUnstake);
@@ -210,12 +203,12 @@ contract UnstakeTest is Test {
 
 	function test_unstake_rapidly() public {
 		uint128[] memory changeBlocks = new uint128[](1);
-		changeBlocks[0] = 0;
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
 		uint128 startBlock = uint128(block.number) + 1;
 		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
 		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] =
 			(1e20 * (10 ** projectToken.decimals())) /
 			poolDurationBlocks;
@@ -251,10 +244,8 @@ contract UnstakeTest is Test {
 
 		// Act: Unstake multiple times in small amounts
 		uint256 totalStaked = launchpool.totalNativeStake();
-		uint256 totalVAssetToUnstake = xcmOracle.getVTokenByToken(
-			address(nativeAsset),
-			totalStaked
-		);
+		uint256 totalVAssetToUnstake = launchpool
+			.exposed_getVTokenByTokenWithoutFee(totalStaked);
 
 		uint256 unstakeAmount = totalVAssetToUnstake / 5;
 

@@ -10,19 +10,23 @@ import { console } from "forge-std/console.sol";
 import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHubProxyCustomSender.sol";
 import { ProjectHubUpgradeable } from "../../src/upgradeable/v1/ProjectHubUpgradeable.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
+import { DeployMockXCMOracle } from "../testutils/DeployMockXCMOracle.sol";
 
 contract CustomDeployAddress is Test {
-	MockXCMOracle public mockXCMOracle;
+	DeployMockXCMOracle mockXCMOracleDeployer = new DeployMockXCMOracle();
+	address mockXCMOracleAddr;
 
 	function setUp() public {
 		// Put MockXCMOracle at the hard-coded address of real on-chain XCMOracle
-		mockXCMOracle = new MockXCMOracle(12000, 10, 100);
-		deployCodeTo("MockXCMOracle", mockXCMOracle.ORACLE_ONCHAIN_ADDRESS());
+		mockXCMOracleDeployer.deploy(12000, 10, 100);
+		mockXCMOracleAddr = mockXCMOracleDeployer.ORACLE_ONCHAIN_ADDRESS();
 	}
 
 	function test_mock_oracle_interactive() public view {
-		uint256 nativeAmount = IXCMOracle(address(mockXCMOracle))
-			.getTokenByVToken(address(this), 10 ether);
+		uint256 nativeAmount = IXCMOracle(mockXCMOracleAddr).getTokenByVToken(
+			address(this),
+			10 ether
+		);
 		assertTrue(
 			nativeAmount > 0,
 			"Native amount should be greater than 0 if mock oracle is working"
