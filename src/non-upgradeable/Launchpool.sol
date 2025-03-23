@@ -374,11 +374,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			investor.nativeAmount
 		);
 
-		if (
-			withdrawableVAsset <
-			_vTokenAmount *
-				10 ** IERC20Metadata(address(acceptedNativeAsset)).decimals()
-		) {
+		if (withdrawableVAsset < _vTokenAmount) {
 			revert VAssetAmountNotSufficient();
 		}
 
