@@ -69,6 +69,18 @@ contract MockLaunchpool is Launchpool {
 		lastNativeExRateUpdateBlock = _lastNativeExRateUpdateBlock;
 	}
 
+	function wild_setPlatformAdminAddress(
+		address _platformAdminAddress
+	) external {
+		platformAdminAddress = _platformAdminAddress;
+	}
+
+	function wild_setOwnerShareOfInterest(
+		uint128 _ownerShareOfInterest
+	) external {
+		ownerShareOfInterest = _ownerShareOfInterest;
+	}
+
 	// Expose internal methods for testing
 	function exposed_getVTokenByTokenWithoutFee(
 		uint256 _nativeAmount
@@ -101,6 +113,14 @@ contract MockLaunchpool is Launchpool {
 		uint256 to
 	) public view returns (uint256) {
 		return _getActiveBlockDelta(from, to);
+	}
+
+	function exposed_getPlatformAndOwnerClaimableVAssets()
+		public
+		view
+		returns (uint256 ownerClaims, uint256 platformFee)
+	{
+		(ownerClaims, platformFee) = _getPlatformAndOwnerClaimableVAssets();
 	}
 
 	function getPendingExchangeRate() public view returns (uint256) {
