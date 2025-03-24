@@ -24,7 +24,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	uint128 public startBlock;
 	uint128 public endBlock;
 	uint128 public tickBlock;
-	uint128 public ownerShareOfInterest = 70; // 70% of the interest goes to the project owner, this is temp value
+	uint128 public ownerShareOfInterest = 90; // 90% of the interest goes to the PO, the rest is platform fee
 	uint256 public maxVAssetPerStaker;
 	uint256 public maxStakers;
 	uint256 public totalNativeStake;
