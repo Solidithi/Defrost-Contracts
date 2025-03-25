@@ -17,11 +17,17 @@ contract DeployMockXCMOracle is Script, Test {
 	function deploy(
 		uint256 _baseExchangeRate,
 		uint256 _blockInterval,
-		uint256 _incrementAmount
+		uint256 _apy,
+		uint256 _networkBlockTime
 	) public returns (address) {
 		deployCodeTo(
 			"MockXCMOracle",
-			abi.encode(_baseExchangeRate, _blockInterval, _incrementAmount),
+			abi.encode(
+				_baseExchangeRate,
+				_blockInterval,
+				_apy,
+				_networkBlockTime
+			),
 			ORACLE_ONCHAIN_ADDRESS
 		);
 
