@@ -131,31 +131,32 @@ contract MockLaunchpool is Launchpool {
 		return getClaimableProjectToken();
 	}
 
-	function _getVTokenByTokenWithoutFee(
-		uint256 _nativeAmount
-	) internal view override returns (uint256 vAssetAmount) {
-		return
-			// Temporary solution
-			xcmOracle.getVTokenByToken(
-				address(acceptedNativeAsset),
-				_nativeAmount
-			);
-	}
+	// function _getVTokenByTokenWithoutFee(
+	// 	uint256 _nativeAmount
+	// ) internal view override returns (uint256 vAssetAmount) {
+	// 	return
+	// 		// Temporary solution
+	// 		xcmOracle.getVTokenByToken(
+	// 			address(acceptedNativeAsset),
+	// 			_nativeAmount
+	// 		);
+	// }
 
-	function _getTokenByVTokenWithoutFee(
-		uint256 _vAssetAmount
-	) internal view override returns (uint256 nativeAmount) {
-		// Temporary solution
-		return
-			xcmOracle.getTokenByVToken(
-				address(acceptedNativeAsset),
-				_vAssetAmount
-			);
-	}
+	// function _getTokenByVTokenWithoutFee(
+	// 	uint256 _vAssetAmount
+	// ) internal view override returns (uint256 nativeAmount) {
+	// 	// Temporary solution
+	// 	return
+	// 		xcmOracle.getTokenByVToken(
+	// 			address(acceptedNativeAsset),
+	// 			_vAssetAmount
+	// 		);
+	// }
 
 	function _preInit() internal override {
-		MockXCMOracle _xcmOracle = new MockXCMOracle(12000, 10, 100);
-		xcmOracle = IXCMOracle(address(_xcmOracle));
+		// Set platform admin address for testing
+		address platformAdmin = address(0x868);
+		platformAdminAddress = platformAdmin;
 	}
 }
 /* solhint-enable */
