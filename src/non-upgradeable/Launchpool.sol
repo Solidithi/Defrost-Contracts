@@ -60,6 +60,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 
 	uint256 public constant BLOCK_TIME = 6 seconds; // for Moonbeam
 
+	// TODO: add test for this
+	bool public platformFeeClaimed;
+
 	///////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// CONTRACT EVENTS //////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////
@@ -91,6 +94,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	error VAssetAmountNotSufficient();
 	error NativeAmountExceedStake();
 	error MustBeDuringPoolTime();
+	error PlatformFeeAlreadyClaimed();
 
 	///////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// MODIFIERS ///////////////////////////////
@@ -116,7 +120,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	}
 
 	modifier afterPoolEnd() {
-		if (block.number < endBlock) {
+		// TODO: re-validate this (just updated from < to <=)
+		if (block.number <= endBlock) {
 			revert MustBeAfterPoolEnd();
 		}
 		_;
@@ -191,10 +196,10 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		}
 
 		uint8 pTokenDecimals = _getTokenDecimals(address(_projectToken));
-		uint8 nativeDecimals = _getTokenDecimals(address(_acceptedNativeAsset));
+		uint8 vAssetDecimals = _getTokenDecimals(address(_acceptedVAsset));
 
 		SCALING_FACTOR = BASE_PRECISION / (10 ** pTokenDecimals);
-		NATIVE_SCALING_FACTOR = BASE_PRECISION / (10 ** nativeDecimals);
+		NATIVE_SCALING_FACTOR = 10 ** vAssetDecimals;
 
 		unchecked {
 			for (uint256 i = 0; i < changeBlocksLen; ++i) {
@@ -203,16 +208,12 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		}
 
 		// Record native exchange rate at start block
-		lastNativeExRate =
-			NATIVE_SCALING_FACTOR *
-			_getTokenByVTokenWithoutFee(
-				10 ** IERC20Metadata(_acceptedNativeAsset).decimals()
-			);
+		lastNativeExRate = _getTokenByVTokenWithoutFee(NATIVE_SCALING_FACTOR);
 		++nativeExRateSampleCount;
 		lastNativeExRateUpdateBlock = uint128(currentBlock);
 
 		changeBlocks = _changeBlocks;
-		platformAdminAddress = _msgSender();
+		// platformAdminAddress = _msgSender(); // TODO: need to be updated to different address in preInit
 		projectToken = IERC20(_projectToken);
 		acceptedVAsset = IERC20(_acceptedVAsset);
 		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
@@ -298,7 +299,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		address investorAddress = _msgSender();
 		Staker storage investor = stakers[investorAddress];
 
-		// Consider removing this redundant check
+		// Keep this as fail-fast mehanism to save gas
 		if (investor.nativeAmount == 0) {
 			revert ZeroAmountNotAllowed();
 		}
@@ -363,9 +364,10 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	 */
 	function unstakeWithoutProjectToken(
 		uint256 _vTokenAmount
-	) external nonReentrant {
+	) external nonZeroAmount(_vTokenAmount) nonReentrant {
 		Staker storage investor = stakers[msg.sender];
-		// Consider removing this redundant check
+
+		// Keep this as fail-fast mehanism to save gas
 		if (investor.nativeAmount == 0) {
 			revert ZeroAmountNotAllowed();
 		}
@@ -394,19 +396,43 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		emit Unstaked(address(msg.sender), _vTokenAmount);
 	}
 
+	// TODO: need to fix this (cannot claim before all users had claimed)
 	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
 		projectToken.safeTransfer(owner(), balance);
 	}
 
+	// TODO: add test for this
 	function claimOwnerInterest() external onlyOwner {
-		(uint256 ownerClaims, ) = _getPlatformAndOwnerClaimableVAssets();
+		(
+			uint256 ownerClaims,
+			uint256 platformFee
+		) = _getPlatformAndOwnerClaimableVAssets();
 		acceptedVAsset.safeTransfer(owner(), ownerClaims);
+		acceptedVAsset.safeTransfer(platformAdminAddress, platformFee);
 	}
 
-	function claimPlatformInterest() external onlyPlatformAdmin {
-		(, uint256 platformClaims) = _getPlatformAndOwnerClaimableVAssets();
-		acceptedVAsset.safeTransfer(platformAdminAddress, platformClaims);
+	// TODO: add test for this
+	function claimPlatformFee()
+		external
+		onlyPlatformAdmin
+		afterPoolEnd
+		nonReentrant
+	{
+		if (platformFeeClaimed) {
+			revert PlatformFeeAlreadyClaimed();
+		}
+
+		platformFeeClaimed = true;
+
+		// Enforce update of avg. native exrate gradient if it's 0
+		if (avgNativeExRateGradient == 0) {
+			uint256 vAssetAmount = NATIVE_SCALING_FACTOR;
+			uint256 nativeAmount = _getTokenByVTokenWithoutFee(vAssetAmount);
+			_updateNativeTokenExchangeRate(nativeAmount, vAssetAmount);
+		}
+		(, uint256 platformFee) = _getPlatformAndOwnerClaimableVAssets();
+		acceptedVAsset.safeTransfer(platformAdminAddress, platformFee);
 	}
 
 	function setXCMOracleAddress(
@@ -430,15 +456,23 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 
 	// TODO: add test for this
 	function getWithdrawableVAssets(
-		uint256 nativeAmount
+		uint256 withdrawnNativeAmount
 	) public view returns (uint256 withdrawableVAssets) {
 		if (block.number <= endBlock) {
-			withdrawableVAssets = _getVTokenByTokenWithoutFee(nativeAmount);
+			withdrawableVAssets = _getVTokenByTokenWithoutFee(
+				withdrawnNativeAmount
+			);
 		} else {
 			uint256 exRateAtEnd = _getEstimatedNativeExRateAtEnd();
 			withdrawableVAssets =
-				(nativeAmount * NATIVE_SCALING_FACTOR) /
+				(withdrawnNativeAmount * NATIVE_SCALING_FACTOR) /
 				exRateAtEnd;
+		}
+
+		// TODO: add test for this (not really needed but for safety)
+		uint256 totalVAssetStaked = getTotalVAssetStaked();
+		if (withdrawableVAssets > getTotalVAssetStaked()) {
+			withdrawableVAssets = totalVAssetStaked;
 		}
 	}
 
@@ -499,9 +533,12 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		return stakers[_investor].nativeAmount;
 	}
 
+	/**
+	 * @notice For setting variables, injecting mock dependencies pre-constructor run, etc.
+	 * @dev Cool bros will go override this function
+	 */
 	function _preInit() internal virtual {
-		// to be overridden in the inherited contract
-		// used for testing, to inject/update mock dependencies
+		// Do sth that apparently all the cool bros are doing
 	}
 
 	function _tick() internal {
@@ -640,6 +677,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		returns (uint256 estimatedNativeExRateAtEnd)
 	{
 		uint256 blocksTilEnd = endBlock - lastNativeExRateUpdateBlock;
+		// TODO: fix bug here (if avgGradient is 0, and the someone tries withdrawing platform fee,
+		// it will use the last rate instead of the gradient)
 		estimatedNativeExRateAtEnd =
 			lastNativeExRate +
 			(avgNativeExRateGradient * blocksTilEnd);
@@ -649,7 +688,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	function _getPlatformAndOwnerClaimableVAssets()
 		internal
 		view
-		returns (uint256 ownerClaims, uint256 platformClaims)
+		returns (uint256 ownerClaims, uint256 platformFee)
 	{
 		uint256 allVAssets = acceptedVAsset.balanceOf(address(this));
 
@@ -660,8 +699,11 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		uint256 investorVAssets = getWithdrawableVAssets(totalNativeStake);
 		uint256 combinedClaims = allVAssets - investorVAssets;
 
+		if (platformFeeClaimed) {
+			return (combinedClaims, 0);
+		}
 		ownerClaims = (combinedClaims * ownerShareOfInterest) / 100;
-		platformClaims = combinedClaims - ownerClaims;
+		platformFee = combinedClaims - ownerClaims;
 	}
 
 	// TODO: add test for this
@@ -685,6 +727,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			address(acceptedNativeAsset)
 		);
 		IXCMOracle.PoolInfo memory poolInfo = xcmOracle.tokenPool(currencyId);
+
 		nativeAmount =
 			(_vAssetAmount * poolInfo.assetAmount) /
 			poolInfo.vAssetAmount;
