@@ -7,6 +7,7 @@ import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 import { console } from "forge-std/console.sol";
+import { DeployMockXCMOracle } from "test/testutils/DeployMockXCMOracle.sol";
 
 contract GeneralStateTest is Test {
 	MockLaunchpool launchpool;
@@ -14,6 +15,7 @@ contract GeneralStateTest is Test {
 	MockERC20 vAsset;
 	MockERC20 nativeAsset;
 	MockXCMOracle xcmOracle;
+	DeployMockXCMOracle mockOracleDeployer = new DeployMockXCMOracle();
 	address owner;
 
 	// Constants for testing
@@ -32,8 +34,8 @@ contract GeneralStateTest is Test {
 		// Set start block in the future to ensure startBlock > current block
 		START_BLOCK = uint128(block.number + 10);
 
-		// Deploy mock XCM Oracle
-		xcmOracle = new MockXCMOracle(12000, 10, 100);
+		// Deploy mock xcm oracle with 1.2 initial rate, 10 block interval, 8% APY, 6 seconds block time
+		mockOracleDeployer.deploy(12000, 10, 80000, 6);
 
 		// Set up change blocks and emission rates for the Launchpool
 		uint128[] memory changeBlocks = new uint128[](1);
@@ -72,10 +74,8 @@ contract GeneralStateTest is Test {
 		assertEq(launchpool.SCALING_FACTOR(), expScalingFactor);
 	}
 
-	function test_intialized_native_scaling_factor() public view {
-		uint256 expNativeScalingFactor = launchpool.BASE_PRECISION() /
-			(10 ** nativeAsset.decimals());
-
-		assertEq(launchpool.SCALING_FACTOR(), expNativeScalingFactor);
+	function test_intialized_one_vtoken_value() public view {
+		uint256 oneVToken = launchpool.ONE_VTOKEN();
+		assertEq(oneVToken, 10 ** vAsset.decimals());
 	}
 }

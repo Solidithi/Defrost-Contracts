@@ -6,6 +6,7 @@ import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
+import { DeployMockXCMOracle } from "test/testutils/DeployMockXCMOracle.sol";
 
 // @todo: Improve testcase later on when implementation for valid vAsset
 contract CumulativeExchangeRateTest is Test {
@@ -13,7 +14,13 @@ contract CumulativeExchangeRateTest is Test {
 	MockERC20 public projectToken;
 	MockERC20 public vAsset;
 	MockERC20 public nativeAsset;
+	DeployMockXCMOracle mockOracleDeployer = new DeployMockXCMOracle();
 	uint256 constant BLOCK_TIME = 6 seconds;
+
+	constructor() {
+		// Deploy mock xcm oracle with 1.2 initial rate, 10 block interval, 8% APY, 6 seconds block time
+		mockOracleDeployer.deploy(12000, 10, 80000, 6);
+	}
 
 	function setUp() public {
 		projectToken = new MockERC20("PROJECT", "PRO");

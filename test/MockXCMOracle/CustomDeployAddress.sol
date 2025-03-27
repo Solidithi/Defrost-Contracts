@@ -18,7 +18,7 @@ contract CustomDeployAddress is Test {
 
 	function setUp() public {
 		// Put MockXCMOracle at the hard-coded address of real on-chain XCMOracle
-		mockXCMOracleDeployer.deploy(12000, 10, 100);
+		mockXCMOracleDeployer.deploy(12000, 10, 80000, 6);
 		mockXCMOracleAddr = mockXCMOracleDeployer.ORACLE_ONCHAIN_ADDRESS();
 	}
 

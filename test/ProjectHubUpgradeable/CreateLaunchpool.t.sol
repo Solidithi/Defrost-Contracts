@@ -26,7 +26,7 @@ contract CreateLaunchpoolTest is Test {
 	MockERC20 ASTR = new MockERC20("Voucher ASTR", "vASTR");
 	MockERC20 FIL = new MockERC20("Voucher FIL", "vFIL");
 
-	MockXCMOracle public mockXCMOracle = new MockXCMOracle(12000, 10, 100);
+	MockXCMOracle public mockXCMOracle = new MockXCMOracle(12000, 10, 80000, 6);
 
 	DeployProjectHubProxyCustomSender public hubDeployScript;
 	DeployMockXCMOracle mockXCMOracleDeployer = new DeployMockXCMOracle();
@@ -56,7 +56,7 @@ contract CreateLaunchpoolTest is Test {
 		projectHubProxy = hubDeployScript.deployProjectHubProxy();
 
 		// Put MockXCMOracle at the hard-coded address of real on-chain XCMOracle
-		mockXCMOracleDeployer.deploy(12000, 10, 100);
+		mockXCMOracleDeployer.deploy(12000, 10, 80000, 6);
 	}
 
 	function test_next_project_id() public {

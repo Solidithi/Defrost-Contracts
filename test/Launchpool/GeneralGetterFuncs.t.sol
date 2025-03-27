@@ -6,6 +6,7 @@ import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
+import { DeployMockXCMOracle } from "test/testutils/DeployMockXCMOracle.sol";
 
 // @todo: Improve testcase later on when implementation for valid vAsset
 contract GeneralGetterFuncsTest is Test {
@@ -23,10 +24,12 @@ contract GeneralGetterFuncsTest is Test {
 	uint128 endBlock = startBlock + poolDurationBlocks;
 	uint256 maxVAssetPerStaker = 1e4 * (10 ** vAsset.decimals());
 	uint256 maxStakers = 0;
+	DeployMockXCMOracle mockOracleDeployer = new DeployMockXCMOracle();
 
 	constructor() {
 		changeBlocks[0] = startBlock;
 		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals());
+		mockOracleDeployer.deploy(12000, 10, 80000, 6);
 	}
 
 	function setUp() public {

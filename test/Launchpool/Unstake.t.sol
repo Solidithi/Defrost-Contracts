@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 import { MockERC20 } from "@src/mocks/MockERC20.sol";
+import { DeployMockXCMOracle } from "test/testutils/DeployMockXCMOracle.sol";
 
-import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 
@@ -14,7 +14,7 @@ contract UnstakeTest is Test {
 	MockERC20 projectToken;
 	MockERC20 vAsset;
 	MockERC20 nativeAsset;
-	// MockXCMOracle xcmOracle;
+	DeployMockXCMOracle mockOracleDeployer = new DeployMockXCMOracle();
 	MockLaunchpool launchpool;
 
 	function setUp() public {
@@ -22,6 +22,11 @@ contract UnstakeTest is Test {
 		vAsset = new MockERC20("Voucher Imaginary", "vImaginary");
 		nativeAsset = new MockERC20("Native Imaginary", "nImaginary");
 		// xcmOracle = new MockXCMOracle();
+	}
+
+	constructor() {
+		// Deploy mock xcm oracle with 1.2 initial rate, 10 block interval, 8% APY, 6 seconds block time
+		mockOracleDeployer.deploy(12000, 10, 80000, 6);
 	}
 
 	function test_unstake_success() public {
@@ -137,7 +142,7 @@ contract UnstakeTest is Test {
 			.exposed_getVTokenByTokenWithoutFee(aliceStake);
 
 		vm.startPrank(alice);
-		vm.expectRevert(Launchpool.VAssetAmountNotSufficient.selector);
+		vm.expectRevert(Launchpool.ExceedWithdrawableVTokens.selector);
 		launchpool.unstake(alicePossibleUnstake * 2);
 		vm.stopPrank();
 	}

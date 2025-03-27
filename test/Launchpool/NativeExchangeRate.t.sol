@@ -7,19 +7,25 @@ import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 import { console } from "forge-std/console.sol";
+import { DeployMockXCMOracle } from "../testutils/DeployMockXCMOracle.sol";
 
 contract NativeExchangeRateTest is Test {
 	MockLaunchpool launchpool;
 	MockERC20 projectToken;
 	MockERC20 vAsset;
 	MockERC20 nativeAsset;
-	MockXCMOracle xcmOracle;
+	DeployMockXCMOracle mockOracleDeployer = new DeployMockXCMOracle();
 	address owner;
 
 	// Constants for testing
 	uint128 public START_BLOCK = 100;
 	uint128 public constant END_BLOCK = 1000;
 	uint256 public constant MAX_VSTAKER = 1000 ether;
+
+	constructor() {
+		// Deploy mock xcm oracle with 1.2 initial rate, 10 block interval, 8% APY, 6 seconds block time
+		mockOracleDeployer.deploy(12000, 10, 80000, 6);
+	}
 
 	function setUp() public {
 		owner = address(this);
@@ -33,7 +39,6 @@ contract NativeExchangeRateTest is Test {
 		START_BLOCK = uint128(block.number + 10);
 
 		// Deploy mock XCM Oracle
-		xcmOracle = new MockXCMOracle(12000, 10, 100);
 
 		// Set up change blocks and emission rates for the Launchpool
 		uint128[] memory changeBlocks = new uint128[](1);
@@ -41,8 +46,6 @@ contract NativeExchangeRateTest is Test {
 
 		uint256[] memory emissionRates = new uint256[](1);
 		emissionRates[0] = 100 ether;
-
-		// vm.roll();
 
 		// Deploy Launchpool with exposed functions
 		launchpool = new MockLaunchpool(

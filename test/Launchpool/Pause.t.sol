@@ -6,9 +6,8 @@ import { MockLaunchpool } from "@src/mocks/MockLaunchpool.sol";
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 import { MockERC20 } from "@src/mocks/MockERC20.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { DeployMockXCMOracle } from "test/testutils/DeployMockXCMOracle.sol";
 
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
-import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { console } from "forge-std/console.sol";
 
@@ -17,7 +16,7 @@ contract PauseTest is Test {
 	MockERC20 projectToken;
 	MockERC20 vAsset;
 	MockERC20 nativeAsset;
-	MockXCMOracle xcmOracle;
+	DeployMockXCMOracle mockOracleDeployer = new DeployMockXCMOracle();
 	address owner;
 
 	// Constants for testing
@@ -25,6 +24,11 @@ contract PauseTest is Test {
 	uint128 public constant END_BLOCK = 1000;
 	uint256 public constant MAX_VSTAKER = 1000 ether;
 	uint128 public poolDurationBlocks = END_BLOCK - START_BLOCK;
+
+	constructor() {
+		// Deploy mock xcm oracle with 1.2 initial rate, 10 block interval, 8% APY, 6 seconds block time
+		mockOracleDeployer.deploy(12000, 10, 80000, 6);
+	}
 
 	function setUp() public {
 		owner = address(this);
@@ -36,9 +40,6 @@ contract PauseTest is Test {
 
 		// Set start block in the future to ensure startBlock > current block
 		START_BLOCK = uint128(block.number + 10);
-
-		// Deploy mock XCM Oracle
-		xcmOracle = new MockXCMOracle(12000, 10, 100);
 
 		// Set up change blocks and emission rates for the Launchpool
 		uint128[] memory changeBlocks = new uint128[](1);
@@ -154,7 +155,7 @@ contract PauseTest is Test {
 		vm.startPrank(investor);
 		vm.roll(START_BLOCK + (poolDurationBlocks * 4) / 5);
 		(uint256 investorNativeStake, ) = launchpool.stakers(investor);
-		uint256 withdrawableVAsset = launchpool.getWithdrawableVAssets(
+		uint256 withdrawableVAsset = launchpool.getWithdrawableVTokens(
 			investorNativeStake
 		);
 		console.log(
