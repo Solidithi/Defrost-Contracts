@@ -42,8 +42,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	IERC20 public projectToken;
 	IERC20 public acceptedVAsset;
 	IERC20 public acceptedNativeAsset; //For XCMOracle cal
-	IXCMOracle public xcmOracle =
-		IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
+	IXCMOracle public xcmOracle;
 
 	mapping(address => Staker) public stakers;
 
@@ -56,9 +55,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	uint128 public nativeExRateSampleCount;
 	uint128 public lastNativeExRateUpdateBlock;
 
-	uint256 public immutable NATIVE_SCALING_FACTOR;
-
-	uint256 public constant BLOCK_TIME = 6 seconds; // for Moonbeam
+	uint256 public immutable ONE_VTOKEN;
 
 	// TODO: add test for this
 	bool public platformFeeClaimed;
@@ -90,9 +87,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	error MustBeAfterPoolEnd();
 	error NotPlatformAdmin();
 	error ZeroAmountNotAllowed();
-	error ExceedsMaximumAllowedStakePerUser();
-	error VAssetAmountNotSufficient();
-	error NativeAmountExceedStake();
+	error ExceedMaxVTokensPerStaker();
+	error ExceedWithdrawableVTokens();
+	error ExceedNativeStake();
 	error MustBeDuringPoolTime();
 	error PlatformFeeAlreadyClaimed();
 
@@ -148,6 +145,15 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		_;
 	}
 
+	modifier handleNativeExRateAfterEnd() {
+		// Enforce update of avg. native exrate gradient if it's 0 after end
+		if (avgNativeExRateGradient == 0 && block.number > endBlock) {
+			uint256 nativePerVToken = _getTokenByVTokenWithoutFee(ONE_VTOKEN);
+			_updateNativeTokenExchangeRate(nativePerVToken, ONE_VTOKEN);
+		}
+		_;
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	/////////////////////////////// CONSTRUCTOR //////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
@@ -199,7 +205,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		uint8 vAssetDecimals = _getTokenDecimals(address(_acceptedVAsset));
 
 		SCALING_FACTOR = BASE_PRECISION / (10 ** pTokenDecimals);
-		NATIVE_SCALING_FACTOR = 10 ** vAssetDecimals;
+		ONE_VTOKEN = 10 ** vAssetDecimals;
 
 		unchecked {
 			for (uint256 i = 0; i < changeBlocksLen; ++i) {
@@ -208,12 +214,11 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		}
 
 		// Record native exchange rate at start block
-		lastNativeExRate = _getTokenByVTokenWithoutFee(NATIVE_SCALING_FACTOR);
+		lastNativeExRate = _getTokenByVTokenWithoutFee(ONE_VTOKEN);
 		++nativeExRateSampleCount;
 		lastNativeExRateUpdateBlock = uint128(currentBlock);
 
 		changeBlocks = _changeBlocks;
-		// platformAdminAddress = _msgSender(); // TODO: need to be updated to different address in preInit
 		projectToken = IERC20(_projectToken);
 		acceptedVAsset = IERC20(_acceptedVAsset);
 		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
@@ -244,18 +249,10 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		nonReentrant
 	{
 		if (_vTokenAmount > maxVAssetPerStaker) {
-			revert ExceedsMaximumAllowedStakePerUser();
+			revert ExceedMaxVTokensPerStaker();
 		}
 
 		Staker storage investor = stakers[msg.sender];
-
-		// (, uint8 redeemRate) = xcmOracle.rateInfo();
-		// uint256 directAmount = xcmOracle.getTokenByVToken(
-		// 	address(acceptedNativeAsset),
-		// 	_vTokenAmount
-		// );
-
-		// uint256 nativeAmount = directAmount / (10000 - redeemRate);
 
 		uint256 nativeAmount = _getTokenByVTokenWithoutFee(_vTokenAmount);
 
@@ -295,37 +292,24 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 
 	function unstake(
 		uint256 _vTokenAmount
-	) external nonZeroAmount(_vTokenAmount) whenNotPaused nonReentrant {
-		address investorAddress = _msgSender();
-		Staker storage investor = stakers[investorAddress];
-
-		// Keep this as fail-fast mehanism to save gas
-		if (investor.nativeAmount == 0) {
-			revert ZeroAmountNotAllowed();
-		}
-
-		uint256 withdrawableVAsset = getWithdrawableVAssets(
-			investor.nativeAmount
+	)
+		external
+		nonZeroAmount(_vTokenAmount)
+		whenNotPaused
+		nonReentrant
+		handleNativeExRateAfterEnd
+	{
+		address stakerAddr = _msgSender();
+		Staker memory staker = stakers[stakerAddr];
+		(uint256 withdrawnNativeTokens, ) = _handleUnstakeAmount(
+			staker,
+			_vTokenAmount
 		);
 
-		if (withdrawableVAsset < _vTokenAmount) {
-			revert VAssetAmountNotSufficient();
-		}
-
-		// TODO: update this (done)
-		uint256 withdrawnNativeAmount = getWithdrawableVAssets(_vTokenAmount);
-
-		if (investor.nativeAmount < withdrawnNativeAmount) {
-			revert NativeAmountExceedStake();
-		}
-
-		_updateNativeTokenExchangeRate(withdrawnNativeAmount, _vTokenAmount);
-
-		_tick();
-
-		uint256 exchangeRate = cumulativeExchangeRate;
-		uint256 claimableProjectTokenAmount = ((investor.nativeAmount *
-			exchangeRate) / SCALING_FACTOR) - investor.claimOffset;
+		// Handle distribution of project tokens
+		uint256 cumExRate = cumulativeExchangeRate;
+		uint256 claimableProjectTokenAmount = ((staker.nativeAmount *
+			cumExRate) / SCALING_FACTOR) - staker.claimOffset;
 
 		if (claimableProjectTokenAmount > 0) {
 			projectToken.safeTransfer(
@@ -334,18 +318,48 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			);
 		}
 
-		uint256 remainingAmount = investor.nativeAmount - withdrawnNativeAmount;
+		uint256 remainingAmount = staker.nativeAmount - withdrawnNativeTokens;
+		staker.claimOffset = (remainingAmount * cumExRate) / SCALING_FACTOR;
+		staker.nativeAmount = remainingAmount;
+		totalNativeStake -= withdrawnNativeTokens;
 
-		investor.claimOffset =
-			(remainingAmount * exchangeRate) /
-			SCALING_FACTOR;
+		// Write investor back to storage
+		stakers[stakerAddr] = staker;
 
-		investor.nativeAmount = remainingAmount;
-		totalNativeStake -= withdrawnNativeAmount;
+		emit Unstaked(stakerAddr, _vTokenAmount);
 
-		acceptedVAsset.safeTransfer(investorAddress, _vTokenAmount);
+		acceptedVAsset.safeTransfer(stakerAddr, _vTokenAmount);
+	}
 
-		emit Unstaked(investorAddress, _vTokenAmount);
+	// Need modification
+	/**
+	 * @notice Emergency withdrawal function that works even when contract is paused
+	 * @dev Users forfeit any earned project tokens when using this function
+	 * @param _withdrawnVTokens Amount of vTokens to withdraw
+	 */
+	function unstakeWithoutProjectToken(
+		uint256 _withdrawnVTokens
+	) external nonZeroAmount(_withdrawnVTokens) nonReentrant {
+		address stakerAddr = _msgSender();
+		Staker memory staker = stakers[stakerAddr];
+		(uint256 withdrawnNativeTokens, ) = _handleUnstakeAmount(
+			staker,
+			_withdrawnVTokens
+		);
+
+		_updateNativeTokenExchangeRate(staker.nativeAmount, _withdrawnVTokens);
+		_tick();
+
+		staker.nativeAmount -= withdrawnNativeTokens;
+		staker.claimOffset = staker.nativeAmount * cumulativeExchangeRate;
+		totalNativeStake -= withdrawnNativeTokens;
+
+		// Write staker back to storage
+		stakers[stakerAddr] = staker;
+
+		emit Unstaked(address(msg.sender), _withdrawnVTokens);
+
+		acceptedVAsset.safeTransfer(address(msg.sender), _withdrawnVTokens);
 	}
 
 	function recoverWrongToken(
@@ -356,54 +370,27 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		token.safeTransfer(owner(), balance);
 	}
 
-	// Need modification
-	/**
-	 * @notice Emergency withdrawal function that works even when contract is paused
-	 * @dev Users forfeit any earned project tokens when using this function
-	 * @param _vTokenAmount Amount of vTokens to withdraw
-	 */
-	function unstakeWithoutProjectToken(
-		uint256 _vTokenAmount
-	) external nonZeroAmount(_vTokenAmount) nonReentrant {
-		Staker storage investor = stakers[msg.sender];
-
-		// Keep this as fail-fast mehanism to save gas
-		if (investor.nativeAmount == 0) {
-			revert ZeroAmountNotAllowed();
-		}
-
-		uint256 withdrawableVAsset = getWithdrawableVAssets(
-			investor.nativeAmount
-		);
-
-		if (withdrawableVAsset < _vTokenAmount) {
-			revert VAssetAmountNotSufficient();
-		}
-
-		_updateNativeTokenExchangeRate(investor.nativeAmount, _vTokenAmount);
-
-		_tick();
-
-		uint256 withdrawnNativeAmount = _getTokenByVTokenWithoutFee(
-			_vTokenAmount
-		);
-
-		investor.nativeAmount -= withdrawnNativeAmount;
-		totalNativeStake -= withdrawnNativeAmount;
-
-		acceptedVAsset.safeTransfer(address(msg.sender), _vTokenAmount);
-		investor.claimOffset = investor.nativeAmount * cumulativeExchangeRate;
-		emit Unstaked(address(msg.sender), _vTokenAmount);
-	}
-
 	// TODO: need to fix this (cannot claim before all users had claimed)
 	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
 		uint256 balance = projectToken.balanceOf(address(this));
+		projectToken.safeTransfer(address(msg.sender), balance);
 		projectToken.safeTransfer(owner(), balance);
 	}
 
 	// TODO: add test for this
-	function claimOwnerInterest() external onlyOwner {
+	function claimOwnerInterest()
+		external
+		onlyOwner
+		nonReentrant
+		handleNativeExRateAfterEnd
+	{
+		// Enforce update of avg. native exrate gradient if it's 0
+		// if (avgNativeExRateGradient == 0) {
+		// 	uint256 vAssetAmount = ONE_VTOKEN;
+		// 	uint256 nativeAmount = _getTokenByVTokenWithoutFee(vAssetAmount);
+		// 	_updateNativeTokenExchangeRate(nativeAmount, vAssetAmount);
+		// }
+
 		(
 			uint256 ownerClaims,
 			uint256 platformFee
@@ -418,6 +405,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		onlyPlatformAdmin
 		afterPoolEnd
 		nonReentrant
+		handleNativeExRateAfterEnd
 	{
 		if (platformFeeClaimed) {
 			revert PlatformFeeAlreadyClaimed();
@@ -426,11 +414,11 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		platformFeeClaimed = true;
 
 		// Enforce update of avg. native exrate gradient if it's 0
-		if (avgNativeExRateGradient == 0) {
-			uint256 vAssetAmount = NATIVE_SCALING_FACTOR;
-			uint256 nativeAmount = _getTokenByVTokenWithoutFee(vAssetAmount);
-			_updateNativeTokenExchangeRate(nativeAmount, vAssetAmount);
-		}
+		// if (avgNativeExRateGradient == 0) {
+		// 	uint256 vAssetAmount = ONE_VTOKEN;
+		// 	uint256 nativeAmount = _getTokenByVTokenWithoutFee(vAssetAmount);
+		// 	_updateNativeTokenExchangeRate(nativeAmount, vAssetAmount);
+		// }
 		(, uint256 platformFee) = _getPlatformAndOwnerClaimableVAssets();
 		acceptedVAsset.safeTransfer(platformAdminAddress, platformFee);
 	}
@@ -455,17 +443,17 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	}
 
 	// TODO: add test for this
-	function getWithdrawableVAssets(
-		uint256 withdrawnNativeAmount
+	function getWithdrawableVTokens(
+		uint256 _withdrawnNativeTokens
 	) public view returns (uint256 withdrawableVAssets) {
 		if (block.number <= endBlock) {
 			withdrawableVAssets = _getVTokenByTokenWithoutFee(
-				withdrawnNativeAmount
+				_withdrawnNativeTokens
 			);
 		} else {
 			uint256 exRateAtEnd = _getEstimatedNativeExRateAtEnd();
 			withdrawableVAssets =
-				(withdrawnNativeAmount * NATIVE_SCALING_FACTOR) /
+				(_withdrawnNativeTokens * ONE_VTOKEN) /
 				exRateAtEnd;
 		}
 
@@ -538,7 +526,59 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	 * @dev Cool bros will go override this function
 	 */
 	function _preInit() internal virtual {
+		// xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
+		// platformAdminAddress = address(0x868);
+		// Set xcmOracle =
+		// Set platformAdminAddress =
 		// Do sth that apparently all the cool bros are doing
+	}
+
+	function _handleUnstakeAmount(
+		Staker memory staker,
+		uint256 _withdrawnVTokens
+	)
+		internal
+		returns (uint256 withdrawnNativeTokens, uint256 withdrawableVTokens)
+	{
+		// Keep this as fail-fast mechanism to save gas
+		if (staker.nativeAmount == 0) {
+			revert ZeroAmountNotAllowed();
+		}
+
+		// Handle edge case: when the avg gradient is 0 after pool end
+		// TODO: add test for this
+		if (block.number > endBlock) {
+			if (avgNativeExRateGradient == 0) {
+				withdrawnNativeTokens = _getTokenByVTokenWithoutFee(
+					_withdrawnVTokens
+				);
+				_updateNativeTokenExchangeRate(
+					withdrawnNativeTokens,
+					_withdrawnVTokens
+				);
+			} else {
+				uint256 nativePerVToken = _getEstimatedNativeExRateAtEnd();
+				withdrawnNativeTokens =
+					(_withdrawnVTokens * nativePerVToken) /
+					ONE_VTOKEN;
+			}
+		} else {
+			withdrawnNativeTokens = _getTokenByVTokenWithoutFee(
+				_withdrawnVTokens
+			);
+		}
+
+		if (staker.nativeAmount < withdrawnNativeTokens) {
+			revert ExceedNativeStake();
+		}
+
+		withdrawableVTokens = getWithdrawableVTokens(staker.nativeAmount);
+
+		if (withdrawableVTokens < _withdrawnVTokens) {
+			revert ExceedWithdrawableVTokens();
+		}
+
+		return (withdrawnNativeTokens, withdrawableVTokens);
 	}
 
 	function _tick() internal {
@@ -585,6 +625,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		}
 
 		// Edge case: after the pool ends, if the avg gradient is larger than zero, we stop here, else let it be updated
+		// TODO: Add extensive invarianet tests for this edge case
 		bool isAfterEndBlock = currentBlock > endBlock;
 		bool isAvgGradientPositive = avgNativeExRateGradient > 0;
 		if (isAfterEndBlock && isAvgGradientPositive) {
@@ -592,8 +633,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		}
 
 		// Edge case: prevent case when the time gap between 2 stakers is too small, the rate delta is 0
-		uint256 newNativeExRate = (_nativeAmount * NATIVE_SCALING_FACTOR) /
-			_vTokenAmount;
+		uint256 newNativeExRate = (_nativeAmount * ONE_VTOKEN) / _vTokenAmount;
 		if (newNativeExRate <= lastNativeExRate) {
 			return;
 		}
@@ -679,6 +719,17 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		uint256 blocksTilEnd = endBlock - lastNativeExRateUpdateBlock;
 		// TODO: fix bug here (if avgGradient is 0, and the someone tries withdrawing platform fee,
 		// it will use the last rate instead of the gradient)
+		// Handle edge case: when the gradient is 0 after pool end
+		if (block.number > endBlock && avgNativeExRateGradient == 0) {
+			uint256 newRate = _getTokenByVTokenWithoutFee(ONE_VTOKEN);
+			// TODO: add test for this (it must not and cannot be 0)
+			uint256 avgRateGradient = (newRate - lastNativeExRate) /
+				(block.number - lastNativeExRateUpdateBlock);
+			return
+				lastNativeExRate +
+				(avgRateGradient * (endBlock - lastNativeExRateUpdateBlock));
+		}
+
 		estimatedNativeExRateAtEnd =
 			lastNativeExRate +
 			(avgNativeExRateGradient * blocksTilEnd);
@@ -696,7 +747,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			return (0, 0);
 		}
 
-		uint256 investorVAssets = getWithdrawableVAssets(totalNativeStake);
+		uint256 investorVAssets = getWithdrawableVTokens(totalNativeStake);
 		uint256 combinedClaims = allVAssets - investorVAssets;
 
 		if (platformFeeClaimed) {
