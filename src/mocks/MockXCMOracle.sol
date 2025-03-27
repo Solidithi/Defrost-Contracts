@@ -14,21 +14,19 @@ contract MockXCMOracle {
 		uint256 vAssetAmount;
 	}
 
-	PoolInfo public poolInfo = PoolInfo(1, 1);
+	PoolInfo public poolInfo = PoolInfo(1 ether, 1 ether);
 
-	uint256 public baseExchangeRate;
 	uint256 public blockInterval;
 	uint256 public lastUpdatedBlock;
 	uint256 public nativeIncrementPerInterval;
-	uint256 public exchangeRate;
 
 	uint256 public immutable NETWORK_BLOCK_TIME;
 	uint256 public constant APY_DECIMALS = 6;
-	uint256 public constant RATE_DECIMALS = 4;
+	uint256 public constant RATE_DECIMALS = 18;
 
 	/**
 	 *
-	 * @param _initialRate initial exchange rate, 4-decimal precision, e.g. 1.2 => 12.000, 1.5 => 15.000
+	 * @param _initialRate initial exchange rate, 18-decimal precision, e.g. 1.2 => 1.2e18, 1.5524 => 1.5524e18
 	 * @param _blockInterval block interval for exchange rate update (how many blocks in an interval)
 	 * @param _apy APY in percentage, 6-decimal precision, e.g. 0.01 => 10.000, 0.5034 => 503.400
 	 * @param _networkBlockTime block time in seconds, e.g 12 secs for Ethereum, 6 secs for Moonbeam
@@ -66,8 +64,8 @@ contract MockXCMOracle {
 	function setNativeIncrementPerInterval(
 		uint256 _nativeIncrementPerInterval
 	) public {
-		syncExchangeRate();
 		nativeIncrementPerInterval = _nativeIncrementPerInterval;
+		lastUpdatedBlock = block.number;
 	}
 
 	/**
@@ -91,8 +89,9 @@ contract MockXCMOracle {
 	 * @param _exchangeRate exchange rate to set
 	 */
 	function setExchangeRate(uint256 _exchangeRate) public {
-		poolInfo.nativeAmount *= _exchangeRate / (10 ** RATE_DECIMALS);
-		baseExchangeRate = _exchangeRate;
+		poolInfo.nativeAmount =
+			(poolInfo.vAssetAmount * _exchangeRate) /
+			(10 ** RATE_DECIMALS);
 		lastUpdatedBlock = block.number;
 	}
 
@@ -122,6 +121,13 @@ contract MockXCMOracle {
 			(intervals * nativeIncrementPerInterval);
 		return
 			(currentNativeAmt * (10 ** RATE_DECIMALS)) / poolInfo.vAssetAmount;
+	}
+
+	function getLastSetExchangeRate() public view returns (uint256) {
+		console.log("Last set native amount: %d", poolInfo.nativeAmount);
+		return
+			(poolInfo.nativeAmount * (10 ** RATE_DECIMALS)) /
+			poolInfo.vAssetAmount;
 	}
 
 	/**
