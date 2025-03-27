@@ -69,7 +69,7 @@ contract CumulativeExchangeRateTest is Test {
 
 		// 2. Call _getPendingExchangeRate() halfway through the pool (35 blocks)
 		vm.roll(startBlock + poolDurationBlocks / 2);
-		actualExchangeRate = launchpool.getPendingExchangeRate();
+		actualExchangeRate = launchpool.exposed_getPendingExchangeRate();
 		uint256 expectedExchangeRate = (emissionRateChanges[0] *
 			(poolDurationBlocks / 2) *
 			scalingFactor) / nativeStakeAmount;
@@ -141,7 +141,7 @@ contract CumulativeExchangeRateTest is Test {
 
 		// 2. Call _getPendingExchangeRate() halfway through the pool (35 blocks)
 		vm.roll(startBlock + poolDurationBlocks / 2);
-		actualExchangeRate = launchpool.getPendingExchangeRate();
+		actualExchangeRate = launchpool.exposed_getPendingExchangeRate();
 		uint256 expectedExchangeRate = (emissionRateChanges[0] *
 			(poolDurationBlocks / 2) *
 			scalingFactor) / (stakeAmount + stakeAmount2);
@@ -267,7 +267,8 @@ contract CumulativeExchangeRateTest is Test {
 
 		// 2. Call _getPendingRewardRate rate at halfway through the pool
 		vm.roll(startBlock + poolDurationBlocks / 2);
-		uint256 pendingExchangeRate = launchpool.getPendingExchangeRate();
+		uint256 pendingExchangeRate = launchpool
+			.exposed_getPendingExchangeRate();
 		// Calculate expected rate at halfway point
 		uint256 expectedPendingExchangeRate = ((emissionRateChanges[0] *
 			(changeBlocks[1] - changeBlocks[0]) +
@@ -284,7 +285,7 @@ contract CumulativeExchangeRateTest is Test {
 
 		// 3. Call _getPendingRewardRate rate at 6/7 duration of the pool
 		vm.roll(startBlock + (poolDurationBlocks * 6) / 7);
-		pendingExchangeRate = launchpool.getPendingExchangeRate();
+		pendingExchangeRate = launchpool.exposed_getPendingExchangeRate();
 		// Calculate expected rate at halfway point
 		expectedPendingExchangeRate =
 			((emissionRateChanges[0] *
@@ -362,7 +363,8 @@ contract CumulativeExchangeRateTest is Test {
 		// Assert:
 		// 1. Check cumulative exchange rate at the last block of the pool
 		vm.roll(startBlock + poolDurationBlocks);
-		uint256 pendingExchangeRate = launchpool.getPendingExchangeRate();
+		uint256 pendingExchangeRate = launchpool
+			.exposed_getPendingExchangeRate();
 		uint256 actualCumulativeExchangeRate = launchpool
 			.cumulativeExchangeRate() + pendingExchangeRate;
 		// Calculate expected rate at pool end
@@ -532,7 +534,7 @@ contract CumulativeExchangeRateTest is Test {
 
 		// Assert final rates
 		vm.roll(endBlock);
-		uint256 pendingRate = launchpool.getPendingExchangeRate();
+		uint256 pendingRate = launchpool.exposed_getPendingExchangeRate();
 		uint256 finalRate = launchpool.cumulativeExchangeRate() + pendingRate;
 
 		assertEq(

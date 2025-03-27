@@ -123,12 +123,12 @@ contract MockLaunchpool is Launchpool {
 		(ownerClaims, platformFee) = _getPlatformAndOwnerClaimableVAssets();
 	}
 
-	function getPendingExchangeRate() public view returns (uint256) {
+	function exposed_getPendingExchangeRate() public view returns (uint256) {
 		return _getPendingExchangeRate();
 	}
 
-	function getClaimableProjectToken() public view returns (uint256) {
-		return getClaimableProjectToken();
+	function exposed_getClaimableProjectToken() public view returns (uint256) {
+		return exposed_getClaimableProjectToken();
 	}
 
 	// function _getVTokenByTokenWithoutFee(
@@ -155,8 +155,8 @@ contract MockLaunchpool is Launchpool {
 
 	function _preInit() internal override {
 		// Set platform admin address for testing
-		address platformAdmin = address(0x868);
-		platformAdminAddress = platformAdmin;
+		platformAdminAddress = address(0x868);
+		xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
 	}
 }
 /* solhint-enable */
