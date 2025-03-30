@@ -301,7 +301,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	{
 		address stakerAddr = _msgSender();
 		Staker memory staker = stakers[stakerAddr];
-		(uint256 withdrawnNativeTokens, ) = _handleUnstakeAmount(
+		uint256 withdrawnNativeTokens = _handleUnstakeAmount(
 			staker,
 			_vTokenAmount
 		);
@@ -342,7 +342,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	) external nonZeroAmount(_withdrawnVTokens) nonReentrant {
 		address stakerAddr = _msgSender();
 		Staker memory staker = stakers[stakerAddr];
-		(uint256 withdrawnNativeTokens, ) = _handleUnstakeAmount(
+		uint256 withdrawnNativeTokens = _handleUnstakeAmount(
 			staker,
 			_withdrawnVTokens
 		);
@@ -526,20 +526,13 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	 * @dev Cool bros will go override this function
 	 */
 	function _preInit() internal virtual {
-		// xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
-		// platformAdminAddress = address(0x868);
-		// Set xcmOracle =
-		// Set platformAdminAddress =
-		// Do sth that apparently all the cool bros are doing
+		xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
 	}
 
 	function _handleUnstakeAmount(
 		Staker memory staker,
 		uint256 _withdrawnVTokens
-	)
-		internal
-		returns (uint256 withdrawnNativeTokens, uint256 withdrawableVTokens)
-	{
+	) internal returns (uint256 withdrawnNativeTokens) {
 		// Keep this as fail-fast mechanism to save gas
 		if (staker.nativeAmount == 0) {
 			revert ZeroAmountNotAllowed();
@@ -568,17 +561,19 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			);
 		}
 
-		if (staker.nativeAmount < withdrawnNativeTokens) {
-			revert ExceedNativeStake();
-		}
-
-		withdrawableVTokens = getWithdrawableVTokens(staker.nativeAmount);
+		uint256 withdrawableVTokens = getWithdrawableVTokens(
+			staker.nativeAmount
+		);
 
 		if (withdrawableVTokens < _withdrawnVTokens) {
 			revert ExceedWithdrawableVTokens();
 		}
 
-		return (withdrawnNativeTokens, withdrawableVTokens);
+		if (staker.nativeAmount < withdrawnNativeTokens) {
+			revert ExceedNativeStake();
+		}
+
+		return (withdrawnNativeTokens);
 	}
 
 	function _tick() internal {
