@@ -23,13 +23,11 @@ contract CustomDeployAddress is Test {
 	}
 
 	function test_mock_oracle_interactive() public view {
-		uint256 nativeAmount = IXCMOracle(mockXCMOracleAddr).getTokenByVToken(
-			address(this),
-			10 ether
-		);
+		IXCMOracle.PoolInfo memory pool = IXCMOracle(mockXCMOracleAddr)
+			.tokenPool(0x0806);
 		assertTrue(
-			nativeAmount > 0,
-			"Native amount should be greater than 0 if mock oracle is working"
+			pool.assetAmount > 0 && pool.vAssetAmount > 0,
+			"Pool info should be set"
 		);
 	}
 }

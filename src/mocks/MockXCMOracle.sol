@@ -139,6 +139,7 @@ contract MockXCMOracle {
 		bytes2 _currencyId
 	) public view returns (PoolInfo memory) {
 		return poolInfo;
+		// TODO: Implement dynamic exchange rate here:
 	}
 
 	/**

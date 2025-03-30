@@ -101,7 +101,7 @@ contract TokenDecimalsTest is Test {
 		// Expect revert when deploying Launchpool with project token without decimals
 		ERC20WithoutDecimals fakePToken = new ERC20WithoutDecimals(
 			"Fake Project Token",
-			"FT"
+			"FPT"
 		);
 		vm.expectRevert(
 			abi.encodeWithSelector(
@@ -121,9 +121,9 @@ contract TokenDecimalsTest is Test {
 		);
 
 		// Expect revert when deploying Launchpool with native token without decimals
-		ERC20WithoutDecimals fakeNativeAsset = new ERC20WithoutDecimals(
-			"Fake Native Token",
-			"FNT"
+		ERC20WithoutDecimals fakeVAsset = new ERC20WithoutDecimals(
+			"Fake Voucher Token",
+			"FVT"
 		);
 		vm.expectRevert(
 			abi.encodeWithSelector(
@@ -133,8 +133,8 @@ contract TokenDecimalsTest is Test {
 		new MockLaunchpool(
 			owner,
 			address(projectToken),
-			address(vAsset),
-			address(fakeNativeAsset),
+			address(fakeVAsset),
+			address(nativeAsset),
 			START_BLOCK,
 			END_BLOCK,
 			MAX_VSTAKER,
