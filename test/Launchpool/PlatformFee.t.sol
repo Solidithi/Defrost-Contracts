@@ -106,7 +106,7 @@ contract PlatformFeeTest is Test {
 		vm.stopPrank();
 
 		assertEq(
-			launchpool.getTotalVAssetStaked(),
+			launchpool.getTotalStakedVTokens(),
 			staker1VAmount + staker2VAmount,
 			"Total staked vAssets should be sum of staker 1 and staker 2"
 		);
@@ -209,7 +209,7 @@ contract PlatformFeeTest is Test {
 		vm.stopPrank();
 
 		assertEq(
-			launchpool.getTotalVAssetStaked(),
+			launchpool.getTotalStakedVTokens(),
 			staker1VAmount + staker2VAmount,
 			"Total staked vAssets should be sum of staker 1 and staker 2"
 		);

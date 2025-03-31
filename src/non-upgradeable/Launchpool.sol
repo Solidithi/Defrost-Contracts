@@ -384,13 +384,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		nonReentrant
 		handleNativeExRateAfterEnd
 	{
-		// Enforce update of avg. native exrate gradient if it's 0
-		// if (avgNativeExRateGradient == 0) {
-		// 	uint256 vAssetAmount = ONE_VTOKEN;
-		// 	uint256 nativeAmount = _getTokenByVTokenWithoutFee(vAssetAmount);
-		// 	_updateNativeTokenExchangeRate(nativeAmount, vAssetAmount);
-		// }
-
 		(
 			uint256 ownerClaims,
 			uint256 platformFee
@@ -399,7 +392,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		acceptedVAsset.safeTransfer(platformAdminAddress, platformFee);
 	}
 
-	// TODO: add test for this
 	function claimPlatformFee()
 		external
 		onlyPlatformAdmin
@@ -458,13 +450,13 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		}
 
 		// TODO: add test for this (not really needed but for safety)
-		uint256 totalVAssetStaked = getTotalVAssetStaked();
-		if (withdrawableVAssets > getTotalVAssetStaked()) {
-			withdrawableVAssets = totalVAssetStaked;
+		uint256 stakedVTokens = getTotalStakedVTokens();
+		if (withdrawableVAssets > stakedVTokens) {
+			withdrawableVAssets = stakedVTokens;
 		}
 	}
 
-	function getTotalVAssetStaked() public view returns (uint256) {
+	function getTotalStakedVTokens() public view returns (uint256) {
 		return acceptedVAsset.balanceOf(address(this));
 	}
 
@@ -712,8 +704,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		returns (uint256 estimatedNativeExRateAtEnd)
 	{
 		uint256 blocksTilEnd = endBlock - lastNativeExRateUpdateBlock;
-		// TODO: fix bug here (if avgGradient is 0, and the someone tries withdrawing platform fee,
-		// it will use the last rate instead of the gradient)
 		// Handle edge case: when the gradient is 0 after pool end
 		if (block.number > endBlock && avgNativeExRateGradient == 0) {
 			uint256 newRate = _getTokenByVTokenWithoutFee(ONE_VTOKEN);
@@ -730,7 +720,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			(avgNativeExRateGradient * blocksTilEnd);
 	}
 
-	// TODO: add test for this
 	function _getPlatformAndOwnerClaimableVAssets()
 		internal
 		view

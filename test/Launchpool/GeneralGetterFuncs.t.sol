@@ -54,7 +54,7 @@ contract GeneralGetterFuncsTest is Test {
 		launchpool.stake(stakeAmount);
 
 		// Assert: Check total staked amount
-		uint256 retrievedStakeAmount = launchpool.getTotalVAssetStaked();
+		uint256 retrievedStakeAmount = launchpool.getTotalStakedVTokens();
 		assertEq(
 			retrievedStakeAmount,
 			stakeAmount,
@@ -67,7 +67,7 @@ contract GeneralGetterFuncsTest is Test {
 		launchpool.stake(stakeAmount2);
 
 		// Assert 2: Check total staked amount
-		retrievedStakeAmount = launchpool.getTotalVAssetStaked();
+		retrievedStakeAmount = launchpool.getTotalStakedVTokens();
 		assertEq(
 			retrievedStakeAmount,
 			stakeAmount + stakeAmount2,

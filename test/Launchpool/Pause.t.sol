@@ -165,7 +165,7 @@ contract PauseTest is Test {
 
 		// Snapshot related state variables before test-withdrawal
 		uint256 totalPTokenBefore = launchpool.getTotalProjectToken();
-		uint256 totalVAssetStakeBefore = launchpool.getTotalVAssetStaked();
+		uint256 totalVAssetStakeBefore = launchpool.getTotalStakedVTokens();
 		uint256 totalNativeStakeBefore = launchpool.totalNativeStake();
 		uint256 investorVAssetBalanceBefore = vAsset.balanceOf(investor);
 
@@ -185,7 +185,7 @@ contract PauseTest is Test {
 		);
 
 		assertTrue(
-			launchpool.getTotalVAssetStaked() < totalVAssetStakeBefore,
+			launchpool.getTotalStakedVTokens() < totalVAssetStakeBefore,
 			"VAsset stake should decrease after emergency withdrawal"
 		);
 
