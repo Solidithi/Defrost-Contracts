@@ -434,7 +434,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		);
 	}
 
-	// TODO: add test for this
 	function getWithdrawableVTokens(
 		uint256 _withdrawnNativeTokens
 	) public view returns (uint256 withdrawableVAssets) {
@@ -449,7 +448,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 				exRateAtEnd;
 		}
 
-		// TODO: add test for this (not really needed but for safety)
 		uint256 stakedVTokens = getTotalStakedVTokens();
 		if (withdrawableVAssets > stakedVTokens) {
 			withdrawableVAssets = stakedVTokens;
@@ -698,6 +696,11 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		return accumulatedIncrease;
 	}
 
+	/**
+	 * @notice
+	 * @dev This function should only be called after the pool end block, otherwise,
+	 * there's risk of block.number - lastNativeExRateUpdateBlock = 0
+	 */
 	function _getEstimatedNativeExRateAtEnd()
 		internal
 		view

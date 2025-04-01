@@ -101,7 +101,7 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test getWithdrawableVTokens during active pool time
-	function test_getWithdrawableVTokens_duringPoolTime() public {
+	function test_get_withdrawable_v_tokens_during_pool_time() public {
 		_setupStakingScenario();
 
 		// Stake amount should convert back exactly to the same vTokens during pool time
@@ -121,7 +121,9 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test getWithdrawableVTokens after pool end with gradient=0 and updated exchange rate
-	function test_getWithdrawableVTokens_afterPoolEndWithZeroGradient() public {
+	function test_get_withdrawable_v_tokens_after_pool_end_with_zero_gradient()
+		public
+	{
 		_setupStakingScenario();
 
 		// Jump to pool end
@@ -147,7 +149,9 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test with increased exchange rate at end of pool
-	function test_getWithdrawableVTokens_withChangedRateAtPoolEnd() public {
+	function test_get_withdrawable_v_tokens_with_changed_rate_at_pool_end()
+		public
+	{
 		_setupStakingScenario();
 
 		// First update exchange rate normally during pool
@@ -184,7 +188,7 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test edge case: zero native amount
-	function test_getWithdrawableVTokens_zeroNativeAmount() public {
+	function test_get_withdrawable_v_tokens_zero_native_amount() public {
 		_setupStakingScenario();
 
 		uint256 withdrawableVTokens = launchpool.getWithdrawableVTokens(0);
@@ -196,7 +200,7 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test edge case: very large native amount
-	function test_getWithdrawableVTokens_largeNativeAmount() public {
+	function test_get_withdrawable_v_tokens_large_native_amount() public {
 		_setupStakingScenario();
 
 		// Add substantial vAssets to the pool
@@ -220,7 +224,7 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test case where calculation would exceed available vAssets
-	function test_getWithdrawableVTokens_exceedAvailableVAssets() public {
+	function test_get_withdrawable_v_tokens_exceed_available_v_assets() public {
 		_setupStakingScenario();
 
 		// Simulate some withdrawal, reducing vAsset balance but not updating totalNativeStake
@@ -245,7 +249,9 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test with a changing exchange rate over time
-	function test_getWithdrawableVTokens_withIncreasingExchangeRate() public {
+	function test_get_withdrawable_v_tokens_with_increasing_exchange_rate()
+		public
+	{
 		_setupStakingScenario();
 
 		// Simulate multiple exchange rate changes during the pool lifetime
@@ -297,7 +303,7 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test that the maxima of totalVAssetStaked works as expected
-	function test_getWithdrawableVTokens_maxTotalVAssetStaked() public {
+	function test_get_withdrawable_v_tokens_max_total_v_asset_staked() public {
 		_setupStakingScenario();
 
 		// Intentionally lower the exchange rate to make withdrawal calculations exceed vAsset balance
@@ -319,7 +325,7 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test calculation at the exact pool end block
-	function test_getWithdrawableVTokens_atPoolEndBlock() public {
+	function test_get_withdrawable_v_tokens_at_pool_end_block() public {
 		_setupStakingScenario();
 
 		// Move to exactly pool end block
@@ -346,7 +352,9 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test correct behavior with multiple unstakes after pool end
-	function test_getWithdrawableVTokens_multipleUnstakesAfterPoolEnd() public {
+	function test_get_withdrawable_v_tokens_multiple_unstakes_after_pool_end()
+		public
+	{
 		_setupStakingScenario();
 
 		// Simulate increased exchange rate at end
@@ -391,10 +399,17 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test with updateNativeTokenExchangeRate forcing gradient update after pool end
-	function test_getWithdrawableVTokens_forcedGradientUpdateAfterPoolEnd()
+	function test_get_withdrawable_v_tokens_forced_gradient_update_after_pool_end()
 		public
 	{
 		_setupStakingScenario();
+
+		// Assert that gradient is still 0
+		assertEq(
+			launchpool.avgNativeExRateGradient(),
+			0,
+			"Gradient should still be 0 after 3 stakers staked at the same startBlock"
+		);
 
 		// Move to after pool end without any rate updates during pool
 		vm.roll(END_BLOCK + 1);
@@ -422,9 +437,9 @@ contract GetWithdrawableVTokensTest is Test {
 	}
 
 	// Test fuzz with random native amounts
-	function testFuzz_getWithdrawableVTokens(uint256 nativeAmount) public {
+	function test_fuzz_get_withdrawable_v_tokens(uint256 nativeAmount) public {
 		// Bound to reasonable values to avoid overflow
-		nativeAmount = bound(nativeAmount, 0, 10000 ether);
+		nativeAmount = bound(nativeAmount, 0, 1000000 ether);
 
 		_setupStakingScenario();
 
@@ -454,7 +469,7 @@ contract GetWithdrawableVTokensTest is Test {
 			assertApproxEqRel(
 				withdrawableVTokens,
 				expectedResult,
-				0.001e18,
+				0.0001e18,
 				"Should calculate correct withdrawable amount for any valid input"
 			);
 		}
