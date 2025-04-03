@@ -1,6 +1,6 @@
 # Linting 
 echo "🕺 Performing linting checks..."
-npx lint-staged
+pnpm exec lint-staged
 echo "Your code is beautiful, nice job 👍"
 
 # Compilation test
