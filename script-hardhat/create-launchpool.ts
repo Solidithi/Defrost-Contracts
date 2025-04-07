@@ -1,7 +1,11 @@
 import { ethers } from "hardhat";
 
 // Define the contract ABI
-async function main(testParams: { proxyAddress: string }) {
+async function main(testParams: {
+	proxyAddress: string;
+	vAssetAddress: string;
+	projectTokenAddress: string;
+}) {
 	const [signer] = await ethers.getSigners();
 
 	const contract = await ethers.getContractAt(
@@ -23,18 +27,15 @@ async function main(testParams: { proxyAddress: string }) {
 	console.log("Current Block:", currentBlock);
 	const startBlock = currentBlock + 100n;
 	const endBlock = startBlock + 1000n;
-	const projectTokenAmount = ethers.toBigInt("1000000000000000000000000");
 
 	// Approve project tokens for ProjectHub
-	const projectTokenAddress = "0x9ca3B6f93D4ed8DdE19008cDff4261b7b44030E3";
-	const vAssetAddress = "0xBc6137154f4EBf64Ee355e8774A7467B1d0CfF29";
+	const projectTokenAmount = ethers.toBigInt("1000000000000000000000000");
 	const projectToken = await ethers.getContractAt(
 		"MockERC20",
-		projectTokenAddress,
+		testParams.projectTokenAddress,
 		signer,
 	);
 	await (await projectToken.freeMint(projectTokenAmount)).wait();
-	// un-approve for testing rn
 	await (
 		await projectToken.approve(testParams.proxyAddress, projectTokenAmount)
 	).wait();
@@ -42,8 +43,8 @@ async function main(testParams: { proxyAddress: string }) {
 	const params = {
 		projectId: projectId,
 		projectTokenAmount: projectTokenAmount,
-		projectToken: projectTokenAddress, // Project Token
-		vAsset: vAssetAddress, // Voucher Imagination
+		projectToken: testParams.projectTokenAddress, // Project Token
+		vAsset: testParams.vAssetAddress, // Voucher Imagination
 		startBlock: startBlock,
 		endBlock: endBlock,
 		maxVTokensPerStaker: ethers.toBigInt("1000000000000000000"),
@@ -67,5 +68,7 @@ async function main(testParams: { proxyAddress: string }) {
 }
 
 main({
-	proxyAddress: "0x2e87a18343E0087f4E795a82Dd68Bd1b3B3fcd14",
+	proxyAddress: "0x2CD45db1754b74dddbE42F742BB10B70D0AC7819",
+	vAssetAddress: "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465",
+	projectTokenAddress: "0x96b6D28DF53641A47be72F44BE8C626bf07365A8",
 }).catch(console.error);
