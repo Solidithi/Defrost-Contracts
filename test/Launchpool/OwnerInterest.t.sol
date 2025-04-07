@@ -597,7 +597,7 @@ contract OwnerInterestTest is Test {
 	}
 
 	// Fuzz test with various interest percentages and owner shares
-	function testFuzz_claim_owner_interest(
+	function test_fuzz_claim_owner_interest(
 		uint8 interestPercentage,
 		uint8 ownerSharePercentage
 	) public {
