@@ -489,8 +489,14 @@ contract NativeExchangeRateTest is Test {
 	}
 
 	function test_estimated_native_ex_rate_at_end() public {
+		console.log(
+			"Something wrong here and I will get to the bottom of it (1):",
+			launchpool.ONE_VTOKEN()
+		);
 		uint256 poolInitBlock = block.number;
 		uint256 newRateBlock = START_BLOCK + 20;
+
+		uint256 deltaBlocks = newRateBlock - poolInitBlock;
 
 		// Get the latest vToken -> token rate from Oracle
 		uint256 oldRate = launchpool.lastNativeExRate();
@@ -504,6 +510,7 @@ contract NativeExchangeRateTest is Test {
 			launchpool.ONE_VTOKEN();
 
 		vm.roll(newRateBlock);
+
 		launchpool.wild_updateNativeTokenExchangeRate(
 			nativeAmount,
 			vAssetAmount
@@ -514,7 +521,7 @@ contract NativeExchangeRateTest is Test {
 		uint256 rateAtEnd = launchpool.exposed_getEstimatedNativeExRateAtEnd();
 		assertTrue(rateAtEnd > newRate, "Rate at end should be higher");
 
-		uint256 gradient = (newRate - oldRate) / (newRateBlock - poolInitBlock);
+		uint256 gradient = (newRate - oldRate) / deltaBlocks;
 		uint256 expectedRateAtEnd = newRate +
 			(gradient * (END_BLOCK - newRateBlock));
 		assertApproxEqAbs(
@@ -620,6 +627,11 @@ contract NativeExchangeRateTest is Test {
 			"Native exchange rate should not change if investor staked at start block"
 		);
 
+		uint256 deltaBlocksAfterAction = END_BLOCK +
+			10 -
+			initialNativeExRateUpdateBlock;
+		uint256 deltaBlocks = END_BLOCK - initialNativeExRateUpdateBlock;
+
 		// Move past end block
 		vm.roll(END_BLOCK + 10);
 
@@ -632,11 +644,12 @@ contract NativeExchangeRateTest is Test {
 			vAssetAmount
 		);
 		uint256 expectedAvgGradientAfterAction = (afterEndRate - initialRate) /
-			(END_BLOCK + 10 - initialNativeExRateUpdateBlock);
+			deltaBlocksAfterAction;
 		uint256 avgGradientAfterAction = launchpool.avgNativeExRateGradient();
+
 		uint256 expectedRateAtEnd = initialRate +
 			expectedAvgGradientAfterAction *
-			(END_BLOCK - initialNativeExRateUpdateBlock);
+			deltaBlocks;
 
 		assertEq(
 			avgGradientAfterAction,
