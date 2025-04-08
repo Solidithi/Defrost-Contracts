@@ -513,9 +513,10 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 
 	/**
 	 * @notice For setting variables, injecting mock dependencies pre-constructor run, etc.
-	 * @dev Cool bros will go override this function
+	 * @dev Plz override this
 	 */
 	function _preInit() internal virtual {
+		platformAdminAddress = address(0x868);
 		xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
 	}
 
