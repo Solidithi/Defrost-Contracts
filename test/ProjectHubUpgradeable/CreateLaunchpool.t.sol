@@ -106,8 +106,7 @@ contract CreateLaunchpoolTest is Test {
 				endBlock: endBlock,
 				maxVTokensPerStaker: 1000 * 1e18,
 				changeBlocks: changeBlocks,
-				emissionRateChanges: emissionRateChanges,
-				isListed: true
+				emissionRateChanges: emissionRateChanges
 			});
 
 		// Act:
@@ -132,8 +131,7 @@ contract CreateLaunchpoolTest is Test {
 			uint256 _poolId,
 			,
 			address _poolAddress,
-			uint64 _projectId,
-
+			uint64 _projectId
 		) = ProjectHubUpgradeable(projectHubProxy).pools(nextPoolIdBefore);
 		assertEq(_projectId, projectId, "Wrong project Id");
 		assertEq(_poolId, poolId, "Wrong pool Id");
@@ -207,8 +205,7 @@ contract CreateLaunchpoolTest is Test {
 					endBlock: endBlock,
 					maxVTokensPerStaker: 8686 * (10 ** vDOT.decimals()),
 					changeBlocks: changeBlocks,
-					emissionRateChanges: emissionRateChanges,
-					isListed: i % 2 == 0 ? true : false
+					emissionRateChanges: emissionRateChanges
 				});
 			bytes memory callPayload = abi.encodeWithSelector(
 				ProjectHubUpgradeable(projectHubProxy)
@@ -350,8 +347,7 @@ contract CreateLaunchpoolTest is Test {
 				endBlock: endBlock,
 				maxVTokensPerStaker: 1000 * 1e18,
 				changeBlocks: changeBlocks,
-				emissionRateChanges: emissionRateChanges,
-				isListed: true
+				emissionRateChanges: emissionRateChanges
 			});
 
 		// Act:
@@ -389,8 +385,7 @@ contract CreateLaunchpoolTest is Test {
 				endBlock: endBlock,
 				maxVTokensPerStaker: 1000 * 1e18,
 				changeBlocks: changeBlocks,
-				emissionRateChanges: emissionRateChanges,
-				isListed: true
+				emissionRateChanges: emissionRateChanges
 			});
 
 		// Act:
@@ -421,8 +416,7 @@ contract CreateLaunchpoolTest is Test {
 				endBlock: endBlock,
 				maxVTokensPerStaker: 1000 * 1e18,
 				changeBlocks: changeBlocks,
-				emissionRateChanges: emissionRateChanges,
-				isListed: true
+				emissionRateChanges: emissionRateChanges
 			});
 		// 3. Expect revert with custom error ProjectNotFound()
 		vm.expectRevert(ProjectLibrary.ProjectNotFound.selector);
@@ -460,8 +454,7 @@ contract CreateLaunchpoolTest is Test {
 				endBlock: endBlock,
 				maxVTokensPerStaker: 1000 * 1e18,
 				changeBlocks: changeBlocks,
-				emissionRateChanges: emissionRateChanges,
-				isListed: true
+				emissionRateChanges: emissionRateChanges
 			});
 
 		// 3. Set project token allowance to 0
