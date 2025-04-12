@@ -1,0 +1,12 @@
+[
+    {
+        "name": "MockNativeToken",
+        "type": "contract",
+        "address": "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81",
+        "deploymentTime": "2025-04-07T10:22:01.516Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "commitHash": "cd2af1e252bc4392e969fba85c56ed6d9784f88d",
+        "version": "v1",
+        "isUpgradeSafe": false
+    }
+]
