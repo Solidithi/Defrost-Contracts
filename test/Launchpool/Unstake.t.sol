@@ -307,7 +307,7 @@ contract UnstakeTest is Test {
 		assertApproxEqRel(remainingStake, expectedRemainingNative, 0.0001e18);
 	}
 
-	function test_unstake_withExchangeRateChange() public {
+	function test_unstake_with_exchange_rate_change() public {
 		uint128[] memory changeBlocks = new uint128[](1);
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
@@ -380,7 +380,7 @@ contract UnstakeTest is Test {
 		);
 	}
 
-	function test_unstakeWithoutProjectToken() public {
+	function test_unstake_without_project_token() public {
 		uint128[] memory changeBlocks = new uint128[](1);
 		uint256[] memory emissionRateChanges = new uint256[](1);
 		uint128 poolDurationBlocks = 70;
