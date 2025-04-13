@@ -8,6 +8,7 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
+// import { console } from "forge-std/console.sol"; // remove when deploy
 
 contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	using SafeERC20 for IERC20;
@@ -305,6 +306,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			staker,
 			_vTokenAmount
 		);
+
+		_updateNativeTokenExchangeRate(staker.nativeAmount, _vTokenAmount);
+		_tick();
 
 		// Handle distribution of project tokens
 		uint256 cumExRate = cumulativeExchangeRate;
