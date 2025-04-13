@@ -437,7 +437,6 @@ contract GetWithdrawableVTokensTest is Test {
 		// Fix: Use the correct formula for expected vTokens
 		uint256 expectedVTokens = (nativeAmount * launchpool.ONE_VTOKEN()) /
 			expectedExRate;
-
 		assertApproxEqRel(
 			withdrawableVTokens,
 			expectedVTokens,
