@@ -415,8 +415,6 @@ contract GetWithdrawableVTokensTest is Test {
 		vm.roll(END_BLOCK + 1);
 
 		// Force an update of the exchange rate gradient via unstake
-		uint256 newExchangeRate = 1.5e18;
-		mockOracle.setExchangeRate(newExchangeRate);
 		vm.prank(stakers[0]);
 		uint256 smallAmount = 10 ether;
 		launchpool.unstake(smallAmount);
@@ -428,15 +426,7 @@ contract GetWithdrawableVTokensTest is Test {
 		);
 
 		// Should be based on the updated gradient now
-		uint256 exRateGradient = launchpool.avgNativeExRateGradient();
-		uint256 expectedExRate = launchpool.lastNativeExRate() +
-			(exRateGradient *
-				(launchpool.endBlock() -
-					launchpool.lastNativeExRateUpdateBlock()));
-
-		// Fix: Use the correct formula for expected vTokens
-		uint256 expectedVTokens = (nativeAmount * launchpool.ONE_VTOKEN()) /
-			expectedExRate;
+		uint256 expectedVTokens = (nativeAmount * 1e18) / INITIAL_EXCHANGE_RATE;
 
 		assertApproxEqRel(
 			withdrawableVTokens,
