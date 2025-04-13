@@ -53,7 +53,6 @@ async function main(testParams: {
 			ethers.toBigInt("1000000000000000000"),
 			ethers.toBigInt("500000000000000000"),
 		],
-		isListed: true,
 	};
 
 	// Send the transaction

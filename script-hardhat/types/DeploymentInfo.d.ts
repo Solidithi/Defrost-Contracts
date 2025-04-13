@@ -20,7 +20,6 @@ export interface DeploymentInfo {
 	isUpgradeSafe: boolean; // Is this contract/library upgrade-safe?
 	upgradeability?: {
 		pattern: "transparent" | "uups" | "diammond" | "beacon"; // Upgradeable pattern
-		isProxy: boolean; // Is this a proxy contract?
 		proxyAddress?: string; // Proxy address (if applicable)
 		proxyAdminAddress?: string; // Proxy admin contract address (if applicable)
 		adminAddress?: string; // Admin address (if applicable)

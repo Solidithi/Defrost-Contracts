@@ -126,7 +126,7 @@ async function deployProjectHubProxy(
 		commitHash: latestCommitHash,
 		deploymentTime: new Date().toISOString(),
 		deployer: deployerAddress,
-		version: "increment",
+		version: "v1",
 		linkedLibraries: {
 			ProjectLibrary: projectLibAddress,
 			LaunchpoolLibrary: launchpoolLibAddress,
@@ -134,7 +134,6 @@ async function deployProjectHubProxy(
 		isUpgradeSafe: true,
 		upgradeability: {
 			pattern: "transparent",
-			isProxy: true,
 			proxyAddress: projectHubProxyAddress,
 			proxyAdminAddress: adminAddress,
 			implementationAddress: implAddress,
