@@ -101,4 +101,6 @@ interface IProjectHub {
 	function nextPoolId() external view returns (uint64);
 
 	function owner() external view returns (address);
+
+	function xcmOracleAddress() external view returns (address);
 }
