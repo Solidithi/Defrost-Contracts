@@ -1,0 +1,12 @@
+[
+    {
+        "name": "ProjectLibrary",
+        "type": "library",
+        "address": "0x8BDB2E6F6dD2172178BCba5529C3D5dFe96B1538",
+        "commitHash": "9848e7ea8ed443e43199159f60c365f9cc7b883e",
+        "deploymentTime": "2025-04-13T13:49:37.945Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v1",
+        "isUpgradeSafe": true
+    }
+]
