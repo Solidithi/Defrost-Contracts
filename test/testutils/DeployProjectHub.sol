@@ -31,6 +31,7 @@ contract DeployProjectHub is Context, Script {
 	function deployProjectHub() public returns (address projectHubAddress) {
 		projectHubAddress = address(new ProjectHubUpgradeable());
 		ProjectHubUpgradeable(projectHubAddress).initialize(
+			0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a,
 			_msgSender(),
 			vAssets,
 			nativeAssets

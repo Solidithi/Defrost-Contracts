@@ -12,6 +12,7 @@ import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHub
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ILaunchpool } from "@src/interfaces/ILaunchpool.sol";
 import { DeployMockXCMOracle } from "../testutils/DeployMockXCMOracle.sol";
+import { console } from "forge-std/console.sol";
 
 contract GeneralSetters is Test {
 	MockERC20 public projectToken;
@@ -67,7 +68,9 @@ contract GeneralSetters is Test {
 	function test_set_native_asset_for_vAsset() public {
 		// Arrange:
 		// Check owner permission beforehand
-		assert(ProjectHubUpgradeable(projectHubProxy).owner() == address(this));
+		address owner = ProjectHubUpgradeable(projectHubProxy).owner();
+		console.log("this address: ", address(this));
+		assert(owner == address(this));
 		// Deploy new asset pair
 		MockERC20 newVAsset = new MockERC20("New Voucher Token", "vNew");
 		MockERC20 newNativeAsset = new MockERC20("New Native", "New");

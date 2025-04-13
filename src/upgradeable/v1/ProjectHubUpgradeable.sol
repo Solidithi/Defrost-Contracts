@@ -144,6 +144,7 @@ library LaunchpoolLibrary {
 		mapping(uint64 => Pool) storage pools,
 		uint64 nextPoolId,
 		address nativeAsset,
+		address xcmOracleAddress,
 		LaunchpoolCreationParams calldata params,
 		address projectOwner
 	)
@@ -153,6 +154,7 @@ library LaunchpoolLibrary {
 		// Create a new launchpool and new launchpool record
 		poolAddress = address(
 			new Launchpool(
+				xcmOracleAddress,
 				projectOwner,
 				params.projectToken,
 				params.vAsset,
@@ -235,6 +237,7 @@ contract ProjectHubUpgradeable is
 	mapping(address => address) public vAssetToNativeAsset;
 	uint64 public nextProjectId;
 	uint64 public nextPoolId;
+	address public xcmOracleAddress;
 
 	// Events
 	event VAssetMappingUpdated(
@@ -260,11 +263,14 @@ contract ProjectHubUpgradeable is
 	 * @param _initialVAssets Array of initially accepted vAsset addresses
 	 */
 	function initialize(
+		address _xcmOracleAddress,
 		address _initialOwner,
 		address[] calldata _initialVAssets,
 		address[] calldata _initialNativeAssets
 	) external initializer {
 		__Ownable_init(_initialOwner);
+
+		xcmOracleAddress = _xcmOracleAddress;
 
 		uint256 vAssetCount = _initialVAssets.length;
 		if (vAssetCount != _initialNativeAssets.length) {
@@ -319,6 +325,7 @@ contract ProjectHubUpgradeable is
 				pools,
 				nextPoolId,
 				nativeAsset,
+				xcmOracleAddress,
 				_params,
 				projectOwner
 			);
