@@ -1,50 +1,65 @@
 import { ethers } from "hardhat";
 
-// Define the contract ABI
-async function main(testParams: {
+interface CreateLaunchpoolConfig {
 	proxyAddress: string;
 	vAssetAddress: string;
+	nativeAssetAddress: string; // Add native asset address
 	projectTokenAddress: string;
-}) {
-	const [signer] = await ethers.getSigners();
+}
 
+async function main(config: CreateLaunchpoolConfig) {
+	const [signer] = await ethers.getSigners();
 	const contract = await ethers.getContractAt(
 		"ProjectHubUpgradeable",
-		testParams.proxyAddress,
+		config.proxyAddress,
 		signer,
 	);
 
+	// 1. Check if vAsset has a native asset mapping
+	const nativeAsset = await contract.vAssetToNativeAsset(
+		config.vAssetAddress,
+	);
+	console.log("Mapped Native Asset:", nativeAsset);
+
+	if (nativeAsset === "0x0000000000000000000000000000000000000000") {
+		console.log("Setting up vAsset mapping first...");
+		const setMappingTx = await contract.setNativeAssetForVAsset(
+			config.vAssetAddress,
+			config.nativeAssetAddress,
+		);
+		await setMappingTx.wait();
+		console.log("vAsset mapping created!");
+	}
+
+	// 2. Create project with dynamic ID tracking
 	const createProjectTx = await contract.createProject();
 	await createProjectTx.wait();
-	console.log("Project Created!");
-
 	const projectId = (await contract.nextProjectId()) - 1n;
-	console.log("Our Project Id:", projectId);
-	await new Promise((resolve) => setTimeout(resolve, 3000));
+	console.log("Project Created with ID:", projectId);
 
-	// Use this before creating the launchpool
+	// Get current block and set start/end blocks
 	const currentBlock = BigInt(await ethers.provider.getBlockNumber());
 	console.log("Current Block:", currentBlock);
-	const startBlock = currentBlock + 100n;
+	const startBlock = currentBlock + 1000n;
 	const endBlock = startBlock + 1000n;
 
-	// Approve project tokens for ProjectHub
+	// Approve project tokens
 	const projectTokenAmount = ethers.toBigInt("1000000000000000000000000");
 	const projectToken = await ethers.getContractAt(
 		"MockERC20",
-		testParams.projectTokenAddress,
+		config.projectTokenAddress,
 		signer,
 	);
 	await (await projectToken.freeMint(projectTokenAmount)).wait();
 	await (
-		await projectToken.approve(testParams.proxyAddress, projectTokenAmount)
+		await projectToken.approve(config.proxyAddress, projectTokenAmount)
 	).wait();
 
 	const params = {
 		projectId: projectId,
 		projectTokenAmount: projectTokenAmount,
-		projectToken: testParams.projectTokenAddress, // Project Token
-		vAsset: testParams.vAssetAddress, // Voucher Imagination
+		projectToken: config.projectTokenAddress,
+		vAsset: config.vAssetAddress,
 		startBlock: startBlock,
 		endBlock: endBlock,
 		maxVTokensPerStaker: ethers.toBigInt("1000000000000000000"),
@@ -55,19 +70,33 @@ async function main(testParams: {
 		],
 	};
 
-	// Send the transaction
-	async function createLaunchpool() {
+	try {
 		const tx = await contract.createLaunchpool(params);
 		console.log("Transaction Hash:", tx.hash);
 		await tx.wait();
 		console.log("Launchpool Created!");
-	}
+	} catch (error) {
+		console.error("Failed to create launchpool:");
+		console.error(error);
 
-	createLaunchpool().catch(console.error);
+		// Extract meaningful error message from revert
+		if (
+			(error as any).message &&
+			(error as any).message.includes("reverted")
+		) {
+			const match = (error as any).message.match(
+				/reverted with reason string '([^']+)'/,
+			);
+			if (match) {
+				console.error("Revert reason:", match[1]);
+			}
+		}
+	}
 }
 
 main({
-	proxyAddress: "0x2CD45db1754b74dddbE42F742BB10B70D0AC7819",
+	proxyAddress: "0x42aADFe321D6d383b1355C6B9EA47D13D2B98dF7",
 	vAssetAddress: "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465",
+	nativeAssetAddress: "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81",
 	projectTokenAddress: "0x96b6D28DF53641A47be72F44BE8C626bf07365A8",
 }).catch(console.error);
