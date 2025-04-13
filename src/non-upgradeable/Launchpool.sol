@@ -306,6 +306,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			_vTokenAmount
 		);
 
+		_updateNativeTokenExchangeRate(staker.nativeAmount, _vTokenAmount);
+		_tick();
+
 		// Handle distribution of project tokens
 		uint256 cumExRate = cumulativeExchangeRate;
 		uint256 claimableProjectTokenAmount = ((staker.nativeAmount *
