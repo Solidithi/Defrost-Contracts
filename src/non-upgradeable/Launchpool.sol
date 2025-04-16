@@ -68,6 +68,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	/////////////////////////////////////////////////////////////////////////////
 	event Staked(address indexed user, uint256 amount);
 	event Unstaked(address indexed user, uint256 amount);
+	event ProjectTokensClaimed(address indexed user, uint256 amount);
 
 	/////////////////////////////////////////////////////////////////////////////
 	//////////////////////// VALIDATE POOL INFO ERRORS /////////////////////////
@@ -370,6 +371,44 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		acceptedVAsset.safeTransfer(address(msg.sender), _withdrawnVTokens);
 	}
 
+	/**
+	 * @notice Allows stakers to claim earned project tokens without unstaking
+	 * @dev Updates exchange rates and claim offset similar to stake/unstake functions
+	 */
+	function claimProjectTokens()
+		external
+		whenNotPaused
+		nonReentrant
+		handleNativeExRateAfterEnd
+	{
+		address stakerAddr = _msgSender();
+		Staker memory staker = stakers[stakerAddr];
+
+		if (staker.nativeAmount == 0) {
+			revert ZeroAmountNotAllowed();
+		}
+
+		// Update pool-wise exchange rate of project tokens
+		_tick();
+
+		// Calc claimable amount
+		uint256 cumExRate = cumulativeExchangeRate;
+		uint256 claimableProjectTokenAmount = ((staker.nativeAmount *
+			cumExRate) / SCALING_FACTOR) - staker.claimOffset;
+
+		if (claimableProjectTokenAmount == 0) {
+			revert ZeroAmountNotAllowed();
+		}
+
+		staker.claimOffset = (staker.nativeAmount * cumExRate) / SCALING_FACTOR;
+
+		// Write staker back to storage
+		stakers[stakerAddr] = staker;
+
+		projectToken.safeTransfer(stakerAddr, claimableProjectTokenAmount);
+		emit ProjectTokensClaimed(stakerAddr, claimableProjectTokenAmount);
+	}
+
 	function recoverWrongToken(
 		address _tokenAddress
 	) external onlyOwner notProjectToken(_tokenAddress) {
@@ -427,6 +466,26 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		address _xcmOracleAddress
 	) external onlyPlatformAdmin {
 		xcmOracle = IXCMOracle(_xcmOracleAddress);
+	}
+
+	/**
+	 * @dev This function is mostly used for front-end fetching
+	 *  claimable project tokens on front-end
+	 */
+	function getClaimableProjectToken(
+		address _investor
+	) external view returns (uint256) {
+		Staker memory investor = stakers[_investor];
+
+		if (investor.nativeAmount == 0) {
+			return 0;
+		}
+
+		return
+			(investor.nativeAmount *
+				(cumulativeExchangeRate + _getPendingExchangeRate())) /
+			SCALING_FACTOR -
+			investor.claimOffset;
 	}
 
 	function getPoolInfo()
@@ -495,22 +554,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			emissionRate = emissionRateChanges[changeBlocks[i]];
 		}
 		return emissionRate;
-	}
-
-	function getClaimableProjectToken(
-		address _investor
-	) public view returns (uint256) {
-		Staker memory investor = stakers[_investor];
-
-		if (investor.nativeAmount == 0) {
-			return 0;
-		}
-
-		return
-			(investor.nativeAmount *
-				(cumulativeExchangeRate + _getPendingExchangeRate())) /
-			SCALING_FACTOR -
-			investor.claimOffset;
 	}
 
 	function getStakerNativeAmount(
