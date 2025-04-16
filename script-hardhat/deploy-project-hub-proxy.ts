@@ -3,6 +3,7 @@ import { logDeployment } from "./utils";
 import { preDeploymentCheck, getLatestCommitHash } from "./utils";
 import { getNamedFunctionArgs } from "./utils";
 import { ProjectHubUpgradeable__factory } from "../typechain-types";
+import { ContractTransactionReceipt } from "ethers";
 
 // Define the configuration object type for deployProjectHubProxy
 interface DeployProjectHubProxyConfig {
@@ -127,6 +128,36 @@ async function deployProjectHubProxy(config: DeployProjectHubProxyConfig) {
 		projectHubProxyAddress,
 	);
 
+	// Set mapping from vAssets to native assets
+	const setMappingTxs: Promise<ContractTransactionReceipt | null>[] = [];
+	for (let i = 0; i < vAssets.length; i++) {
+		const vAsset = vAssets[i];
+		const nativeAsset = nativeAssets[i];
+
+		console.log(
+			`Setting mapping from vToken ${vAsset} to native token ${nativeAsset}...`,
+		);
+		try {
+			setMappingTxs.push(
+				(
+					await projectHubProxy.setNativeAssetForVAsset(
+						vAsset,
+						nativeAsset,
+					)
+				).wait(),
+			);
+		} catch (err) {
+			console.error(
+				`Failed to set mapping for vToken ${vAsset} to native token ${nativeAsset}:`,
+				err,
+			);
+			console.log("You may need to set this mapping manually.");
+		}
+	}
+	console.log("Waiting for all vAsset mapping txs to be mined...");
+	await Promise.all(setMappingTxs);
+	console.log("All vAssets mapping txs finished!");
+
 	// After deployment
 	const adminAddress = await upgrades.erc1967.getAdminAddress(
 		await projectHubProxy.getAddress(),
@@ -172,8 +203,9 @@ async function main() {
 			vAssets: ["0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465"], // Voucher Imagination
 			nativeAssets: ["0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"], // Native Token
 			xcmOracleAddress: "0x288154C87Db809bc0d702CB46De40E5041b22071", // XCM Oracle
-			projectLibAddress: "0x8BDB2E6F6dD2172178BCba5529C3D5dFe96B1538", // Project library
-			launchpoolLibAddress: "0xe7F3843639DFFd610176327C5Eb5220F44a5cF9C", // Launchpool library
+			// Comment these 2 lines below out for fresh deployment of libraries
+			projectLibAddress: "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce", // Project library
+			launchpoolLibAddress: "0xA33FCAf92DD13247291d5e6f9867064899753E17", // Launchpool library
 		});
 	} catch (error) {
 		console.error("Deployment failed:", error);
