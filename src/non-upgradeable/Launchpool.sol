@@ -254,11 +254,15 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		whenNotPaused
 		nonReentrant
 	{
-		if (_vTokenAmount > maxVAssetPerStaker) {
+		Staker storage investor = stakers[msg.sender];
+
+		if (investor.nativeAmount == 0) {
+			if (totalNativeStake >= maxVAssetPerStaker) {
+				revert ExceedMaxVTokensPerStaker();
+			}
+		} else if (investor.nativeAmount + _vTokenAmount > maxVAssetPerStaker) {
 			revert ExceedMaxVTokensPerStaker();
 		}
-
-		Staker storage investor = stakers[msg.sender];
 
 		uint256 nativeAmount = _getTokenByVTokenWithoutFee(_vTokenAmount);
 
