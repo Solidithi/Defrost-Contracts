@@ -550,4 +550,88 @@ contract CumulativeExchangeRateTest is Test {
 			"Cumulative exchange rate at pool end different from expectation"
 		);
 	}
+
+	function test_cummulative_different_if_emission_rate_static() public {
+		// Arrange: deploy pool with static emission rate
+		uint128[] memory changeBlocks = new uint128[](1);
+		uint128 startBlock = uint128(block.number) + 1;
+		changeBlocks[0] = startBlock;
+		uint256[] memory emissionRateChanges = new uint256[](1);
+		emissionRateChanges[0] = 1e4 * (10 ** vAsset.decimals()); // Static emission rate
+		uint128 poolDurationBlocks = 70;
+		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
+		uint128 endBlock = startBlock + poolDurationBlocks;
+
+		launchpool = new MockLaunchpool(
+			address(this),
+			address(projectToken),
+			address(vAsset),
+			address(nativeAsset),
+			startBlock,
+			endBlock,
+			maxVTokensPerStaker,
+			changeBlocks,
+			emissionRateChanges
+		);
+		uint256 scalingFactor = launchpool.SCALING_FACTOR();
+
+		projectToken.transfer(
+			address(launchpool),
+			1e3 * (10 ** projectToken.decimals())
+		);
+
+		// Act 1: Initial stake at pool start
+		address staker = makeAddr("staker");
+		uint256 stakeAmount = maxVTokensPerStaker / 2;
+		vAsset.freeMintTo(staker, stakeAmount);
+		vm.startPrank(staker);
+		vAsset.approve(address(launchpool), stakeAmount);
+		vm.roll(startBlock);
+		launchpool.stake(stakeAmount);
+		vm.stopPrank();
+
+		// Initialize with some value
+		vm.roll(startBlock + 4);
+		uint256 initialCumulativeRate = launchpool.cumulativeExchangeRate();
+
+		// Act 2: Track rate changes for 15 iterations (4 blocks each)
+		uint256[] memory rateChanges = new uint256[](15);
+		uint256[] memory absoluteRates = new uint256[](15);
+
+		for (uint256 i = 0; i < 15; i++) {
+			uint256 previousRate = i == 0
+				? initialCumulativeRate
+				: absoluteRates[i - 1];
+
+			// Roll forward 4 blocks
+			vm.roll(startBlock + 4 + (i + 1) * 4);
+
+			// Get new cumulative exchange rate
+			uint256 newRate = launchpool.cumulativeExchangeRate();
+			absoluteRates[i] = newRate;
+
+			// Calculate the difference
+			rateChanges[i] = newRate - previousRate;
+
+			// Log the values
+			console.log(
+				"Block %d: Rate: %d, Change: %d",
+				block.number,
+				newRate,
+				rateChanges[i]
+			);
+		}
+
+		// Assert: With static emission rate, the rate changes should be constant
+		// (allowing for small rounding differences)
+		uint256 firstChange = rateChanges[0];
+		for (uint256 i = 1; i < 15; i++) {
+			assertApproxEqAbs(
+				rateChanges[i],
+				firstChange,
+				100, // Small tolerance for rounding errors
+				"Rate change should be consistent with static emission rate"
+			);
+		}
+	}
 }
