@@ -28,7 +28,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	uint128 public endBlock;
 	uint128 public tickBlock;
 	uint128 public ownerShareOfInterest = 90; // 90% of the interest goes to the PO, the rest is platform fee
-	uint256 public maxVAssetPerStaker;
+	uint256 public maxTokenPerStaker;
 	uint256 public maxStakers;
 	uint256 public totalNativeStake;
 
@@ -91,7 +91,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	error MustBeAfterPoolEnd();
 	error NotPlatformAdmin();
 	error ZeroAmountNotAllowed();
-	error ExceedMaxVTokensPerStaker();
+	error ExceedMaxTokensPerStaker();
 	error ExceedWithdrawableVTokens();
 	error ExceedNativeStake();
 	error MustBeDuringPoolTime();
@@ -107,8 +107,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		_;
 	}
 
-	modifier validStakingRange(uint256 _maxVAssetPerStaker) {
-		if (_maxVAssetPerStaker == 0)
+	modifier validStakingRange(uint256 _maxTokenPerStaker) {
+		if (_maxTokenPerStaker == 0)
 			revert MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 		_;
 	}
@@ -169,7 +169,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		address _acceptedNativeAsset,
 		uint128 _startBlock,
 		uint128 _endBlock,
-		uint256 _maxVAssetPerStaker,
+		uint256 _maxTokenPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
 	)
@@ -177,7 +177,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		validTokenAddress(_projectToken)
 		validTokenAddress(_acceptedVAsset)
 		validTokenAddress(_acceptedNativeAsset)
-		validStakingRange(_maxVAssetPerStaker)
+		validStakingRange(_maxTokenPerStaker)
 	{
 		_preInit();
 		xcmOracle = IXCMOracle(xcmOracleAddress);
@@ -230,7 +230,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
 		startBlock = _startBlock;
 		endBlock = _endBlock;
-		maxVAssetPerStaker = _maxVAssetPerStaker;
+		maxTokenPerStaker = _maxTokenPerStaker;
 		tickBlock = _startBlock;
 	}
 
@@ -255,16 +255,15 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		nonReentrant
 	{
 		Staker storage investor = stakers[msg.sender];
+		uint256 nativeAmount = _getTokenByVTokenWithoutFee(_vTokenAmount);
 
 		if (investor.nativeAmount == 0) {
-			if (totalNativeStake >= maxVAssetPerStaker) {
-				revert ExceedMaxVTokensPerStaker();
+			if (nativeAmount > maxTokenPerStaker) {
+				revert ExceedMaxTokensPerStaker();
 			}
-		} else if (investor.nativeAmount + _vTokenAmount > maxVAssetPerStaker) {
-			revert ExceedMaxVTokensPerStaker();
+		} else if (investor.nativeAmount + nativeAmount > maxTokenPerStaker) {
+			revert ExceedMaxTokensPerStaker();
 		}
-
-		uint256 nativeAmount = _getTokenByVTokenWithoutFee(_vTokenAmount);
 
 		_updateNativeTokenExchangeRate(nativeAmount, _vTokenAmount);
 
@@ -479,7 +478,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	 * TODO: Need review
 	 */
 	function getStakingRange() public view returns (uint256, uint256) {
-		return (maxVAssetPerStaker, maxStakers);
+		return (maxTokenPerStaker, maxStakers);
 	}
 
 	function getEmissionRate() public view returns (uint256) {
