@@ -191,65 +191,6 @@ contract StakeTest is Test {
 		);
 	}
 
-	function test_stake_exceeds_max() public {
-		uint128[] memory changeBlocks = new uint128[](1);
-		uint256[] memory emissionRateChanges = new uint256[](1);
-		uint128 poolDurationBlocks = 70;
-		uint128 startBlock = uint128(block.number) + 1;
-		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
-		uint128 endBlock = startBlock + poolDurationBlocks;
-		changeBlocks[0] = startBlock;
-		emissionRateChanges[0] =
-			(1e20 * (10 ** projectToken.decimals())) /
-			poolDurationBlocks;
-
-		launchpool = new MockLaunchpool(
-			address(this),
-			address(projectToken),
-			address(vAsset),
-			address(nativeAsset),
-			startBlock,
-			endBlock,
-			maxVTokensPerStaker,
-			changeBlocks,
-			emissionRateChanges
-		);
-
-		projectToken.transfer(
-			address(launchpool),
-			1e20 * (10 ** projectToken.decimals())
-		);
-
-		// Move to start block
-		vm.roll(startBlock);
-
-		// Prepare staker with more than the maximum allowed
-		address alice = makeAddr("alice");
-		uint256 aliceStake = maxVTokensPerStaker + 1;
-		vAsset.freeMintTo(alice, aliceStake);
-
-		// Attempt to stake more than the maximum
-		vm.startPrank(alice);
-		vAsset.approve(address(launchpool), aliceStake);
-
-		// Should revert with ExceedMaxVTokensPerStaker
-		vm.expectRevert(Launchpool.ExceedMaxVTokensPerStaker.selector);
-		launchpool.stake(aliceStake);
-		vm.stopPrank();
-
-		// Assertion: no tokens should have been transferred
-		assertEq(
-			vAsset.balanceOf(alice),
-			aliceStake,
-			"Alice's vAsset balance should remain unchanged"
-		);
-		assertEq(
-			vAsset.balanceOf(address(launchpool)),
-			0,
-			"Launchpool should not have received any tokens"
-		);
-	}
-
 	function test_stake_zero_amount() public {
 		uint128[] memory changeBlocks = new uint128[](1);
 		uint256[] memory emissionRateChanges = new uint256[](1);
@@ -510,6 +451,250 @@ contract StakeTest is Test {
 			launchpool.totalNativeStake(),
 			aliceNativeStake + bobNativeStake,
 			"Total native stake should be sum of individual stakes"
+		);
+	}
+
+	function test_stake_more_than_max() public {
+		uint128[] memory changeBlocks = new uint128[](1);
+		uint256[] memory emissionRateChanges = new uint256[](1);
+		uint128 poolDurationBlocks = 70;
+		uint128 startBlock = uint128(block.number) + 1;
+		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
+		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
+		emissionRateChanges[0] =
+			(1e20 * (10 ** projectToken.decimals())) /
+			poolDurationBlocks;
+
+		launchpool = new MockLaunchpool(
+			address(this),
+			address(projectToken),
+			address(vAsset),
+			address(nativeAsset),
+			startBlock,
+			endBlock,
+			maxVTokensPerStaker,
+			changeBlocks,
+			emissionRateChanges
+		);
+
+		projectToken.transfer(
+			address(launchpool),
+			1e20 * (10 ** projectToken.decimals())
+		);
+
+		// Move to start block
+		vm.roll(startBlock);
+
+		// Prepare staker with amount exactly equal to max + 1
+		address alice = makeAddr("alice");
+		uint256 aliceStake = maxVTokensPerStaker + 1;
+		vAsset.freeMintTo(alice, aliceStake);
+
+		// Attempt to stake more than the maximum
+		vm.startPrank(alice);
+		vAsset.approve(address(launchpool), aliceStake);
+
+		// Expect revert with ExceedMaxTokensPerStaker
+		vm.expectRevert(Launchpool.ExceedMaxTokensPerStaker.selector);
+		launchpool.stake(aliceStake);
+		vm.stopPrank();
+	}
+
+	function test_stack_stake_reach_more_than_max() public {
+		uint128[] memory changeBlocks = new uint128[](1);
+		uint256[] memory emissionRateChanges = new uint256[](1);
+		uint128 poolDurationBlocks = 70;
+		uint128 startBlock = uint128(block.number) + 1;
+		uint256 maxVTokensPerStaker = 1e3 * (10 ** vAsset.decimals());
+		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
+		emissionRateChanges[0] =
+			(1e20 * (10 ** projectToken.decimals())) /
+			poolDurationBlocks;
+
+		launchpool = new MockLaunchpool(
+			address(this),
+			address(projectToken),
+			address(vAsset),
+			address(nativeAsset),
+			startBlock,
+			endBlock,
+			maxVTokensPerStaker,
+			changeBlocks,
+			emissionRateChanges
+		);
+
+		projectToken.transfer(
+			address(launchpool),
+			1e20 * (10 ** projectToken.decimals())
+		);
+
+		// Move to start block
+		vm.roll(startBlock);
+
+		// Prepare staker
+		address alice = makeAddr("alice");
+		uint256 firstStake = maxVTokensPerStaker / 2;
+		uint256 secondStake = maxVTokensPerStaker / 2 + 1; // This will exceed max when combined
+		vAsset.freeMintTo(alice, firstStake + secondStake);
+
+		// First stake - should succeed
+		vm.startPrank(alice);
+		vAsset.approve(address(launchpool), firstStake + secondStake);
+		launchpool.stake(firstStake);
+
+		// Second stake - should fail because it would exceed max
+		vm.expectRevert(Launchpool.ExceedMaxTokensPerStaker.selector);
+		launchpool.stake(secondStake);
+		vm.stopPrank();
+
+		// Verify first stake was successful
+		assertEq(
+			vAsset.balanceOf(address(launchpool)),
+			firstStake,
+			"Launchpool should have received only the first stake"
+		);
+	}
+
+	function test_stake_with_exact_max() public {
+		uint128[] memory changeBlocks = new uint128[](1);
+		uint256[] memory emissionRateChanges = new uint256[](1);
+		uint128 poolDurationBlocks = 70;
+		uint128 startBlock = uint128(block.number) + 1;
+		uint256 maxNativeTokensPerStaker = 1e3 * (10 ** nativeAsset.decimals());
+		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
+		emissionRateChanges[0] =
+			(1e20 * (10 ** projectToken.decimals())) /
+			poolDurationBlocks;
+
+		launchpool = new MockLaunchpool(
+			address(this),
+			address(projectToken),
+			address(vAsset),
+			address(nativeAsset),
+			startBlock,
+			endBlock,
+			maxNativeTokensPerStaker,
+			changeBlocks,
+			emissionRateChanges
+		);
+
+		projectToken.transfer(
+			address(launchpool),
+			1e20 * (10 ** projectToken.decimals())
+		);
+
+		// Move to start block
+		vm.roll(startBlock);
+
+		// Calculate the vToken amount that would convert to exactly maxNativeTokensPerStaker
+		uint256 nativePerVToken = launchpool.exposed_getTokenByVTokenWithoutFee(
+			10 ** vAsset.decimals()
+		);
+		uint256 aliceStake = (maxNativeTokensPerStaker *
+			(10 ** vAsset.decimals())) / nativePerVToken;
+
+		// Prepare staker with amount that will convert to exactly max native tokens
+		address alice = makeAddr("alice");
+		vAsset.freeMintTo(alice, aliceStake);
+
+		// Attempt to stake exactly the maximum (in native token equivalent)
+		vm.startPrank(alice);
+		vAsset.approve(address(launchpool), aliceStake);
+		launchpool.stake(aliceStake);
+		vm.stopPrank();
+
+		// Assertions
+		assertEq(
+			vAsset.balanceOf(alice),
+			0,
+			"Alice's vAsset balance should be 0 after staking"
+		);
+		assertEq(
+			vAsset.balanceOf(address(launchpool)),
+			aliceStake,
+			"Launchpool's vAsset balance should equal the staked amount"
+		);
+
+		uint256 aliceNativeStake = launchpool.getStakerNativeAmount(alice);
+		assertApproxEqRel(
+			aliceNativeStake,
+			maxNativeTokensPerStaker,
+			0.01e18,
+			"Alice's native stake should be approximately equal to maxNativeTokensPerStaker"
+		);
+	}
+
+	function test_stack_stake_with_exact_max() public {
+		uint128[] memory changeBlocks = new uint128[](1);
+		uint256[] memory emissionRateChanges = new uint256[](1);
+		uint128 poolDurationBlocks = 70;
+		uint128 startBlock = uint128(block.number) + 1;
+		uint256 maxNativeTokensPerStaker = 1e3 * (10 ** nativeAsset.decimals());
+		uint128 endBlock = startBlock + poolDurationBlocks;
+		changeBlocks[0] = startBlock;
+		emissionRateChanges[0] =
+			(1e20 * (10 ** projectToken.decimals())) /
+			poolDurationBlocks;
+
+		launchpool = new MockLaunchpool(
+			address(this),
+			address(projectToken),
+			address(vAsset),
+			address(nativeAsset),
+			startBlock,
+			endBlock,
+			maxNativeTokensPerStaker,
+			changeBlocks,
+			emissionRateChanges
+		);
+
+		projectToken.transfer(
+			address(launchpool),
+			1e20 * (10 ** projectToken.decimals())
+		);
+
+		// Move to start block
+		vm.roll(startBlock);
+
+		// Calculate the vToken amount that would convert to exactly maxNativeTokensPerStaker
+		uint256 nativePerVToken = launchpool.exposed_getTokenByVTokenWithoutFee(
+			10 ** vAsset.decimals()
+		);
+		uint256 aliceStake = (maxNativeTokensPerStaker *
+			(10 ** vAsset.decimals())) / nativePerVToken;
+
+		// Prepare staker with amount that will convert to exactly max native tokens
+		address alice = makeAddr("alice");
+		vAsset.freeMintTo(alice, aliceStake);
+
+		// Attempt to stake exactly the maximum (in native token equivalent)
+		vm.startPrank(alice);
+		vAsset.approve(address(launchpool), aliceStake);
+		launchpool.stake(aliceStake / 2);
+		launchpool.stake(aliceStake / 2 + 1); // Don't ask
+		vm.stopPrank();
+
+		// Assertions
+		assertEq(
+			vAsset.balanceOf(alice),
+			0,
+			"Alice's vAsset balance should be 0 after staking"
+		);
+		assertEq(
+			vAsset.balanceOf(address(launchpool)),
+			aliceStake,
+			"Launchpool's vAsset balance should equal the staked amount"
+		);
+
+		uint256 aliceNativeStake = launchpool.getStakerNativeAmount(alice);
+		assertApproxEqRel(
+			aliceNativeStake,
+			maxNativeTokensPerStaker,
+			0.01e18,
+			"Alice's native stake should be approximately equal to maxNativeTokensPerStaker"
 		);
 	}
 }
