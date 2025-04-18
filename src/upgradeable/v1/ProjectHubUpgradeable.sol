@@ -101,7 +101,6 @@ library LaunchpoolLibrary {
 		PoolTypeLib.PoolType poolType;
 		address poolAddress;
 		uint64 projectId;
-		bool isListed;
 	}
 
 	struct LaunchpoolCreationParams {
@@ -114,7 +113,6 @@ library LaunchpoolLibrary {
 		uint256 maxVTokensPerStaker;
 		uint128[] changeBlocks;
 		uint256[] emissionRateChanges;
-		bool isListed;
 	}
 
 	// Events
@@ -128,8 +126,6 @@ library LaunchpoolLibrary {
 		uint128 startBlock,
 		uint128 endBlock
 	);
-
-	event PoolListingChanged(uint64 indexed projectId, bool indexed isListed);
 
 	// Errors
 	error PoolNotFound();
@@ -148,6 +144,7 @@ library LaunchpoolLibrary {
 		mapping(uint64 => Pool) storage pools,
 		uint64 nextPoolId,
 		address nativeAsset,
+		address xcmOracleAddress,
 		LaunchpoolCreationParams calldata params,
 		address projectOwner
 	)
@@ -157,6 +154,7 @@ library LaunchpoolLibrary {
 		// Create a new launchpool and new launchpool record
 		poolAddress = address(
 			new Launchpool(
+				xcmOracleAddress,
 				projectOwner,
 				params.projectToken,
 				params.vAsset,
@@ -183,8 +181,7 @@ library LaunchpoolLibrary {
 			poolId,
 			PoolTypeLib.PoolType.LAUNCHPOOL,
 			poolAddress,
-			params.projectId,
-			params.isListed
+			params.projectId
 		);
 
 		emit LaunchpoolCreated(
@@ -201,23 +198,6 @@ library LaunchpoolLibrary {
 		unchecked {
 			newNextPoolId = nextPoolId + 1;
 		}
-	}
-
-	/**
-	 * @dev Sets the listing status of a pool
-	 * @param pools Mapping of pools
-	 * @param poolId The pool ID to update
-	 * @param isListed The new listing status
-	 */
-	function setPoolListing(
-		mapping(uint64 => Pool) storage pools,
-		uint64 poolId,
-		bool isListed
-	) external {
-		validatePoolExists(pools, poolId);
-
-		pools[poolId].isListed = isListed;
-		emit PoolListingChanged(pools[poolId].projectId, isListed);
 	}
 
 	/**
@@ -257,6 +237,7 @@ contract ProjectHubUpgradeable is
 	mapping(address => address) public vAssetToNativeAsset;
 	uint64 public nextProjectId;
 	uint64 public nextPoolId;
+	address public xcmOracleAddress;
 
 	// Events
 	event VAssetMappingUpdated(
@@ -282,11 +263,14 @@ contract ProjectHubUpgradeable is
 	 * @param _initialVAssets Array of initially accepted vAsset addresses
 	 */
 	function initialize(
+		address _xcmOracleAddress,
 		address _initialOwner,
 		address[] calldata _initialVAssets,
 		address[] calldata _initialNativeAssets
 	) external initializer {
 		__Ownable_init(_initialOwner);
+
+		xcmOracleAddress = _xcmOracleAddress;
 
 		uint256 vAssetCount = _initialVAssets.length;
 		if (vAssetCount != _initialNativeAssets.length) {
@@ -312,52 +296,6 @@ contract ProjectHubUpgradeable is
 		);
 		nextProjectId = newNextProjectId;
 	}
-
-	// /**
-	//  * @dev Lists a pool, making it visible to the platform
-	//  * @param _poolId ID of the pool to list
-	//  */
-	// function listPool(uint64 _poolId) external {
-	// 	// Verify pool exists
-	// 	LaunchpoolLibrary.validatePoolExists(pools, _poolId);
-
-	// 	// Verify caller is project owner
-	// 	ProjectLibrary.validateProjectOwner(
-	// 		projects,
-	// 		pools[_poolId].projectId,
-	// 		_msgSender()
-	// 	);
-
-	// 	// No-op if already listed
-	// 	if (pools[_poolId].isListed == true) {
-	// 		return;
-	// 	}
-
-	// 	LaunchpoolLibrary.setPoolListing(pools, _poolId, true);
-	// }
-
-	// /**
-	//  * @dev Unlists a pool, hiding it from the platform
-	//  * @param _poolId ID of the pool to unlist
-	//  */
-	// function unlistPool(uint64 _poolId) external {
-	// 	// Verify pool exists
-	// 	LaunchpoolLibrary.validatePoolExists(pools, _poolId);
-
-	// 	// Verify caller is project owner
-	// 	ProjectLibrary.validateProjectOwner(
-	// 		projects,
-	// 		pools[_poolId].projectId,
-	// 		_msgSender()
-	// 	);
-
-	// 	// No-op if already unlisted
-	// 	if (pools[_poolId].isListed == false) {
-	// 		return;
-	// 	}
-
-	// 	LaunchpoolLibrary.setPoolListing(pools, _poolId, false);
-	// }
 
 	/**
 	 * @dev Creates a new launchpool
@@ -387,6 +325,7 @@ contract ProjectHubUpgradeable is
 				pools,
 				nextPoolId,
 				nativeAsset,
+				xcmOracleAddress,
 				_params,
 				projectOwner
 			);

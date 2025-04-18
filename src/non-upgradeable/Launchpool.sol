@@ -10,6 +10,8 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
 // import { console } from "forge-std/console.sol"; // remove when deploy
 
+// import { console } from "forge-std/console.sol"; // remove when deploy
+
 contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	using SafeERC20 for IERC20;
 
@@ -35,7 +37,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	uint256 public constant BASE_PRECISION = 1e30;
 	uint256 public lastProcessedChangeBlockIndex;
 
-	address public platformAdminAddress;
+	address public platformAdminAddress =
+		0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27;
 
 	mapping(uint128 => uint256) public emissionRateChanges;
 	uint128[] public changeBlocks;
@@ -159,6 +162,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	/////////////////////////////// CONSTRUCTOR //////////////////////////////
 	/////////////////////////////////////////////////////////////////////////
 	constructor(
+		address xcmOracleAddress,
 		address _projectOwner,
 		address _projectToken,
 		address _acceptedVAsset,
@@ -176,6 +180,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		validStakingRange(_maxVAssetPerStaker)
 	{
 		_preInit();
+		xcmOracle = IXCMOracle(xcmOracleAddress);
 
 		uint256 currentBlock = block.number;
 		if (_startBlock <= currentBlock) revert StartBlockMustBeInFuture();
@@ -517,11 +522,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 
 	/**
 	 * @notice For setting variables, injecting mock dependencies pre-constructor run, etc.
-	 * @dev Cool bros will go override this function
+	 * @dev Plz override this
 	 */
-	function _preInit() internal virtual {
-		xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
-	}
+	function _preInit() internal virtual {}
 
 	function _handleUnstakeAmount(
 		Staker memory staker,

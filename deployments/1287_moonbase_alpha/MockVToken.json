@@ -1,0 +1,12 @@
+[
+    {
+        "name": "MockVToken",
+        "type": "contract",
+        "address": "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465",
+        "deploymentTime": "2025-04-07T10:21:54.950Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "commitHash": "cd2af1e252bc4392e969fba85c56ed6d9784f88d",
+        "version": "v1",
+        "isUpgradeSafe": false
+    }
+]

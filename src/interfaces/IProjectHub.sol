@@ -26,7 +26,6 @@ interface IProjectHub {
 		PoolType poolType;
 		address poolAddress;
 		uint64 projectId;
-		bool isListed;
 	}
 
 	struct LaunchpoolCreationParams {
@@ -39,7 +38,6 @@ interface IProjectHub {
 		uint256 maxVTokensPerStaker;
 		uint128[] changeBlocks;
 		uint256[] emissionRateChanges;
-		bool isListed;
 	}
 
 	// Events
@@ -57,7 +55,6 @@ interface IProjectHub {
 		uint128 startBlock,
 		uint128 endBlock
 	);
-	event PoolListingChanged(uint64 indexed projectId, bool indexed isListed);
 	event VAssetMappingUpdated(
 		address indexed vAsset,
 		address indexed nativeAsset
@@ -104,4 +101,6 @@ interface IProjectHub {
 	function nextPoolId() external view returns (uint64);
 
 	function owner() external view returns (address);
+
+	function xcmOracleAddress() external view returns (address);
 }

@@ -1,0 +1,12 @@
+[
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0xe7F3843639DFFd610176327C5Eb5220F44a5cF9C",
+        "commitHash": "9848e7ea8ed443e43199159f60c365f9cc7b883e",
+        "deploymentTime": "2025-04-13T13:49:43.673Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v1",
+        "isUpgradeSafe": true
+    }
+]

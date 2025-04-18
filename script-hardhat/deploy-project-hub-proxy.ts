@@ -4,12 +4,24 @@ import { preDeploymentCheck, getLatestCommitHash } from "./utils";
 import { getNamedFunctionArgs } from "./utils";
 import { ProjectHubUpgradeable__factory } from "../typechain-types";
 
-async function deployProjectHubProxy(
-	vAssets: string[],
-	nativeAssets: string[],
-	projectLibAddress?: string,
-	launchpoolLibAddress?: string,
-) {
+// Define the configuration object type for deployProjectHubProxy
+interface DeployProjectHubProxyConfig {
+	vAssets: string[];
+	nativeAssets: string[];
+	xcmOracleAddress: string;
+	projectLibAddress?: string;
+	launchpoolLibAddress?: string;
+}
+
+async function deployProjectHubProxy(config: DeployProjectHubProxyConfig) {
+	let {
+		vAssets,
+		nativeAssets,
+		xcmOracleAddress,
+		projectLibAddress,
+		launchpoolLibAddress,
+	} = config;
+
 	const chainId = await ethers.provider
 		.getNetwork()
 		.then((n) => Number(n.chainId));
@@ -92,8 +104,13 @@ async function deployProjectHubProxy(
 
 	// Deploy ProjectHubUpgradeable proxy
 	console.log("Deploying ProjectHub proxy...");
-	// TODO: Update vAssets and nativeAssets to pass in real data
-	const projectHubInitArgs = [deployerAddress, vAssets, nativeAssets];
+	// Include XCMOracle address in initialization arguments
+	const projectHubInitArgs = [
+		xcmOracleAddress,
+		deployerAddress,
+		vAssets,
+		nativeAssets,
+	];
 	const projectHubProxy = await upgrades.deployProxy(
 		ProjectHubFactory,
 		projectHubInitArgs,
@@ -126,7 +143,7 @@ async function deployProjectHubProxy(
 		commitHash: latestCommitHash,
 		deploymentTime: new Date().toISOString(),
 		deployer: deployerAddress,
-		version: "increment",
+		version: "v1",
 		linkedLibraries: {
 			ProjectLibrary: projectLibAddress,
 			LaunchpoolLibrary: launchpoolLibAddress,
@@ -134,7 +151,6 @@ async function deployProjectHubProxy(
 		isUpgradeSafe: true,
 		upgradeability: {
 			pattern: "transparent",
-			isProxy: true,
 			proxyAddress: projectHubProxyAddress,
 			proxyAdminAddress: adminAddress,
 			implementationAddress: implAddress,
@@ -151,12 +167,14 @@ async function deployProjectHubProxy(
 
 async function main() {
 	try {
-		await deployProjectHubProxy(
-			["0xBc6137154f4EBf64Ee355e8774A7467B1d0CfF29"], // Voucher Imagination
-			["0x198F2832AFe856CD5CdABAbA9EEAecAb6be95652"], // Native Token
-			"0x51169dA7eCaCeC8fDf4992B062F9CEd774B95C99", // Project library
-			"0x42Be0470309EE7bDD338187E100053f413d00600", // Launchpool library
-		);
+		// Now deploy the ProjectHub with the MockXCMOracle address using the new config object
+		await deployProjectHubProxy({
+			vAssets: ["0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465"], // Voucher Imagination
+			nativeAssets: ["0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"], // Native Token
+			xcmOracleAddress: "0x288154C87Db809bc0d702CB46De40E5041b22071", // XCM Oracle
+			projectLibAddress: "0x8BDB2E6F6dD2172178BCba5529C3D5dFe96B1538", // Project library
+			launchpoolLibAddress: "0xe7F3843639DFFd610176327C5Eb5220F44a5cF9C", // Launchpool library
+		});
 	} catch (error) {
 		console.error("Deployment failed:", error);
 		process.exit(1);

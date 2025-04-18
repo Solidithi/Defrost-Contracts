@@ -6,6 +6,7 @@ pragma solidity ^0.8.26;
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
 import { MockXCMOracle } from "@src/mocks/MockXCMOracle.sol";
+import { DeployMockXCMOracle } from "../..//test/testutils/DeployMockXCMOracle.sol";
 
 contract MockLaunchpool is Launchpool {
 	constructor(
@@ -19,8 +20,9 @@ contract MockLaunchpool is Launchpool {
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
 	)
-		// address _xcmOracle
+		// Get hard-coded XCMOracle address for local testing
 		Launchpool(
+			0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a,
 			_projectOwner,
 			_projectToken,
 			_acceptedVAsset,
@@ -31,9 +33,7 @@ contract MockLaunchpool is Launchpool {
 			_changeBlocks,
 			_emissionRateChanges
 		)
-	{
-		// Do sth that the cool bros do
-	}
+	{}
 
 	// Wildcard setters for testing (beware when testing)
 	function wild_setTickBlock(uint128 _tickBlock) external {
@@ -153,10 +153,10 @@ contract MockLaunchpool is Launchpool {
 	// 		);
 	// }
 
-	function _preInit() internal override {
-		// Set platform admin address for testing
-		platformAdminAddress = address(0x868);
-		xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
-	}
+	// function _preInit() internal override {
+	// 	// Set platform admin address for testing
+	// 	platformAdminAddress = address(0x868);
+	// 	xcmOracle = IXCMOracle(0xEF81930Aa8ed07C17948B2E26b7bfAF20144eF2a);
+	// }
 }
 /* solhint-enable */

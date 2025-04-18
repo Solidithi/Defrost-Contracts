@@ -8,10 +8,12 @@ import { ProjectHubUpgradeable } from "@src/upgradeable/v1/ProjectHubUpgradeable
 import { Context } from "@openzeppelin/contracts/access/Ownable.sol";
 import { console } from "forge-std/console.sol";
 import { Script } from "forge-std/Script.sol";
+import { DeployMockXCMOracle } from "./DeployMockXCMOracle.sol";
 
 contract DeployProjectHubProxy is Context, Script {
 	address[] public vAssets;
 	address[] public nativeAssets;
+	DeployMockXCMOracle public oracleDeployer = new DeployMockXCMOracle();
 
 	function setVAssets(address[] memory _vAssets) public {
 		vAssets = _vAssets;
@@ -23,6 +25,8 @@ contract DeployProjectHubProxy is Context, Script {
 
 	function deployProjectHubProxy() public returns (address proxyAddress) {
 		vm.startBroadcast();
+		address oracleAddr = oracleDeployer.deploy(1e18, 10, 80000, 6);
+
 		Options memory opt;
 		opt.unsafeAllow = "external-library-linking";
 		proxyAddress = Upgrades.deployTransparentProxy(
@@ -30,7 +34,7 @@ contract DeployProjectHubProxy is Context, Script {
 			_msgSender(),
 			abi.encodeCall(
 				ProjectHubUpgradeable.initialize,
-				(_msgSender(), vAssets, nativeAssets)
+				(oracleAddr, _msgSender(), vAssets, nativeAssets)
 			),
 			opt
 		);

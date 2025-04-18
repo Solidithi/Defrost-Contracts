@@ -1,0 +1,12 @@
+[
+    {
+        "name": "MockProjectToken",
+        "type": "contract",
+        "address": "0x96b6D28DF53641A47be72F44BE8C626bf07365A8",
+        "deploymentTime": "2025-04-07T10:22:07.290Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "commitHash": "cd2af1e252bc4392e969fba85c56ed6d9784f88d",
+        "version": "v1",
+        "isUpgradeSafe": false
+    }
+]
