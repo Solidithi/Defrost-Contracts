@@ -363,7 +363,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		_tick();
 
 		staker.nativeAmount -= withdrawnNativeTokens;
-		staker.claimOffset = staker.nativeAmount * cumulativeExchangeRate;
+		staker.claimOffset =
+			(staker.nativeAmount * cumulativeExchangeRate) /
+			SCALING_FACTOR;
 		totalNativeStake -= withdrawnNativeTokens;
 
 		// Write staker back to storage
