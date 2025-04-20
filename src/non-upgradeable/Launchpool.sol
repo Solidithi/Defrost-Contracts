@@ -68,7 +68,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	/////////////////////////////////////////////////////////////////////////////
 	event Staked(address indexed user, uint256 amount);
 	event Unstaked(address indexed user, uint256 amount);
-	event ProjectTokensClaimed(address indexed user, uint256 amount);
+	event ProjectTokensClaimed(address indexed user, uint256 amount); // @TODO: add tests for this
 
 	/////////////////////////////////////////////////////////////////////////////
 	//////////////////////// VALIDATE POOL INFO ERRORS /////////////////////////
@@ -258,7 +258,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			revert ExceedMaxVTokensPerStaker();
 		}
 
-		Staker storage investor = stakers[msg.sender];
+		address stakerAddr = _msgSender();
+		Staker storage staker = stakers[stakerAddr];
 
 		uint256 nativeAmount = _getTokenByVTokenWithoutFee(_vTokenAmount);
 
@@ -266,21 +267,25 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 
 		_tick();
 
-		if (investor.nativeAmount > 0) {
-			uint256 claimableProjectTokenAmount = (investor.nativeAmount *
+		if (staker.nativeAmount > 0) {
+			uint256 claimableProjectTokenAmount = (staker.nativeAmount *
 				cumulativeExchangeRate) /
 				SCALING_FACTOR -
-				investor.claimOffset;
+				staker.claimOffset;
 
 			if (claimableProjectTokenAmount > 0) {
 				projectToken.safeTransfer(
 					address(msg.sender),
 					claimableProjectTokenAmount
 				);
+				emit ProjectTokensClaimed(
+					stakerAddr,
+					claimableProjectTokenAmount
+				);
 			}
 		}
 
-		investor.nativeAmount += nativeAmount;
+		staker.nativeAmount += nativeAmount;
 		totalNativeStake += nativeAmount;
 
 		acceptedVAsset.safeTransferFrom(
@@ -289,8 +294,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			_vTokenAmount
 		);
 
-		investor.claimOffset =
-			(investor.nativeAmount * cumulativeExchangeRate) /
+		staker.claimOffset =
+			(staker.nativeAmount * cumulativeExchangeRate) /
 			SCALING_FACTOR;
 
 		emit Staked(address(msg.sender), _vTokenAmount);
@@ -321,10 +326,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			cumExRate) / SCALING_FACTOR) - staker.claimOffset;
 
 		if (claimableProjectTokenAmount > 0) {
-			projectToken.safeTransfer(
-				address(msg.sender),
-				claimableProjectTokenAmount
-			);
+			projectToken.safeTransfer(stakerAddr, claimableProjectTokenAmount);
+			emit ProjectTokensClaimed(stakerAddr, claimableProjectTokenAmount);
 		}
 
 		uint256 remainingAmount = staker.nativeAmount - withdrawnNativeTokens;
@@ -351,6 +354,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	) external nonZeroAmount(_withdrawnVTokens) nonReentrant {
 		address stakerAddr = _msgSender();
 		Staker memory staker = stakers[stakerAddr];
+
 		uint256 withdrawnNativeTokens = _handleUnstakeAmount(
 			staker,
 			_withdrawnVTokens
@@ -366,9 +370,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		// Write staker back to storage
 		stakers[stakerAddr] = staker;
 
-		emit Unstaked(address(msg.sender), _withdrawnVTokens);
+		emit Unstaked(stakerAddr, _withdrawnVTokens);
 
-		acceptedVAsset.safeTransfer(address(msg.sender), _withdrawnVTokens);
+		acceptedVAsset.safeTransfer(stakerAddr, _withdrawnVTokens);
 	}
 
 	/**
