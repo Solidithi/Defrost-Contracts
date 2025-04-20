@@ -148,6 +148,7 @@ contract CreateLaunchpoolTest is Test {
 			poolId + 1,
 			address(projectToken),
 			address(vDOT),
+			address(DOT),
 			address(0), // We dont' know this address yet, will match anything
 			startBlock,
 			endBlock
@@ -236,18 +237,17 @@ contract CreateLaunchpoolTest is Test {
 		Vm.Log[] memory logs = vm.getRecordedLogs();
 
 		// Assert:
-		// Count PoolCreated events
 		bytes32 sigLaunchpoolCreated = keccak256(
-			"LaunchpoolCreated(uint64,uint8,uint64,address,address,address,uint128,uint128)"
+			"LaunchpoolCreated(uint64,uint8,uint64,address,address,address,address,uint128,uint128)"
 		);
 
 		// Debug information
 		console.log("Total logs emitted:", logs.length);
 
-		uint256 poolCreatedEventCount = 0;
+		uint256 launchpoolCreatedEventCount = 0;
 		for (uint256 i = 0; i < logs.length; i++) {
 			if (logs[i].topics[0] == sigLaunchpoolCreated) {
-				++poolCreatedEventCount;
+				++launchpoolCreatedEventCount;
 				// 1. Extract indexed parameters from topics
 				uint64 _projectId = uint64(uint256(logs[i].topics[1]));
 				uint8 _poolType = uint8(uint256(logs[i].topics[2]));
@@ -257,12 +257,13 @@ contract CreateLaunchpoolTest is Test {
 				(
 					uint64 _poolId,
 					address _projectToken,
+					address _nativeAsset,
 					address _poolAddress,
 					uint128 _startBlock,
 					uint128 _endBlock
 				) = abi.decode(
 						logs[i].data,
-						(uint64, address, address, uint128, uint128)
+						(uint64, address, address, address, uint128, uint128)
 					);
 				assertEq(_projectId, projectId, "projectId mismatch");
 				assertEq(_poolType, 0, "pool type mismatch");
@@ -271,6 +272,7 @@ contract CreateLaunchpoolTest is Test {
 					address(projectToken),
 					"projectToken mismatch"
 				);
+				assertEq(_nativeAsset, address(DOT), "nativeAsset mismatch");
 				assertEq(_vAsset, address(vDOT), "vAsset mismatch");
 				assertEq(_startBlock, startBlock, "startBlock mismatch");
 				assertEq(_endBlock, endBlock, "endBlock mismatch");
@@ -290,7 +292,7 @@ contract CreateLaunchpoolTest is Test {
 			}
 		}
 		assertEq(
-			poolCreatedEventCount,
+			launchpoolCreatedEventCount,
 			poolCount,
 			"Wrong number of PoolCreated events emitted"
 		);

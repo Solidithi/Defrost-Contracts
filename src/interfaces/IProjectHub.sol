@@ -51,6 +51,7 @@ interface IProjectHub {
 		uint64 poolId,
 		address projectToken,
 		address indexed vAsset,
+		address nativeAsset,
 		address poolAddress,
 		uint128 startBlock,
 		uint128 endBlock

@@ -122,6 +122,7 @@ library LaunchpoolLibrary {
 		uint64 poolId,
 		address projectToken,
 		address indexed vAsset,
+		address nativeAsset,
 		address poolAddress,
 		uint128 startBlock,
 		uint128 endBlock
@@ -190,6 +191,7 @@ library LaunchpoolLibrary {
 			poolId,
 			params.projectToken,
 			params.vAsset,
+			nativeAsset,
 			poolAddress,
 			params.startBlock,
 			params.endBlock
