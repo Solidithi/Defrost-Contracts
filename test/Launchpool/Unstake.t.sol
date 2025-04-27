@@ -513,10 +513,10 @@ contract UnstakeTest is Test {
 			"Alice's stake should be zero after unstaking"
 		);
 
-		// Verify claimable tokens still remain
+		// Verify claimable tokens is also lost
 		assertEq(
 			launchpool.getClaimableProjectToken(alice),
-			claimableBefore,
+			0,
 			"Claimable tokens should remain after emergency unstaking"
 		);
 	}
