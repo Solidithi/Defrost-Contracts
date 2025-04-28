@@ -32,4 +32,5 @@ jobs:
       - name: Run Forge tests
         run: |
           forge test --build-info --force --via-ir -vvv
+
         id: test
