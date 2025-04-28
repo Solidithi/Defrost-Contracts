@@ -6,12 +6,32 @@ cache/
 out/
 
 # Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/**/dry-run/
+/broadcast
 
 # Docs
 docs/
 
 # Dotenv file
 .env
+
+node_modules
+.env
+
+# Hardhat files
+/cache-hardhat
+/out-hardhat
+
+# TypeChain files
+/typechain
+/typechain-types
+
+# solidity-coverage files
+/coverage
+/coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+ignition/deployments/chain-31337
+
+# Localhost deployment files
+deployments/31337_localhost
+deployments/1337_localhost
