@@ -9,8 +9,6 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IXCMOracle } from "@src/interfaces/IXCMOracle.sol";
 
-// import { console } from "forge-std/console.sol"; // remove when deploy
-
 contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	using SafeERC20 for IERC20;
 
@@ -27,7 +25,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	uint128 public endBlock;
 	uint128 public tickBlock;
 	uint128 public ownerShareOfInterest = 90; // 90% of the interest goes to the PO, the rest is platform fee
-	uint256 public maxVAssetPerStaker;
+	uint256 public maxTokenPerStaker;
 	uint256 public maxStakers;
 	uint256 public totalNativeStake;
 
@@ -91,7 +89,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	error MustBeAfterPoolEnd();
 	error NotPlatformAdmin();
 	error ZeroAmountNotAllowed();
-	error ExceedMaxVTokensPerStaker();
+	error ExceedMaxTokensPerStaker();
 	error ExceedWithdrawableVTokens();
 	error ExceedNativeStake();
 	error MustBeDuringPoolTime();
@@ -107,8 +105,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		_;
 	}
 
-	modifier validStakingRange(uint256 _maxVAssetPerStaker) {
-		if (_maxVAssetPerStaker == 0)
+	modifier validStakingRange(uint256 _maxTokenPerStaker) {
+		if (_maxTokenPerStaker == 0)
 			revert MaxAndMinTokensPerStakerMustBeGreaterThanZero();
 		_;
 	}
@@ -169,7 +167,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		address _acceptedNativeAsset,
 		uint128 _startBlock,
 		uint128 _endBlock,
-		uint256 _maxVAssetPerStaker,
+		uint256 _maxTokenPerStaker,
 		uint128[] memory _changeBlocks,
 		uint256[] memory _emissionRateChanges
 	)
@@ -177,7 +175,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		validTokenAddress(_projectToken)
 		validTokenAddress(_acceptedVAsset)
 		validTokenAddress(_acceptedNativeAsset)
-		validStakingRange(_maxVAssetPerStaker)
+		validStakingRange(_maxTokenPerStaker)
 	{
 		_preInit();
 		xcmOracle = IXCMOracle(xcmOracleAddress);
@@ -230,7 +228,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		acceptedNativeAsset = IERC20(_acceptedNativeAsset);
 		startBlock = _startBlock;
 		endBlock = _endBlock;
-		maxVAssetPerStaker = _maxVAssetPerStaker;
+		maxTokenPerStaker = _maxTokenPerStaker;
 		tickBlock = _startBlock;
 	}
 
@@ -254,14 +252,18 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		whenNotPaused
 		nonReentrant
 	{
-		if (_vTokenAmount > maxVAssetPerStaker) {
-			revert ExceedMaxVTokensPerStaker();
-		}
-
 		address stakerAddr = _msgSender();
 		Staker storage staker = stakers[stakerAddr];
 
 		uint256 nativeAmount = _getTokenByVTokenWithoutFee(_vTokenAmount);
+
+		if (staker.nativeAmount == 0) {
+			if (nativeAmount > maxTokenPerStaker) {
+				revert ExceedMaxTokensPerStaker();
+			}
+		} else if (staker.nativeAmount + nativeAmount > maxTokenPerStaker) {
+			revert ExceedMaxTokensPerStaker();
+		}
 
 		_updateNativeTokenExchangeRate(nativeAmount, _vTokenAmount);
 
@@ -364,7 +366,9 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		_tick();
 
 		staker.nativeAmount -= withdrawnNativeTokens;
-		staker.claimOffset = staker.nativeAmount * cumulativeExchangeRate;
+		staker.claimOffset =
+			(staker.nativeAmount * cumulativeExchangeRate) /
+			SCALING_FACTOR;
 		totalNativeStake -= withdrawnNativeTokens;
 
 		// Write staker back to storage
@@ -537,7 +541,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	 * TODO: Need review
 	 */
 	function getStakingRange() public view returns (uint256, uint256) {
-		return (maxVAssetPerStaker, maxStakers);
+		return (maxTokenPerStaker, maxStakers);
 	}
 
 	function getEmissionRate() public view returns (uint256) {

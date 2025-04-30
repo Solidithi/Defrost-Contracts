@@ -1,5 +1,4 @@
 import { ethers } from "hardhat";
-import { logDeployment, getLatestCommitHash } from "./utils";
 
 interface StakeLaunchpoolConfig {
 	launchpoolAddress: string;
@@ -126,6 +125,17 @@ async function main(config?: StakeLaunchpoolConfig) {
 		process.exit(1);
 	}
 
+	// Check pool maxVTokensPerStaker
+	const maxVTokensPerStaker = await launchpool.maxVAssetPerStaker();
+	if (amountToStake > maxVTokensPerStaker) {
+		console.error(
+			`Amount to stake exceeds maxVTokensPerStaker (${ethers.formatEther(
+				maxVTokensPerStaker.toString(),
+			)})`,
+		);
+		process.exit(1);
+	}
+
 	// Stake vTokens
 	console.log(`Staking ${ethers.formatEther(amountToStake)} vTokens...`);
 	try {
@@ -171,7 +181,7 @@ async function main(config?: StakeLaunchpoolConfig) {
 if (require.main === module) {
 	main({
 		amountToStake: ethers.parseUnits("1000", 18).toString(),
-		launchpoolAddress: "0xd2ae079e420c600d414444666182cf26f618de1e",
+		launchpoolAddress: "0xfbe66a07021d7cf5bd89486abe9690421dcc649b",
 		vAssetAddress: "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465",
 	})
 		.then(() => process.exit(0))

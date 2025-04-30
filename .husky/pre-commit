@@ -5,5 +5,7 @@ echo "Your code is beautiful, nice job 👍"
 
 # Compilation test
 echo "Hold'on, we're making sure yer code compiles 👨‍🍳"
+
 forge build --skip 'test' --skip 'script' --build-info --force
+
 echo "It worked this time, keep on doing gud stuffs 🎉"
