@@ -425,14 +425,12 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		token.safeTransfer(owner(), balance);
 	}
 
-	// TODO: need to fix this (cannot claim before all users had claimed)
-	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {
-		uint256 balance = projectToken.balanceOf(address(this));
-		projectToken.safeTransfer(address(msg.sender), balance);
-		projectToken.safeTransfer(owner(), balance);
-	}
+	/**
+	 * @notice Allows the owner to withdraw any leftover project tokens after pool ends
+	 * @dev Right now, we have no way to implement this function. Considering remove it completely
+	 */
+	function claimLeftoverProjectToken() external onlyOwner afterPoolEnd {}
 
-	// TODO: add test for this
 	function claimOwnerInterest()
 		external
 		onlyOwner
