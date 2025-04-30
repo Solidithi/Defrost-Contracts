@@ -40,6 +40,31 @@
       "address": "0xD1b11fE68a7e363E5564aB86AB496Ec9C4eB125d",
       "txHash": "0x0cf7f78d43bf3a03e4f743ebb7d4d4431923e20e63e6d3d2f2bf5a2f487be8bf",
       "kind": "transparent"
+    },
+    {
+      "address": "0x00FF4fF34536cab902fae709a384Ed7D3Ff8122A",
+      "txHash": "0x97aa72b7eaa85f12019b8a8f48d85d9b35df4c7e8d19b5358ccf2d21b5d491f3",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xF265B0344014Bf66Ac232D3F1A45618261220aa3",
+      "txHash": "0x6727c71cf7c5cea25ecbccaaf7d843e94281d991ea346d4f99b3e4b7b40333e4",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x959b771E32783EB475a00D90e4836B54FA2De7aC",
+      "txHash": "0x0872ed94623ec2ebfa166aa7c6d66d827b8532c53ef537329d5ad7dd4af0a22b",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xB8618EaEEbFf1c817e3DD32A2e27Ece62C9d2317",
+      "txHash": "0x6ab6c85a7ebf8e5461cff8c573b0fd2824ddecc808c9b8bab143fea4d3f9269f",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xDA5821B8830F2f16011A562df324f3D78De93fB1",
+      "txHash": "0x15488363ac4a20e939f7e5c36045d99deafde084f89c5d029ba76ceba6b7f4a7",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -787,6 +812,810 @@
             "numberOfBytes": "64"
           },
           "t_struct(Project)54590_storage": {
+            "label": "struct ProjectLibrary.Project",
+            "members": [
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "projectOwner",
+                "type": "t_address",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "71e1e0e31f29877880c103df34bd3d9f70d55f9bbfaa6d7d517dc76ef13084ad": {
+      "address": "0x4b7252D335bcb423b3617Ae4a17887cDb950A28C",
+      "txHash": "0x634b793058c2bc5663faedab2cb2aa8bbf8e71ad28f9eeff142a2e119a0eb66f",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "projects",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_uint64,t_struct(Project)54690_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:237"
+          },
+          {
+            "label": "pools",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_uint64,t_struct(Pool)54808_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:238"
+          },
+          {
+            "label": "vAssetToNativeAsset",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:239"
+          },
+          {
+            "label": "nextProjectId",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:240"
+          },
+          {
+            "label": "nextPoolId",
+            "offset": 8,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:241"
+          },
+          {
+            "label": "xcmOracleAddress",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:242"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)17911_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)17851_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_enum(PoolType)54683": {
+            "label": "enum PoolTypeLib.PoolType",
+            "members": [
+              "LAUNCHPOOL",
+              "LAUNCHPAD",
+              "VESTING",
+              "FARMING"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Pool)54808_storage)": {
+            "label": "mapping(uint64 => struct LaunchpoolLibrary.Pool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Project)54690_storage)": {
+            "label": "mapping(uint64 => struct ProjectLibrary.Project)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Pool)54808_storage": {
+            "label": "struct LaunchpoolLibrary.Pool",
+            "members": [
+              {
+                "label": "poolId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "poolType",
+                "type": "t_enum(PoolType)54683",
+                "offset": 8,
+                "slot": "0"
+              },
+              {
+                "label": "poolAddress",
+                "type": "t_address",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Project)54690_storage": {
+            "label": "struct ProjectLibrary.Project",
+            "members": [
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "projectOwner",
+                "type": "t_address",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "c4480a895ee68a8fc45c55fa4ce38c9c582474d7367bcfc4ec0936cba83d017e": {
+      "address": "0x05de3640669F0090b863E29b4819b21Ca33b689F",
+      "txHash": "0xc9576cf6ddbe99ab969d7841bfeff47604e04d2d2dc83c7088897393e6deef49",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "projects",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_uint64,t_struct(Project)54692_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:237"
+          },
+          {
+            "label": "pools",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_uint64,t_struct(Pool)54810_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:238"
+          },
+          {
+            "label": "vAssetToNativeAsset",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:239"
+          },
+          {
+            "label": "nextProjectId",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:240"
+          },
+          {
+            "label": "nextPoolId",
+            "offset": 8,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:241"
+          },
+          {
+            "label": "xcmOracleAddress",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:242"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)17911_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)17851_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_enum(PoolType)54685": {
+            "label": "enum PoolTypeLib.PoolType",
+            "members": [
+              "LAUNCHPOOL",
+              "LAUNCHPAD",
+              "VESTING",
+              "FARMING"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Pool)54810_storage)": {
+            "label": "mapping(uint64 => struct LaunchpoolLibrary.Pool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Project)54692_storage)": {
+            "label": "mapping(uint64 => struct ProjectLibrary.Project)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Pool)54810_storage": {
+            "label": "struct LaunchpoolLibrary.Pool",
+            "members": [
+              {
+                "label": "poolId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "poolType",
+                "type": "t_enum(PoolType)54685",
+                "offset": 8,
+                "slot": "0"
+              },
+              {
+                "label": "poolAddress",
+                "type": "t_address",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Project)54692_storage": {
+            "label": "struct ProjectLibrary.Project",
+            "members": [
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "projectOwner",
+                "type": "t_address",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "12448371b7992b70311cf8f96bc0eaa0eace379dd4552e1b975c1246c6fc2f02": {
+      "address": "0x250e9ADd107484e703BC799c62000078726E1a41",
+      "txHash": "0x40f5e7d0f233d9ec8007f7ae7840a117309a41a986cb26399ae7c6c1bbe2f442",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "projects",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_uint64,t_struct(Project)54692_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:237"
+          },
+          {
+            "label": "pools",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_uint64,t_struct(Pool)54810_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:238"
+          },
+          {
+            "label": "vAssetToNativeAsset",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:239"
+          },
+          {
+            "label": "nextProjectId",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:240"
+          },
+          {
+            "label": "nextPoolId",
+            "offset": 8,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:241"
+          },
+          {
+            "label": "xcmOracleAddress",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:242"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)17911_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)17851_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_enum(PoolType)54685": {
+            "label": "enum PoolTypeLib.PoolType",
+            "members": [
+              "LAUNCHPOOL",
+              "LAUNCHPAD",
+              "VESTING",
+              "FARMING"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Pool)54810_storage)": {
+            "label": "mapping(uint64 => struct LaunchpoolLibrary.Pool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Project)54692_storage)": {
+            "label": "mapping(uint64 => struct ProjectLibrary.Project)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Pool)54810_storage": {
+            "label": "struct LaunchpoolLibrary.Pool",
+            "members": [
+              {
+                "label": "poolId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "poolType",
+                "type": "t_enum(PoolType)54685",
+                "offset": 8,
+                "slot": "0"
+              },
+              {
+                "label": "poolAddress",
+                "type": "t_address",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Project)54692_storage": {
+            "label": "struct ProjectLibrary.Project",
+            "members": [
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "projectOwner",
+                "type": "t_address",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "3c26a6716132bda70db20bc6c6ddaba125aab230df0ceaab1e41544fe225d9c0": {
+      "address": "0x9b105E8cDb7Db8F7AC5Ff562543d66aA61A4c567",
+      "txHash": "0x9d822c0c7c0c9618ff6a5837f4f1da761edc0f981925ec1d70e8dfda13c301b1",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "projects",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_uint64,t_struct(Project)54692_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:237"
+          },
+          {
+            "label": "pools",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_uint64,t_struct(Pool)54810_storage)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:238"
+          },
+          {
+            "label": "vAssetToNativeAsset",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:239"
+          },
+          {
+            "label": "nextProjectId",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:240"
+          },
+          {
+            "label": "nextPoolId",
+            "offset": 8,
+            "slot": "3",
+            "type": "t_uint64",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:241"
+          },
+          {
+            "label": "xcmOracleAddress",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ProjectHubUpgradeable",
+            "src": "src/upgradeable/v1/ProjectHubUpgradeable.sol:242"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)17911_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)17851_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_enum(PoolType)54685": {
+            "label": "enum PoolTypeLib.PoolType",
+            "members": [
+              "LAUNCHPOOL",
+              "LAUNCHPAD",
+              "VESTING",
+              "FARMING"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Pool)54810_storage)": {
+            "label": "mapping(uint64 => struct LaunchpoolLibrary.Pool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint64,t_struct(Project)54692_storage)": {
+            "label": "mapping(uint64 => struct ProjectLibrary.Project)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Pool)54810_storage": {
+            "label": "struct LaunchpoolLibrary.Pool",
+            "members": [
+              {
+                "label": "poolId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "poolType",
+                "type": "t_enum(PoolType)54685",
+                "offset": 8,
+                "slot": "0"
+              },
+              {
+                "label": "poolAddress",
+                "type": "t_address",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "projectId",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Project)54692_storage": {
             "label": "struct ProjectLibrary.Project",
             "members": [
               {

@@ -8,5 +8,35 @@
         "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
         "version": "v1",
         "isUpgradeSafe": true
+    },
+    {
+        "name": "ProjectLibrary",
+        "type": "library",
+        "address": "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce",
+        "commitHash": "b21eee521e3c9e854a40d60f750f36ba9c51c008",
+        "deploymentTime": "2025-04-16T08:39:11.220Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v2",
+        "isUpgradeSafe": true
+    },
+    {
+        "name": "ProjectLibrary",
+        "type": "library",
+        "address": "0x97C6A41de7b975eE772779bA8bEE60D7A71cb53F",
+        "commitHash": "ca8a0471c69ca6ddc49a98218ef443e0759f6b76",
+        "deploymentTime": "2025-04-20T16:41:31.414Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v3",
+        "isUpgradeSafe": true
+    },
+    {
+        "name": "ProjectLibrary",
+        "type": "library",
+        "address": "0x21649bBd0b5aE6C27bB041c2A4dB8D9D449b64E8",
+        "commitHash": "ca8a0471c69ca6ddc49a98218ef443e0759f6b76",
+        "deploymentTime": "2025-04-20T19:32:18.826Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v4",
+        "isUpgradeSafe": true
     }
 ]

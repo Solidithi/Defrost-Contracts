@@ -174,7 +174,7 @@ async function deployProjectHubProxy(config: DeployProjectHubProxyConfig) {
 		commitHash: latestCommitHash,
 		deploymentTime: new Date().toISOString(),
 		deployer: deployerAddress,
-		version: "v1",
+		version: "increment",
 		linkedLibraries: {
 			ProjectLibrary: projectLibAddress,
 			LaunchpoolLibrary: launchpoolLibAddress,
@@ -204,8 +204,8 @@ async function main() {
 			nativeAssets: ["0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"], // Native Token
 			xcmOracleAddress: "0x288154C87Db809bc0d702CB46De40E5041b22071", // XCM Oracle
 			// Comment these 2 lines below out for fresh deployment of libraries
-			projectLibAddress: "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce", // Project library
-			launchpoolLibAddress: "0xA33FCAf92DD13247291d5e6f9867064899753E17", // Launchpool library
+			// projectLibAddress: "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce", // Project library
+			// launchpoolLibAddress: "0xA33FCAf92DD13247291d5e6f9867064899753E17", // Launchpool library
 		});
 	} catch (error) {
 		console.error("Deployment failed:", error);

@@ -8,5 +8,45 @@
         "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
         "version": "v1",
         "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0xA33FCAf92DD13247291d5e6f9867064899753E17",
+        "commitHash": "b21eee521e3c9e854a40d60f750f36ba9c51c008",
+        "deploymentTime": "2025-04-16T08:39:19.819Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v2",
+        "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0xA7DC778911f775B397D88abE537602FEd69CC68f",
+        "commitHash": "105dc839625a105c6dcb80caca2cf3eff17e75a7",
+        "deploymentTime": "2025-04-20T08:13:12.833Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v3",
+        "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0x1ABAeeB0bED9f38C03195dcCB18B4EE13F4ED556",
+        "commitHash": "ca8a0471c69ca6ddc49a98218ef443e0759f6b76",
+        "deploymentTime": "2025-04-20T16:41:37.452Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v4",
+        "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0xD7C5a3109194966dEe715A4C454A26F6B14bB342",
+        "commitHash": "ca8a0471c69ca6ddc49a98218ef443e0759f6b76",
+        "deploymentTime": "2025-04-20T19:32:25.597Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v5",
+        "isUpgradeSafe": true
     }
 ]

@@ -9,6 +9,7 @@ async function main() {
 	const deployerAddress = await signer.getAddress();
 	const latestCommitHash = getLatestCommitHash();
 
+	// Deploy mock Voucher Token
 	const vFactory = await ethers.getContractFactory("MockERC20", signer);
 	const vContract = await vFactory.deploy("Voucher Imagination", "VI");
 	await vContract.waitForDeployment();
@@ -22,9 +23,14 @@ async function main() {
 		deployer: deployerAddress,
 		commitHash: latestCommitHash,
 		version: "increment",
+		constructorArgs: {
+			name: "Voucher Imagination",
+			symbol: "VI",
+		},
 		isUpgradeSafe: false,
 	});
 
+	// Deploy mock Native Token
 	const nFactory = await ethers.getContractFactory("MockERC20", signer);
 	const nContract = await nFactory.deploy("Native Token", "NAT");
 	await nContract.waitForDeployment();
@@ -38,9 +44,14 @@ async function main() {
 		deployer: deployerAddress,
 		commitHash: latestCommitHash,
 		version: "increment",
+		constructorArgs: {
+			name: "Native Token",
+			symbol: "NAT",
+		},
 		isUpgradeSafe: false,
 	});
 
+	// Deploy mock Project Token
 	const pFactory = await ethers.getContractFactory("MockERC20", signer);
 	const pContract = await pFactory.deploy("Project Token", "PRO");
 	await pContract.waitForDeployment();
@@ -54,6 +65,10 @@ async function main() {
 		deployer: deployerAddress,
 		commitHash: latestCommitHash,
 		version: "increment",
+		constructorArgs: {
+			name: "Project Token",
+			symbol: "PRO",
+		},
 		isUpgradeSafe: false,
 	});
 }

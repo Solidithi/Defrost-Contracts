@@ -71,14 +71,15 @@ async function main(config: CreateLaunchpoolConfig) {
 	}
 
 	// 2. Create project with dynamic ID tracking
-	console.log("Creating new project...");
-	const createProjectTx = await projectHubProxy.createProject();
-	const receipt = await createProjectTx.wait();
-	console.log("Project creation transaction hash:", createProjectTx.hash);
+	// console.log("Creating new project...");
+	// const createProjectTx = await projectHubProxy.createProject();
+	// const receipt = await createProjectTx.wait();
+	// console.log("Project creation transaction hash:", createProjectTx.hash);
 
 	// Look for project creation event
-	const projectId = (await projectHubProxy.nextProjectId()) - 1n;
-	console.log("Project Created with ID:", projectId);
+	// const projectId = (await projectHubProxy.nextProjectId()) - 1n;
+	// console.log("Project Created with ID:", projectId);
+	const projectId = 4n;
 
 	// Verify project ownership
 	const project = await projectHubProxy.projects(projectId);
@@ -179,9 +180,9 @@ async function main(config: CreateLaunchpoolConfig) {
 	} catch (error) {
 		console.error("Failed to create launchpool:");
 
-		if (error.error && error.error.data) {
+		if ((error as any).error && (error as any).error.data) {
 			// For lower level revert reasons
-			console.error("Error data:", error.error.data);
+			console.error("Error data:", (error as any).error.data);
 		}
 
 		// Extract meaningful error message from revert
@@ -256,7 +257,7 @@ async function main(config: CreateLaunchpoolConfig) {
 }
 
 main({
-	proxyAddress: "0xa6f8E8f5265b829515727B32A795963E1Efd7CF4",
+	proxyAddress: "0xB8618EaEEbFf1c817e3DD32A2e27Ece62C9d2317",
 	vAssetAddress: "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465",
 	nativeAssetAddress: "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81",
 	projectTokenAddress: "0x96b6D28DF53641A47be72F44BE8C626bf07365A8",

@@ -6,7 +6,7 @@
         "commitHash": "9848e7ea8ed443e43199159f60c365f9cc7b883e",
         "deploymentTime": "2025-04-13T13:51:31.773Z",
         "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
-        "version": "v1",
+        "version": "v0",
         "linkedLibraries": {
             "ProjectLibrary": "0x8BDB2E6F6dD2172178BCba5529C3D5dFe96B1538",
             "LaunchpoolLibrary": "0xe7F3843639DFFd610176327C5Eb5220F44a5cF9C"
@@ -17,6 +17,156 @@
             "proxyAddress": "0xD1b11fE68a7e363E5564aB86AB496Ec9C4eB125d",
             "proxyAdminAddress": "0xA2Dc035516B9Ae2DeCB18753599A82cb802fa4D4",
             "implementationAddress": "0x2116404EaFDb0416BB99c09EC855f46F9b5173fE",
+            "initializerArgs": {
+                "_xcmOracleAddress": "0x288154C87Db809bc0d702CB46De40E5041b22071",
+                "_initialOwner": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+                "_initialVAssets": [
+                    "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465"
+                ],
+                "_initialNativeAssets": [
+                    "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"
+                ]
+            }
+        }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0x83be4ad4ffDF498f7fB3bbAE42AD93D7C0876Ae7",
+        "commitHash": "b21eee521e3c9e854a40d60f750f36ba9c51c008",
+        "deploymentTime": "2025-04-16T08:49:55.540Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v1",
+        "linkedLibraries": {
+            "ProjectLibrary": "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce",
+            "LaunchpoolLibrary": "0xA33FCAf92DD13247291d5e6f9867064899753E17"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0xa6f8E8f5265b829515727B32A795963E1Efd7CF4",
+            "proxyAdminAddress": "0xb22163CDFa0Fb11C992d9B94C012835db8A0AEA6",
+            "implementationAddress": "0x83be4ad4ffDF498f7fB3bbAE42AD93D7C0876Ae7",
+            "initializerArgs": {
+                "_xcmOracleAddress": "0x288154C87Db809bc0d702CB46De40E5041b22071",
+                "_initialOwner": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+                "_initialVAssets": [
+                    "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465"
+                ],
+                "_initialNativeAssets": [
+                    "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"
+                ]
+            }
+        }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0x4b7252D335bcb423b3617Ae4a17887cDb950A28C",
+        "commitHash": "105dc839625a105c6dcb80caca2cf3eff17e75a7",
+        "deploymentTime": "2025-04-20T08:13:37.248Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "",
+        "linkedLibraries": {
+            "ProjectLibrary": "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce",
+            "LaunchpoolLibrary": "0xA7DC778911f775B397D88abE537602FEd69CC68f"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0x00FF4fF34536cab902fae709a384Ed7D3Ff8122A",
+            "proxyAdminAddress": "0xa9f42caB402c1402Ac9bF7b66070e36f1D282A9B",
+            "implementationAddress": "0x4b7252D335bcb423b3617Ae4a17887cDb950A28C",
+            "initializerArgs": {
+                "_xcmOracleAddress": "0x288154C87Db809bc0d702CB46De40E5041b22071",
+                "_initialOwner": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+                "_initialVAssets": [
+                    "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465"
+                ],
+                "_initialNativeAssets": [
+                    "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"
+                ]
+            }
+        }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0x05de3640669F0090b863E29b4819b21Ca33b689F",
+        "commitHash": "ca8a0471c69ca6ddc49a98218ef443e0759f6b76",
+        "deploymentTime": "2025-04-20T15:33:43.631Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v2",
+        "linkedLibraries": {
+            "ProjectLibrary": "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce",
+            "LaunchpoolLibrary": "0xA33FCAf92DD13247291d5e6f9867064899753E17"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0xF265B0344014Bf66Ac232D3F1A45618261220aa3",
+            "proxyAdminAddress": "0xe8E79fc3b97D382bFBf2daea8615C85A0c9F36BE",
+            "implementationAddress": "0x05de3640669F0090b863E29b4819b21Ca33b689F",
+            "initializerArgs": {
+                "_xcmOracleAddress": "0x288154C87Db809bc0d702CB46De40E5041b22071",
+                "_initialOwner": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+                "_initialVAssets": [
+                    "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465"
+                ],
+                "_initialNativeAssets": [
+                    "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"
+                ]
+            }
+        }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0x05de3640669F0090b863E29b4819b21Ca33b689F",
+        "commitHash": "ca8a0471c69ca6ddc49a98218ef443e0759f6b76",
+        "deploymentTime": "2025-04-20T16:40:37.714Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v3",
+        "linkedLibraries": {
+            "ProjectLibrary": "0xB6e25e0d45D2D7B5A337C09a73AC8c4739bB6Cce",
+            "LaunchpoolLibrary": "0xA33FCAf92DD13247291d5e6f9867064899753E17"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0x959b771E32783EB475a00D90e4836B54FA2De7aC",
+            "proxyAdminAddress": "0x234F48B47A6765d2019Bf5B3bAF23Ec989238dAf",
+            "implementationAddress": "0x05de3640669F0090b863E29b4819b21Ca33b689F",
+            "initializerArgs": {
+                "_xcmOracleAddress": "0x288154C87Db809bc0d702CB46De40E5041b22071",
+                "_initialOwner": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+                "_initialVAssets": [
+                    "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465"
+                ],
+                "_initialNativeAssets": [
+                    "0x7a4ebae8cA815b9F52F23a8AC9A2f707D4d4ff81"
+                ]
+            }
+        }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0x250e9ADd107484e703BC799c62000078726E1a41",
+        "commitHash": "ca8a0471c69ca6ddc49a98218ef443e0759f6b76",
+        "deploymentTime": "2025-04-20T16:41:55.789Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v4",
+        "linkedLibraries": {
+            "ProjectLibrary": "0x97C6A41de7b975eE772779bA8bEE60D7A71cb53F",
+            "LaunchpoolLibrary": "0x1ABAeeB0bED9f38C03195dcCB18B4EE13F4ED556"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0xB8618EaEEbFf1c817e3DD32A2e27Ece62C9d2317",
+            "proxyAdminAddress": "0xc70D19905E444Eab56FE301Eef2b0fDec156A89e",
+            "implementationAddress": "0x250e9ADd107484e703BC799c62000078726E1a41",
             "initializerArgs": {
                 "_xcmOracleAddress": "0x288154C87Db809bc0d702CB46De40E5041b22071",
                 "_initialOwner": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
