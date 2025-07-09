@@ -39,16 +39,25 @@ const config: HardhatUserConfig = {
 			url: "http://localhost:8545",
 			accounts: devPrivateKeys,
 			loggingEnabled: true,
+			chainId: 31337,
 		},
 		sepolia: {
 			url: "https://eth-sepolia.g.alchemy.com/v2/vmbHGNAV4NKw9V2tleUXODo4NDDUQpiy",
 			accounts: privateKeys,
 			loggingEnabled: true,
+			chainId: 11155111,
 		},
 		moonbase_alpha: {
 			url: "https://rpc.api.moonbase.moonbeam.network",
 			accounts: privateKeys,
 			loggingEnabled: true,
+			chainId: 1287,
+		},
+		westend: {
+			url: "https://westend-asset-hub-eth-rpc.polkadot.io",
+			accounts: privateKeys,
+			loggingEnabled: true,
+			chainId: 1000,
 		},
 	},
 	solidity: {
