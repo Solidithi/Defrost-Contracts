@@ -67,6 +67,12 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 	event Staked(address indexed user, uint256 amount);
 	event Unstaked(address indexed user, uint256 amount);
 	event ProjectTokensClaimed(address indexed user, uint256 amount); // @TODO: add tests for this
+	event OwnerInterestsClaimed(
+		address indexed claimer,
+		uint256 ownerClaims,
+		uint256 platformFee // this is identical to 'claimAmount' in PlatformFeeClaimed event
+	);
+	event PlatformFeeClaimed(address indexed claimer, uint256 platformFee);
 
 	/////////////////////////////////////////////////////////////////////////////
 	//////////////////////// VALIDATE POOL INFO ERRORS /////////////////////////
@@ -440,8 +446,10 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		(
 			uint256 ownerClaims,
 			uint256 platformFee
-		) = _getPlatformAndOwnerClaimableVAssets();
-		acceptedVAsset.safeTransfer(owner(), ownerClaims);
+		) = getPlatformAndOwnerClaimableVAssets();
+		address claimer = _msgSender();
+		emit OwnerInterestsClaimed(claimer, ownerClaims, platformFee);
+		acceptedVAsset.safeTransfer(claimer, ownerClaims);
 		acceptedVAsset.safeTransfer(platformAdminAddress, platformFee);
 	}
 
@@ -464,7 +472,8 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		// 	uint256 nativeAmount = _getTokenByVTokenWithoutFee(vAssetAmount);
 		// 	_updateNativeTokenExchangeRate(nativeAmount, vAssetAmount);
 		// }
-		(, uint256 platformFee) = _getPlatformAndOwnerClaimableVAssets();
+		(, uint256 platformFee) = getPlatformAndOwnerClaimableVAssets();
+		emit PlatformFeeClaimed(_msgSender(), platformFee);
 		acceptedVAsset.safeTransfer(platformAdminAddress, platformFee);
 	}
 
@@ -505,6 +514,27 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			getTotalProjectToken(),
 			getEmissionRate()
 		);
+	}
+
+	function getPlatformAndOwnerClaimableVAssets()
+		public
+		view
+		returns (uint256 ownerClaims, uint256 platformFee)
+	{
+		uint256 allVAssets = acceptedVAsset.balanceOf(address(this));
+
+		if (allVAssets == 0) {
+			return (0, 0);
+		}
+
+		uint256 investorVAssets = getWithdrawableVTokens(totalNativeStake);
+		uint256 combinedClaims = allVAssets - investorVAssets;
+
+		if (platformFeeClaimed) {
+			return (combinedClaims, 0);
+		}
+		ownerClaims = (combinedClaims * ownerShareOfInterest) / 100;
+		platformFee = combinedClaims - ownerClaims;
 	}
 
 	function getWithdrawableVTokens(
@@ -776,27 +806,6 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		estimatedNativeExRateAtEnd =
 			lastNativeExRate +
 			(avgNativeExRateGradient * blocksTilEnd);
-	}
-
-	function _getPlatformAndOwnerClaimableVAssets()
-		internal
-		view
-		returns (uint256 ownerClaims, uint256 platformFee)
-	{
-		uint256 allVAssets = acceptedVAsset.balanceOf(address(this));
-
-		if (allVAssets == 0) {
-			return (0, 0);
-		}
-
-		uint256 investorVAssets = getWithdrawableVTokens(totalNativeStake);
-		uint256 combinedClaims = allVAssets - investorVAssets;
-
-		if (platformFeeClaimed) {
-			return (combinedClaims, 0);
-		}
-		ownerClaims = (combinedClaims * ownerShareOfInterest) / 100;
-		platformFee = combinedClaims - ownerClaims;
 	}
 
 	// TODO: add test for this

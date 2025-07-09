@@ -120,7 +120,7 @@ contract MockLaunchpool is Launchpool {
 		view
 		returns (uint256 ownerClaims, uint256 platformFee)
 	{
-		(ownerClaims, platformFee) = _getPlatformAndOwnerClaimableVAssets();
+		(ownerClaims, platformFee) = getPlatformAndOwnerClaimableVAssets();
 	}
 
 	function exposed_getPendingExchangeRate() public view returns (uint256) {

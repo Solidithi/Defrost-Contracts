@@ -51,6 +51,11 @@ interface ILaunchpool {
 		address _investor
 	) external view returns (uint256);
 
+	function getPlatformAndOwnerClaimableVAssets()
+		external
+		view
+		returns (uint256 ownerClaims, uint256 platformFee);
+
 	// State Variables
 	function cumulativeExchangeRate() external view returns (uint256);
 
