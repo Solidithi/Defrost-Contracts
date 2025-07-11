@@ -27,7 +27,7 @@ interface ILaunchpool {
 
 	function claimOwnerInterest() external;
 
-	function claimPlatformInterest() external;
+	function claimPlatformFee() external;
 
 	function setXCMOracleAddress(address _xcmOracleAddress) external;
 
