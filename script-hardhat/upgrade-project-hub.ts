@@ -1,5 +1,9 @@
 import { ethers, upgrades, network } from "hardhat";
 import { logDeployment, getLatestCommitHash } from "./utils";
+import {
+	deployLaunchpoolLibrary,
+	deployProjectLibrary,
+} from "./deploy-libraries";
 
 /**
  * Simple script to upgrade a ProjectHub proxy to a new implementation
@@ -22,8 +26,8 @@ interface UpgradeToImplementationConfig {
 
 interface DeployAndUpgradeConfig {
 	proxyAddress: string;
-	projectLibAddress: string;
-	launchpoolLibAddress: string;
+	projectLibAddress?: string;
+	launchpoolLibAddress?: string;
 }
 
 async function upgradeToImplementation({
@@ -109,13 +113,37 @@ async function deployAndUpgrade({
 		await upgrades.erc1967.getImplementationAddress(proxyAddress);
 	console.log("Current implementation:", oldImplAddress);
 
+	let projectLib;
+	if (projectLibAddress) {
+		projectLib = await ethers.getContractAt(
+			"ProjectLibrary",
+			projectLibAddress,
+		);
+	} else {
+		projectLib = await deployProjectLibrary({ chainId });
+		projectLibAddress = await projectLib.getAddress();
+		console.log("ProjectLib deployed to:", projectLibAddress);
+	}
+
+	let launchpoolLib;
+	if (!!launchpoolLibAddress) {
+		launchpoolLib = await ethers.getContractAt(
+			"LaunchpoolLibrary",
+			launchpoolLibAddress,
+		);
+	} else {
+		launchpoolLib = await deployLaunchpoolLibrary({ chainId });
+		launchpoolLibAddress = await launchpoolLib.getAddress();
+		console.log("LaunchpoolLib deployed to:", launchpoolLibAddress);
+	}
+
 	// Create factory with library linking
 	const ProjectHubFactory = await ethers.getContractFactory(
 		"ProjectHubUpgradeable",
 		{
 			libraries: {
-				ProjectLibrary: projectLibAddress,
-				LaunchpoolLibrary: launchpoolLibAddress,
+				ProjectLibrary: await projectLib.getAddress(),
+				LaunchpoolLibrary: await launchpoolLib.getAddress(),
 			},
 		},
 	);
@@ -206,7 +234,7 @@ async function main() {
 		await deployAndUpgrade({
 			proxyAddress: PROXY_ADDRESS,
 			projectLibAddress: PROJECT_LIB_ADDRESS,
-			launchpoolLibAddress: LAUNCHPOOL_LIB_ADDRESS,
+			// launchpoolLibAddress: LAUNCHPOOL_LIB_ADDRESS, (redeploy this shit please)
 		});
 
 		console.log("Upgrade completed successfully!");

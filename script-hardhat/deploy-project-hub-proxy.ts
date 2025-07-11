@@ -4,6 +4,10 @@ import { preDeploymentCheck, getLatestCommitHash } from "./utils";
 import { getNamedFunctionArgs } from "./utils";
 import { ProjectHubUpgradeable__factory } from "../typechain-types";
 import { ContractTransactionReceipt } from "ethers";
+import {
+	deployLaunchpoolLibrary,
+	deployProjectLibrary,
+} from "./deploy-libraries";
 
 // Define the configuration object type for deployProjectHubProxy
 interface DeployProjectHubProxyConfig {
@@ -43,23 +47,7 @@ async function deployProjectHubProxy(config: DeployProjectHubProxyConfig) {
 		);
 		console.log("ProjectLib retrieved from address: ", projectLibAddress);
 	} else {
-		const projectLibFactory =
-			await ethers.getContractFactory("ProjectLibrary");
-		projectLib = await projectLibFactory.deploy();
-		projectLib.waitForDeployment();
-		projectLibAddress = await projectLib.getAddress();
-		console.log("ProjectLib deployed to: ", projectLibAddress);
-		// Log deployment info for ProjectLib
-		logDeployment(chainId, {
-			name: "ProjectLibrary",
-			type: "library",
-			address: projectLibAddress,
-			commitHash: latestCommitHash,
-			deploymentTime: new Date().toISOString(),
-			deployer: deployerAddress,
-			version: "increment",
-			isUpgradeSafe: true,
-		});
+		projectLib = await deployProjectLibrary({ chainId });
 	}
 
 	let launchpoolLib;
@@ -73,22 +61,8 @@ async function deployProjectHubProxy(config: DeployProjectHubProxyConfig) {
 			launchpoolLibAddress,
 		);
 	} else {
-		const launchpoolLibFactory =
-			await ethers.getContractFactory("LaunchpoolLibrary");
-		launchpoolLib = await launchpoolLibFactory.deploy();
-		await launchpoolLib.waitForDeployment();
-		launchpoolLibAddress = await launchpoolLib.getAddress();
-		console.log("Launchpool library deployed to:", launchpoolLibAddress);
-		// Log deployment info for LaunchpoolLibrary
-		logDeployment(chainId, {
-			name: "LaunchpoolLibrary",
-			type: "library",
-			address: launchpoolLibAddress,
-			commitHash: latestCommitHash,
-			deploymentTime: new Date().toISOString(),
-			deployer: deployerAddress,
-			version: "increment",
-			isUpgradeSafe: true,
+		launchpoolLib = await deployLaunchpoolLibrary({
+			chainId: chainId,
 		});
 	}
 
@@ -176,8 +150,8 @@ async function deployProjectHubProxy(config: DeployProjectHubProxyConfig) {
 		deployer: deployerAddress,
 		version: "increment",
 		linkedLibraries: {
-			ProjectLibrary: projectLibAddress,
-			LaunchpoolLibrary: launchpoolLibAddress,
+			ProjectLibrary: await projectLib.getAddress(),
+			LaunchpoolLibrary: await launchpoolLib.getAddress(),
 		},
 		isUpgradeSafe: true,
 		upgradeability: {
