@@ -464,15 +464,17 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			revert PlatformFeeAlreadyClaimed();
 		}
 
-		platformFeeClaimed = true;
-
 		// Enforce update of avg. native exrate gradient if it's 0
 		// if (avgNativeExRateGradient == 0) {
 		// 	uint256 vAssetAmount = ONE_VTOKEN;
 		// 	uint256 nativeAmount = _getTokenByVTokenWithoutFee(vAssetAmount);
 		// 	_updateNativeTokenExchangeRate(nativeAmount, vAssetAmount);
 		// }
+
+		// Always call this getter func b4 setting platformFeeClaimed to true
 		(, uint256 platformFee) = getPlatformAndOwnerClaimableVAssets();
+		platformFeeClaimed = true;
+
 		emit PlatformFeeClaimed(_msgSender(), platformFee);
 		acceptedVAsset.safeTransfer(platformAdminAddress, platformFee);
 	}
@@ -514,6 +516,10 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 			getTotalProjectToken(),
 			getEmissionRate()
 		);
+	}
+
+	function dumbFunc() public pure returns (uint256) {
+		return 864;
 	}
 
 	function getPlatformAndOwnerClaimableVAssets()
