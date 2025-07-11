@@ -129,7 +129,7 @@ contract PlatformFeeTest is Test {
 
 		// Snapshot state variables before action
 		uint256 poolBalanceBefore = vAsset.balanceOf(address(launchpool));
-		uint256 platformBalanceBefore = vAsset.balanceOf(platformAdmin);
+		uint256 platformAdminBalanceBefore = vAsset.balanceOf(platformAdmin);
 		uint256 ownerBalanceBefore = vAsset.balanceOf(owner);
 		(uint256 ownerClaims, uint256 platformFee) = launchpool
 			.exposed_getPlatformAndOwnerClaimableVAssets();
@@ -151,9 +151,10 @@ contract PlatformFeeTest is Test {
 			true,
 			"Platform fee should be claimed after calling claimPlatformFee"
 		);
+		assertNotEq(platformFee, 0, "Platform fee should be greater than zero");
 		assertEq(
 			vAsset.balanceOf(platformAdmin),
-			platformBalanceBefore + platformFee,
+			platformAdminBalanceBefore + platformFee,
 			"Platform admin should receive claimed vAssets"
 		);
 
