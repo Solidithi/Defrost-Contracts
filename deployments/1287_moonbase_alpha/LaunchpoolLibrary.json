@@ -48,5 +48,15 @@
         "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
         "version": "v5",
         "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0x2c080DbAA97504954015a53b9A25bc176fF36b79",
+        "commitHash": "6a152a1864e6a147b0402463b49a7544488819dc",
+        "deploymentTime": "2025-07-12T08:07:31.882Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v6",
+        "isUpgradeSafe": true
     }
 ]

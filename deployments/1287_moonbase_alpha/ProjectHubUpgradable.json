@@ -178,5 +178,25 @@
                 ]
             }
         }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0x81930F352dD928B6DD6Cc430b22af3232C1262d1",
+        "commitHash": "6a152a1864e6a147b0402463b49a7544488819dc",
+        "deploymentTime": "2025-07-12T08:07:49.483Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v5",
+        "linkedLibraries": {
+            "ProjectLibrary": "0x97C6A41de7b975eE772779bA8bEE60D7A71cb53F",
+            "LaunchpoolLibrary": "0x2c080DbAA97504954015a53b9A25bc176fF36b79"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0xB8618EaEEbFf1c817e3DD32A2e27Ece62C9d2317",
+            "proxyAdminAddress": "0xc70D19905E444Eab56FE301Eef2b0fDec156A89e",
+            "implementationAddress": "0x81930F352dD928B6DD6Cc430b22af3232C1262d1"
+        }
     }
 ]
