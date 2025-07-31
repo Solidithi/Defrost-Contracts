@@ -147,6 +147,7 @@ contract CreateLaunchpoolTest is Test {
 			PoolTypeLib.PoolType.LAUNCHPOOL,
 			poolId + 1,
 			address(projectToken),
+			projectTokenAmount,
 			address(vDOT),
 			address(DOT),
 			address(0), // We dont' know this address yet, will match anything
@@ -238,12 +239,13 @@ contract CreateLaunchpoolTest is Test {
 
 		// Assert:
 		bytes32 sigLaunchpoolCreated = keccak256(
-			"LaunchpoolCreated(uint64,uint8,uint64,address,address,address,address,uint128,uint128)"
+			"LaunchpoolCreated(uint64,uint8,uint64,address,uint256,address,address,address,uint128,uint128)"
 		);
 
 		// Debug information
 		console.log("Total logs emitted:", logs.length);
 
+		// Assert validity of event params' values
 		uint256 launchpoolCreatedEventCount = 0;
 		for (uint256 i = 0; i < logs.length; i++) {
 			if (logs[i].topics[0] == sigLaunchpoolCreated) {
@@ -257,13 +259,22 @@ contract CreateLaunchpoolTest is Test {
 				(
 					uint64 _poolId,
 					address _projectToken,
+					uint256 _projectTokenAmount,
 					address _nativeAsset,
 					address _poolAddress,
 					uint128 _startBlock,
 					uint128 _endBlock
 				) = abi.decode(
 						logs[i].data,
-						(uint64, address, address, address, uint128, uint128)
+						(
+							uint64,
+							address,
+							uint256,
+							address,
+							address,
+							uint128,
+							uint128
+						)
 					);
 				assertEq(_projectId, projectId, "projectId mismatch");
 				assertEq(_poolType, 0, "pool type mismatch");
@@ -271,6 +282,11 @@ contract CreateLaunchpoolTest is Test {
 					_projectToken,
 					address(projectToken),
 					"projectToken mismatch"
+				);
+				assertEq(
+					_projectTokenAmount,
+					projectTokenAmount,
+					"projectTokenAmount mismatch"
 				);
 				assertEq(_nativeAsset, address(DOT), "nativeAsset mismatch");
 				assertEq(_vAsset, address(vDOT), "vAsset mismatch");
@@ -377,8 +393,8 @@ contract CreateLaunchpoolTest is Test {
 		uint256[] memory emissionRateChanges = new uint256[](2);
 		uint128 startBlock = uint128(block.number + 1);
 		uint128 endBlock = uint128(block.number + 100);
-		LaunchpoolLibrary.LaunchpoolCreationParams
-			memory params = LaunchpoolLibrary.LaunchpoolCreationParams({
+		LaunchpoolLibrary.LaunchpoolCreationParams memory params = LaunchpoolLibrary
+			.LaunchpoolCreationParams({
 				projectId: uint64(projectId),
 				projectTokenAmount: projectTokenAmount,
 				projectToken: address(projectToken),
