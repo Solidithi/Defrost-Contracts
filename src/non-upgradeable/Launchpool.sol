@@ -522,14 +522,14 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		return (
 			startBlock,
 			endBlock,
-			getTotalProjectToken(),
+			getTotalProjectTokens(),
 			getEmissionRate()
 		);
 	}
 
 	function getPoolTokenomics() external view returns (PoolTokenomics memory) {
 		return
-			new PoolTokenomics({
+			PoolTokenomics({
 				totalNativeStake: totalNativeStake,
 				totalVTokenStake: getTotalStakedVTokens(),
 				projectTokenReserve: getTotalProjectTokens(),
