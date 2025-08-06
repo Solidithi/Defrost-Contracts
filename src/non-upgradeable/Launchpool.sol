@@ -17,6 +17,15 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		uint256 claimOffset;
 	}
 
+	struct PoolTokenomics {
+		uint256 totalNativeStake;
+		uint256 totalVTokenStake;
+		uint256 projectTokenReserve;
+		uint256 emissionRate;
+		uint256 projectTokenExchangeRate;
+		uint256 nativeTokenExchangeRate;
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// CONTRACT STATES ///////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////
@@ -518,8 +527,17 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		);
 	}
 
-	function dumbFunc() public pure returns (uint256) {
-		return 864;
+	function getPoolTokenomics() external view returns (PoolTokenomics memory) {
+		return
+			new PoolTokenomics({
+				totalNativeStake: totalNativeStake,
+				totalVTokenStake: getTotalStakedVTokens(),
+				projectTokenReserve: getTotalProjectTokens(),
+				emissionRate: getEmissionRate(),
+				projectTokenExchangeRate: cumulativeExchangeRate +
+					_getPendingExchangeRate(),
+				nativeTokenExchangeRate: lastNativeExRate
+			});
 	}
 
 	function getPlatformAndOwnerClaimableVAssets()
@@ -567,7 +585,7 @@ contract Launchpool is Ownable, ReentrancyGuard, Pausable {
 		return acceptedVAsset.balanceOf(address(this));
 	}
 
-	function getTotalProjectToken() public view returns (uint256) {
+	function getTotalProjectTokens() public view returns (uint256) {
 		return projectToken.balanceOf(address(this));
 	}
 
