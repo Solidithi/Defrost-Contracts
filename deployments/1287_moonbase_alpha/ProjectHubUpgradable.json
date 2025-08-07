@@ -198,5 +198,65 @@
             "proxyAdminAddress": "0xc70D19905E444Eab56FE301Eef2b0fDec156A89e",
             "implementationAddress": "0x81930F352dD928B6DD6Cc430b22af3232C1262d1"
         }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0x183e506129aB1f22E62Fdb937D1A6cA0D50C6326",
+        "commitHash": "cc344e2004cdb84ceb7c2bae9d2e30478dec3977",
+        "deploymentTime": "2025-07-31T10:18:19.285Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v6",
+        "linkedLibraries": {
+            "ProjectLibrary": "0x97C6A41de7b975eE772779bA8bEE60D7A71cb53F",
+            "LaunchpoolLibrary": "0xB955E064871888F775fd2B3EFCd3FD5ddcB8Ae64"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0xB8618EaEEbFf1c817e3DD32A2e27Ece62C9d2317",
+            "proxyAdminAddress": "0xc70D19905E444Eab56FE301Eef2b0fDec156A89e",
+            "implementationAddress": "0x183e506129aB1f22E62Fdb937D1A6cA0D50C6326"
+        }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0xB85Adc6Ac995ED54356599dC7A6DfFEB47B66bD9",
+        "commitHash": "cc344e2004cdb84ceb7c2bae9d2e30478dec3977",
+        "deploymentTime": "2025-07-31T17:26:31.361Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v7",
+        "linkedLibraries": {
+            "ProjectLibrary": "0x97C6A41de7b975eE772779bA8bEE60D7A71cb53F",
+            "LaunchpoolLibrary": "0xb75AC3ff877D97B0311ba3a66211Ecec5F03FB56"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0xB8618EaEEbFf1c817e3DD32A2e27Ece62C9d2317",
+            "proxyAdminAddress": "0xc70D19905E444Eab56FE301Eef2b0fDec156A89e",
+            "implementationAddress": "0xB85Adc6Ac995ED54356599dC7A6DfFEB47B66bD9"
+        }
+    },
+    {
+        "name": "ProjectHubUpgradable",
+        "type": "contract",
+        "address": "0xeCEc2d4a675eB6ca1aDF8165500c5A7f5BA269dE",
+        "commitHash": "1781011ba779f107efbb34a889e0129ff0308368",
+        "deploymentTime": "2025-08-06T07:31:56.786Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v8",
+        "linkedLibraries": {
+            "ProjectLibrary": "0x97C6A41de7b975eE772779bA8bEE60D7A71cb53F",
+            "LaunchpoolLibrary": "0xfd75F3D55Ca1faF2517D12D5DB27981C570e812C"
+        },
+        "isUpgradeSafe": true,
+        "upgradeability": {
+            "pattern": "transparent",
+            "proxyAddress": "0xB8618EaEEbFf1c817e3DD32A2e27Ece62C9d2317",
+            "proxyAdminAddress": "0xc70D19905E444Eab56FE301Eef2b0fDec156A89e",
+            "implementationAddress": "0xeCEc2d4a675eB6ca1aDF8165500c5A7f5BA269dE"
+        }
     }
 ]

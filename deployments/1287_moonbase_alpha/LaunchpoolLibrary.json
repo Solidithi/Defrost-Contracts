@@ -58,5 +58,35 @@
         "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
         "version": "v6",
         "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0xB955E064871888F775fd2B3EFCd3FD5ddcB8Ae64",
+        "commitHash": "cc344e2004cdb84ceb7c2bae9d2e30478dec3977",
+        "deploymentTime": "2025-07-31T10:18:06.844Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v7",
+        "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0xb75AC3ff877D97B0311ba3a66211Ecec5F03FB56",
+        "commitHash": "cc344e2004cdb84ceb7c2bae9d2e30478dec3977",
+        "deploymentTime": "2025-07-31T17:26:19.310Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v8",
+        "isUpgradeSafe": true
+    },
+    {
+        "name": "LaunchpoolLibrary",
+        "type": "library",
+        "address": "0xfd75F3D55Ca1faF2517D12D5DB27981C570e812C",
+        "commitHash": "1781011ba779f107efbb34a889e0129ff0308368",
+        "deploymentTime": "2025-08-06T07:31:24.896Z",
+        "deployer": "0xfD48761638E3a8C368ABAEFa9859cf6baa6C3c27",
+        "version": "v9",
+        "isUpgradeSafe": true
     }
 ]

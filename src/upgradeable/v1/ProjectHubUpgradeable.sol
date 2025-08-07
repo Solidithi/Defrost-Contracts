@@ -7,6 +7,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { SelfMultiCall } from "@src/utils/SelfMultiCall.sol";
 import { Launchpool } from "@src/non-upgradeable/Launchpool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 library PoolTypeLib {
 	enum PoolType {
@@ -122,6 +123,7 @@ library LaunchpoolLibrary {
 		uint64 poolId,
 		address projectToken,
 		uint256 projectTokenAmount,
+		uint8 projectTokenDecimals,
 		address indexed vAsset,
 		address nativeAsset,
 		address poolAddress,
@@ -177,6 +179,9 @@ library LaunchpoolLibrary {
 			params.projectTokenAmount
 		);
 
+		uint8 projectTokenDecimals = IERC20Metadata(params.projectToken)
+			.decimals();
+
 		// Register pool in storage
 		poolId = nextPoolId;
 		pools[poolId] = Pool(
@@ -192,6 +197,7 @@ library LaunchpoolLibrary {
 			poolId,
 			params.projectToken,
 			params.projectTokenAmount,
+			projectTokenDecimals,
 			params.vAsset,
 			nativeAsset,
 			poolAddress,
