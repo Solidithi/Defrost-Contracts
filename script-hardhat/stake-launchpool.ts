@@ -1,9 +1,10 @@
 import { ethers } from "hardhat";
+import * as readline from "readline";
 
 interface StakeLaunchpoolConfig {
 	launchpoolAddress: string;
 	vAssetAddress: string;
-	amountToStake: string; // String representation of the amount in wei
+	amountToStake?: string; // Optional - if not provided, will prompt user
 }
 
 async function main(config?: StakeLaunchpoolConfig) {
@@ -22,7 +23,7 @@ async function main(config?: StakeLaunchpoolConfig) {
 				"Please provide launchpool address and vAsset address as command line arguments, e.g.:",
 			);
 			console.error(
-				"npx hardhat run script-hardhat/stake-launchpool.ts --network moonbase 0x123... 0x456... 100000000000000000000",
+				"npx hardhat run script-hardhat/stake-launchpool.ts --network moonbase 0x123... 0x456... [amount]",
 			);
 			process.exit(1);
 		}
@@ -30,14 +31,13 @@ async function main(config?: StakeLaunchpoolConfig) {
 		config = {
 			launchpoolAddress: args[0],
 			vAssetAddress: args[1],
-			amountToStake: args[2] || "1000000000000000000", // Default to 1 token if not provided
+			amountToStake: args[2], // Optional third argument
 		};
 	}
 
 	console.log("Staking Configuration:");
 	console.log("  Launchpool Address:", config.launchpoolAddress);
 	console.log("  vAsset Address:", config.vAssetAddress);
-	console.log("  Amount to stake:", config.amountToStake);
 
 	// Get contract instances
 	const launchpool = await ethers.getContractAt(
@@ -55,15 +55,78 @@ async function main(config?: StakeLaunchpoolConfig) {
 	// Get vAsset balance of signer
 	const vAssetBalance = await vAsset.balanceOf(signer.address);
 	console.log(
-		"Current vAsset balance:",
+		"\nCurrent vAsset balance:",
 		ethers.formatEther(vAssetBalance.toString()),
 	);
 
-	const amountToStake = ethers.toBigInt(config.amountToStake);
+	if (vAssetBalance === 0n) {
+		console.log("You have no vAssets to stake.");
+		console.log(
+			"Try minting some vAssets using the deploy-mock-erc20.ts script.",
+		);
+		process.exit(0);
+	}
+
+	// Get pool maxTokenPerStaker for validation
+	const maxVTokensPerStaker = await launchpool.maxTokenPerStaker();
+	console.log(
+		"Maximum vTokens per staker:",
+		ethers.formatEther(maxVTokensPerStaker.toString()),
+	);
+
+	// Get current staker information
+	const stakerInfo = await launchpool.stakers(signer.address);
+	console.log(
+		"Current staked amount:",
+		ethers.formatEther(stakerInfo.nativeAmount.toString()),
+	);
+
+	let amountToStake: bigint;
+
+	// If amount is not provided in config, prompt user for input
+	if (!config.amountToStake) {
+		const rl = readline.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		});
+
+		const answer = await new Promise<string>((resolve) => {
+			rl.question(
+				`\nHow many vTokens would you like to stake? (Max balance: ${ethers.formatEther(
+					vAssetBalance,
+				)}): `,
+				(answer) => {
+					rl.close();
+					resolve(answer);
+				},
+			);
+		});
+
+		try {
+			amountToStake = ethers.parseEther(answer.trim());
+		} catch (error) {
+			console.error(
+				"Invalid amount format. Please enter a valid number.",
+			);
+			process.exit(1);
+		}
+	} else {
+		amountToStake = ethers.toBigInt(config.amountToStake);
+	}
+
+	// Validate the amount
+	if (amountToStake <= 0n) {
+		console.error("Amount must be greater than 0.");
+		process.exit(1);
+	}
 
 	// Check if balance is sufficient
 	if (vAssetBalance < amountToStake) {
-		console.error("Insufficient vAsset balance.");
+		console.error(
+			`Insufficient vAsset balance. You have ${ethers.formatEther(
+				vAssetBalance,
+			)} but trying to stake ${ethers.formatEther(amountToStake)}.`,
+		);
 		console.log("You need to get more vAssets first.");
 		console.log(
 			"Try minting some vAssets using the deploy-mock-erc20.ts script.",
@@ -126,7 +189,6 @@ async function main(config?: StakeLaunchpoolConfig) {
 	}
 
 	// Check pool maxVTokensPerStaker
-	const maxVTokensPerStaker = await launchpool.maxVAssetPerStaker();
 	if (amountToStake > maxVTokensPerStaker) {
 		console.error(
 			`Amount to stake exceeds maxVTokensPerStaker (${ethers.formatEther(
@@ -180,8 +242,9 @@ async function main(config?: StakeLaunchpoolConfig) {
 // This handles running the script directly or being imported by another module
 if (require.main === module) {
 	main({
-		amountToStake: ethers.parseUnits("1000", 18).toString(),
-		launchpoolAddress: "0xfbe66a07021d7cf5bd89486abe9690421dcc649b",
+		// amountToStake: ethers.parseUnits("999", 18).toString(), // Uncomment to skip interactive input
+		// launchpoolAddress: "0xfbe66a07021d7cf5bd89486abe9690421dcc649b",
+		launchpoolAddress: "0x206447b1d13ede7dd361f46725efcc1076dc884d",
 		vAssetAddress: "0xD02D73E05b002Cb8EB7BEf9DF8Ed68ed39752465",
 	})
 		.then(() => process.exit(0))
