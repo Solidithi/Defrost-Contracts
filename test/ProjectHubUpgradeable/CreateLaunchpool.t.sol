@@ -10,6 +10,7 @@ import { console } from "forge-std/console.sol";
 import { DeployProjectHubProxyCustomSender } from "../testutils/DeployProjectHubProxyCustomSender.sol";
 import { IProjectHub } from "@src/interfaces/IProjectHub.sol";
 import { ILaunchpool } from "@src/interfaces/ILaunchpool.sol";
+
 import { DeployMockXCMOracle } from "../testutils/DeployMockXCMOracle.sol";
 
 contract CreateLaunchpoolTest is Test {
@@ -148,6 +149,7 @@ contract CreateLaunchpoolTest is Test {
 			poolId + 1,
 			address(projectToken),
 			projectTokenAmount,
+			projectToken.decimals(),
 			address(vDOT),
 			address(DOT),
 			address(0), // We dont' know this address yet, will match anything
@@ -239,7 +241,7 @@ contract CreateLaunchpoolTest is Test {
 
 		// Assert:
 		bytes32 sigLaunchpoolCreated = keccak256(
-			"LaunchpoolCreated(uint64,uint8,uint64,address,uint256,address,address,address,uint128,uint128)"
+			"LaunchpoolCreated(uint64,uint8,uint64,address,uint256,uint8,address,address,address,uint128,uint128)"
 		);
 
 		// Debug information
@@ -260,6 +262,7 @@ contract CreateLaunchpoolTest is Test {
 					uint64 _poolId,
 					address _projectToken,
 					uint256 _projectTokenAmount,
+					uint8 _projectTokenDecimals,
 					address _nativeAsset,
 					address _poolAddress,
 					uint128 _startBlock,
@@ -270,6 +273,7 @@ contract CreateLaunchpoolTest is Test {
 							uint64,
 							address,
 							uint256,
+							uint8,
 							address,
 							address,
 							uint128,
@@ -287,6 +291,11 @@ contract CreateLaunchpoolTest is Test {
 					_projectTokenAmount,
 					projectTokenAmount,
 					"projectTokenAmount mismatch"
+				);
+				assertEq(
+					_projectTokenDecimals,
+					projectToken.decimals(),
+					"projectTokenDecimals mismatch"
 				);
 				assertEq(_nativeAsset, address(DOT), "nativeAsset mismatch");
 				assertEq(_vAsset, address(vDOT), "vAsset mismatch");
