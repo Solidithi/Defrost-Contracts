@@ -53,6 +53,8 @@ interface ILaunchpool {
 	function setXCMOracleAddress(address _xcmOracleAddress) external;
 
 	// View Functions
+	function owner() external view returns (address);
+
 	function getClaimableProjectToken(
 		address _investor
 	) external view returns (uint256);
