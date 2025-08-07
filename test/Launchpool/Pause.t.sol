@@ -164,7 +164,7 @@ contract PauseTest is Test {
 		);
 
 		// Snapshot related state variables before test-withdrawal
-		uint256 totalPTokenBefore = launchpool.getTotalProjectToken();
+		uint256 totalPTokenBefore = launchpool.getTotalProjectTokens();
 		uint256 totalVAssetStakeBefore = launchpool.getTotalStakedVTokens();
 		uint256 totalNativeStakeBefore = launchpool.totalNativeStake();
 		uint256 investorVAssetBalanceBefore = vAsset.balanceOf(investor);
@@ -174,7 +174,7 @@ contract PauseTest is Test {
 
 		// Assert
 		assertEq(
-			launchpool.getTotalProjectToken(),
+			launchpool.getTotalProjectTokens(),
 			totalPTokenBefore,
 			"Project token balance should not change after emergency withdrawal"
 		);

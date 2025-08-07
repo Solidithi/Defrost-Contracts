@@ -193,7 +193,7 @@ contract GeneralGetterFuncsTest is Test {
 		projectToken.transfer(address(launchpool), depositAmount);
 
 		// Assert: Check launchpool's project token balance
-		uint256 projectTokenBalance = launchpool.getTotalProjectToken();
+		uint256 projectTokenBalance = launchpool.getTotalProjectTokens();
 		assertEq(
 			projectTokenBalance,
 			depositAmount,
